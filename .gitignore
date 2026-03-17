@@ -1,0 +1,35 @@
+node_modules/
+.env
+.env.local
+.env*.local
+*.env
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# NestJS
+backend/dist/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# 서버 PID 파일
+.pids/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Prisma migrations (선택적)
+# backend/prisma/migrations/
+
+# 대용량 PDF 교재 파일 (Render Disk 또는 S3에서 별도 관리)
+backend/static/textbooks/*.pdf
+.vercel

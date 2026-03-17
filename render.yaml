@@ -1,0 +1,77 @@
+services:
+  # ─── 백엔드 (NestJS) ─────────────────────────────────────────────
+  - type: web
+    name: academiq-backend
+    runtime: node
+    plan: free          # 유료: starter($7), standard($25)
+    rootDir: backend
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node dist/src/main
+    healthCheckPath: /api/health
+
+    # Render Disk — PDF 파일 영구 저장 (ephemeral 파일시스템 대체)
+    disk:
+      name: academiq-textbooks
+      mountPath: /data/textbooks
+      sizeGB: 1          # $0.25/GB/월
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 4400
+
+      # Render PostgreSQL 연결 — 대시보드에서 Internal Connection String 복사
+      - key: DATABASE_URL
+        sync: false       # 대시보드에서 직접 입력
+
+      # Redis/Valkey — 기존 mudot-redis 또는 신규 생성
+      - key: REDIS_URL
+        sync: false       # 대시보드에서 직접 입력 (현재 코드에서 미사용)
+
+      # JWT
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+      # 프론트엔드 CORS (Vercel 도메인)
+      - key: FRONTEND_URL
+        sync: false       # https://academiq.vercel.app
+
+      # AWS S3 (영상/파일 업로드 — 미설정 시 로컬 fallback)
+      - key: AWS_REGION
+        value: ap-northeast-2
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_BUCKET_PRIVATE
+        sync: false
+      - key: AWS_CLOUDFRONT_DOMAIN
+        sync: false
+      - key: AWS_CLOUDFRONT_KEY_PAIR_ID
+        sync: false
+
+      # PDF 로컬 경로 → Render Disk 경로로 변경
+      - key: TEXTBOOK_STORAGE_PATH
+        value: /data/textbooks
+
+      # 결제 (PortOne)
+      - key: PORTONE_API_KEY
+        sync: false
+      - key: PORTONE_API_SECRET
+        sync: false
+      - key: PORTONE_IMP_CODE
+        sync: false
+
+      # 알림 (선택)
+      - key: AWS_SES_FROM_EMAIL
+        value: noreply@academiq.co.kr
+      - key: SOLAPI_API_KEY
+        sync: false
+      - key: SOLAPI_API_SECRET
+        sync: false
+      - key: SOLAPI_SENDER
+        sync: false

@@ -1,0 +1,725 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ENUM ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  INSTRUCTOR
+  OPERATOR
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DORMANT
+  SUSPENDED
+}
+
+enum CourseStatus {
+  DRAFT
+  UPCOMING
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum ContentStatus {
+  DRAFT
+  REVIEWING
+  SCHEDULED
+  PUBLISHED
+  HIDDEN
+  ENDED
+}
+
+enum LessonType {
+  VIDEO_YOUTUBE
+  VIDEO_UPLOAD
+  DOCUMENT
+  TEXT
+  LIVE_LINK
+  QUIZ
+}
+
+enum EncodingStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum DrmType {
+  NONE
+  AES128
+  PALLYCON
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+enum AssignmentSubmissionStatus {
+  PENDING
+  SUBMITTED
+  REVIEWING
+  FEEDBACK_DONE
+}
+
+enum ExamSessionStatus {
+  UPCOMING
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum ExamApplicationStatus {
+  TEMP_SAVED
+  PAYMENT_PENDING
+  APPLIED
+  CANCELLED
+  REFUND_REQUESTED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentTarget {
+  ENROLLMENT
+  EXAM_APPLICATION
+  TEXTBOOK
+}
+
+enum DiscountType {
+  NONE
+  PERCENT
+  FIXED
+}
+
+enum PriceTargetType {
+  COURSE
+  EXAM_SESSION
+  TEXTBOOK
+}
+
+enum TextbookStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TextbookGrantedBy {
+  ENROLLMENT
+  PURCHASE
+  ADMIN
+}
+
+enum NoticeScope {
+  GLOBAL
+  COURSE
+}
+
+enum InquiryStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum IntroPageStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+  SCHEDULED
+}
+
+// ─── 사용자 ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  nameEn       String?
+  phone        String?
+  birthDate    DateTime?
+  role         UserRole   @default(USER)
+  status       UserStatus @default(ACTIVE)
+  mfaSecret    String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  enrollments         Enrollment[]
+  lessonProgresses    LessonProgress[]
+  assignmentSubmissions AssignmentSubmission[]
+  examApplications    ExamApplication[]
+  payments            Payment[]
+  inquiries           Inquiry[]
+  textbookAccesses    TextbookAccess[]
+  textbookViewLogs    TextbookViewLog[]
+  videoPlaySessions   VideoPlaySession[]
+  qnaQuestions        QnaQuestion[]
+  qnaAnswers          QnaAnswer[]
+  createdCourses      Course[]      @relation("CourseInstructor")
+  createdTextbooks    Textbook[]    @relation("TextbookCreator")
+  auditLogs           AuditLog[]
+
+  @@index([email])
+  @@index([role, status])
+}
+
+// ─── 소개 페이지 CMS ─────────────────────────────────────────────────────────
+
+model IntroPage {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  title       String
+  summary     String?
+  ogTitle     String?
+  ogDescription String?
+  ogImage     String?
+  status      IntroPageStatus @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  updatedBy   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  sections    IntroPageSection[]
+
+  @@index([slug, status])
+}
+
+model IntroPageSection {
+  id          String   @id @default(cuid())
+  pageId      String
+  sectionType String
+  title       String?
+  contentJson Json
+  sortOrder   Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  page        IntroPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, sortOrder])
+}
+
+// ─── 교육과정 ─────────────────────────────────────────────────────────────────
+
+model Course {
+  id                  String       @id @default(cuid())
+  title               String
+  slug                String       @unique
+  description         String?
+  summary             String?
+  thumbnailUrl        String?
+  price               Int          @default(0)
+  currency            String       @default("KRW")
+  basePrice           Int          @default(0)
+  salePrice           Int?
+  discountType        DiscountType @default(NONE)
+  discountValue       Int          @default(0)
+  priceValidFrom      DateTime?
+  priceValidUntil     DateTime?
+  pricePolicyVersion  Int          @default(1)
+  category            String?
+  tags                String[]
+  instructorId        String
+  enrollmentStartAt   DateTime?
+  enrollmentEndAt     DateTime?
+  learningPeriodDays  Int?
+  maxCapacity         Int?
+  status              CourseStatus @default(DRAFT)
+  isFeatured          Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  instructor          User         @relation("CourseInstructor", fields: [instructorId], references: [id])
+  modules             CourseModule[]
+  enrollments         Enrollment[]
+  assignments         Assignment[]
+  notices             Notice[]
+  qnaQuestions        QnaQuestion[]
+  courseTextbooks     CourseTextbook[]
+
+  @@index([slug])
+  @@index([status, category])
+}
+
+model CourseModule {
+  id        String   @id @default(cuid())
+  courseId  String
+  title     String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+
+  @@index([courseId, sortOrder])
+}
+
+model Lesson {
+  id            String        @id @default(cuid())
+  courseId      String
+  moduleId      String?
+  title         String
+  description   String?
+  lessonType    LessonType
+  contentStatus ContentStatus @default(DRAFT)
+  isPreview     Boolean       @default(false)
+  isLocked      Boolean       @default(false)
+  releaseAt     DateTime?
+  sortOrder     Int           @default(0)
+  prerequisiteId String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  module        CourseModule? @relation(fields: [moduleId], references: [id])
+  videoAsset    LessonVideoAsset?
+  documents     LessonDocument[]
+  progresses    LessonProgress[]
+  versions      LessonVersion[]
+
+  @@index([courseId, sortOrder])
+  @@index([moduleId])
+}
+
+model LessonVideoAsset {
+  id             String         @id @default(cuid())
+  lessonId       String         @unique
+  sourceType     String
+  youtubeUrl     String?
+  videoFileUrl   String?
+  hlsPlaylistUrl String?
+  s3OriginalKey  String?
+  aesKeyId       String?
+  thumbnailUrl   String?
+  durationSeconds Int?
+  subtitleUrl    String?
+  embedEnabled   Boolean        @default(true)
+  encodingStatus EncodingStatus @default(PENDING)
+  drmType        DrmType        @default(NONE)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  lesson         Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model LessonDocument {
+  id        String   @id @default(cuid())
+  lessonId  String
+  fileUrl   String
+  fileName  String
+  fileType  String
+  fileSize  Int?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model LessonVersion {
+  id          String   @id @default(cuid())
+  lessonId    String
+  versionNo   Int
+  changeNote  String?
+  snapshotJson Json
+  publishedBy String?
+  publishedAt DateTime @default(now())
+
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, versionNo])
+}
+
+// ─── 동영상 재생 세션 (복제 방지) ─────────────────────────────────────────────
+
+model VideoPlaySession {
+  id           String   @id @default(cuid())
+  userId       String
+  lessonId     String
+  sessionToken String   @unique
+  startedAt    DateTime @default(now())
+  lastPingAt   DateTime @default(now())
+  expiredAt    DateTime
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lessonId])
+  @@index([sessionToken])
+}
+
+// ─── 수강 등록 ───────────────────────────────────────────────────────────────
+
+model Enrollment {
+  id           String           @id @default(cuid())
+  userId       String
+  courseId     String
+  status       EnrollmentStatus @default(ACTIVE)
+  enrolledAt   DateTime         @default(now())
+  expiresAt    DateTime?
+  progressRate Float            @default(0)
+  paymentId    String?
+
+  user         User             @relation(fields: [userId], references: [id])
+  course       Course           @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId, status])
+}
+
+// ─── 학습 진도 ───────────────────────────────────────────────────────────────
+
+model LessonProgress {
+  id             String   @id @default(cuid())
+  userId         String
+  lessonId       String
+  status         String   @default("NOT_STARTED")
+  watchedSeconds Int      @default(0)
+  completionRate Float    @default(0)
+  isCompleted    Boolean  @default(false)
+  completedAt    DateTime?
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id])
+  lesson         Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+// ─── 과제 ────────────────────────────────────────────────────────────────────
+
+model Assignment {
+  id             String   @id @default(cuid())
+  courseId       String
+  title          String
+  description    String?
+  dueAt          DateTime?
+  allowResubmit  Boolean  @default(false)
+  allowLateSubmit Boolean @default(false)
+  maxFileSizeMb  Int      @default(50)
+  allowedFileTypes String[]
+  createdAt      DateTime @default(now())
+
+  course         Course   @relation(fields: [courseId], references: [id])
+  submissions    AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String                     @id @default(cuid())
+  assignmentId String
+  userId       String
+  textAnswer   String?
+  fileUrl      String?
+  fileName     String?
+  status       AssignmentSubmissionStatus @default(PENDING)
+  submittedAt  DateTime                   @default(now())
+  feedback     String?
+  feedbackAt   DateTime?
+
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+
+  @@index([assignmentId, userId])
+}
+
+// ─── 시험 접수 ───────────────────────────────────────────────────────────────
+
+model ExamSession {
+  id                String            @id @default(cuid())
+  qualificationName String
+  roundName         String
+  applyStartAt      DateTime
+  applyEndAt        DateTime
+  examAt            DateTime
+  place             String?
+  fee               Int               @default(0)
+  currency          String            @default("KRW")
+  basePrice         Int               @default(0)
+  salePrice         Int?
+  discountType      DiscountType      @default(NONE)
+  discountValue     Int               @default(0)
+  priceValidFrom    DateTime?
+  priceValidUntil   DateTime?
+  pricePolicyVersion Int              @default(1)
+  capacity          Int?
+  status            ExamSessionStatus @default(UPCOMING)
+  guidanceHtml      String?
+  relatedCourseId   String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  applications      ExamApplication[]
+}
+
+model ExamApplication {
+  id              String                @id @default(cuid())
+  examSessionId   String
+  userId          String
+  status          ExamApplicationStatus @default(TEMP_SAVED)
+  formJson        Json
+  paymentId       String?
+  paymentStatus   PaymentStatus         @default(PENDING)
+  appliedAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  examSession     ExamSession @relation(fields: [examSessionId], references: [id])
+  user            User        @relation(fields: [userId], references: [id])
+
+  @@index([examSessionId, status])
+  @@index([userId])
+}
+
+// ─── 결제 ────────────────────────────────────────────────────────────────────
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String
+  targetType    PaymentTarget
+  targetId      String
+  orderNo       String        @unique
+  amount        Int
+  currency      String        @default("KRW")
+  baseAmount    Int           @default(0)
+  discountAmount Int          @default(0)
+  finalAmount   Int           @default(0)
+  pricePolicyVersion Int      @default(1)
+  paymentStatus PaymentStatus @default(PENDING)
+  pgProvider    String?
+  pgTxId        String?
+  paidAt        DateTime?
+  cancelledAt   DateTime?
+  refundedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@index([userId, paymentStatus])
+  @@index([orderNo])
+}
+
+// ─── 온라인 교재 ─────────────────────────────────────────────────────────────
+
+model Textbook {
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  coverImageUrl String?
+  s3Key         String?
+  localPath     String?
+  totalPages    Int?
+  price         Int            @default(0)
+  currency      String         @default("KRW")
+  basePrice     Int            @default(0)
+  salePrice     Int?
+  discountType  DiscountType   @default(NONE)
+  discountValue Int            @default(0)
+  priceValidFrom DateTime?
+  priceValidUntil DateTime?
+  pricePolicyVersion Int       @default(1)
+  isStandalone  Boolean        @default(false)
+  status        TextbookStatus @default(DRAFT)
+  createdById   String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  createdBy     User           @relation("TextbookCreator", fields: [createdById], references: [id])
+  courseLinks   CourseTextbook[]
+  accesses      TextbookAccess[]
+  viewLogs      TextbookViewLog[]
+}
+
+model CourseTextbook {
+  id                 String  @id @default(cuid())
+  courseId           String
+  textbookId         String
+  sortOrder          Int     @default(0)
+  autoGrantOnEnroll  Boolean @default(true)
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  textbook  Textbook @relation(fields: [textbookId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, textbookId])
+}
+
+model TextbookAccess {
+  id          String            @id @default(cuid())
+  userId      String
+  textbookId  String
+  grantedBy   TextbookGrantedBy
+  sourceId    String?
+  expiresAt   DateTime?
+  grantedAt   DateTime          @default(now())
+  revokedAt   DateTime?
+
+  user        User     @relation(fields: [userId], references: [id])
+  textbook    Textbook @relation(fields: [textbookId], references: [id])
+
+  @@unique([userId, textbookId])
+  @@index([userId, textbookId])
+}
+
+model TextbookViewLog {
+  id          String   @id @default(cuid())
+  userId      String
+  textbookId  String
+  pageNumber  Int
+  viewedAt    DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  textbook    Textbook @relation(fields: [textbookId], references: [id])
+
+  @@index([userId, textbookId])
+  @@index([textbookId, viewedAt])
+}
+
+// ─── 공지 / FAQ / Q&A / 문의 ────────────────────────────────────────────────
+
+model Notice {
+  id          String     @id @default(cuid())
+  scopeType   NoticeScope @default(GLOBAL)
+  scopeId     String?
+  title       String
+  content     String
+  isPinned    Boolean    @default(false)
+  isPublished Boolean    @default(false)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  course      Course?    @relation(fields: [scopeId], references: [id])
+
+  @@index([scopeType, scopeId, isPinned])
+}
+
+model Faq {
+  id         String   @id @default(cuid())
+  category   String
+  question   String
+  answer     String
+  sortOrder  Int      @default(0)
+  isPublished Boolean @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model QnaQuestion {
+  id         String      @id @default(cuid())
+  courseId   String
+  userId     String
+  title      String
+  content    String
+  isPrivate  Boolean     @default(false)
+  isClosed   Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  course     Course      @relation(fields: [courseId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  answers    QnaAnswer[]
+
+  @@index([courseId, createdAt])
+}
+
+model QnaAnswer {
+  id         String   @id @default(cuid())
+  questionId String
+  userId     String
+  content    String
+  isAccepted Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  question   QnaQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id])
+}
+
+model Inquiry {
+  id         String        @id @default(cuid())
+  userId     String
+  category   String
+  title      String
+  content    String
+  fileUrl    String?
+  status     InquiryStatus @default(OPEN)
+  response   String?
+  respondedAt DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  user       User          @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+}
+
+// ─── 시스템 설정 / 감사 로그 ──────────────────────────────────────────────────
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  targetType String?
+  targetId   String?
+  detail     Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+model PriceHistory {
+  id                 String          @id @default(cuid())
+  targetType         PriceTargetType
+  targetId           String
+  currency           String          @default("KRW")
+  oldBasePrice       Int?
+  oldSalePrice       Int?
+  oldDiscountType    DiscountType?
+  oldDiscountValue   Int?
+  oldValidFrom       DateTime?
+  oldValidUntil      DateTime?
+  oldPolicyVersion   Int?
+  newBasePrice       Int?
+  newSalePrice       Int?
+  newDiscountType    DiscountType?
+  newDiscountValue   Int?
+  newValidFrom       DateTime?
+  newValidUntil      DateTime?
+  newPolicyVersion   Int?
+  reason             String?
+  changedById        String?
+  createdAt          DateTime        @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([changedById, createdAt])
+}
