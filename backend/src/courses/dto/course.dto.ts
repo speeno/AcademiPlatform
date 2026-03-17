@@ -57,6 +57,65 @@ export class CreateCourseDto {
   status?: CourseStatus;
 }
 
+export class UpdateCourseDto {
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  slug?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  summary?: string;
+
+  @IsString()
+  @IsOptional()
+  thumbnailUrl?: string;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsArray()
+  @IsOptional()
+  tags?: string[];
+
+  @IsString()
+  @IsOptional()
+  instructorId?: string;
+
+  @IsOptional()
+  enrollmentStartAt?: string;
+
+  @IsOptional()
+  enrollmentEndAt?: string;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  learningPeriodDays?: number;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  maxCapacity?: number;
+
+  @IsEnum(CourseStatus)
+  @IsOptional()
+  status?: CourseStatus;
+}
+
 export class CourseFilterDto {
   @IsString()
   @IsOptional()

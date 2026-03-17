@@ -177,4 +177,51 @@ export class CoursesService {
   async addLesson(moduleId: string, data: any) {
     return this.prisma.lesson.create({ data: { ...data, moduleId } });
   }
+
+  /** 관리자 편집용: id로 강좌 조회 (모듈·레슨 포함) */
+  async getCourseForAdmin(id: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      include: {
+        instructor: { select: { id: true, name: true } },
+        modules: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            lessons: {
+              orderBy: { sortOrder: 'asc' },
+              select: {
+                id: true,
+                title: true,
+                lessonType: true,
+                sortOrder: true,
+                isFree: true,
+                isPreview: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!course) throw new NotFoundException('교육과정을 찾을 수 없습니다.');
+    return course;
+  }
+
+  async deleteModule(courseId: string, moduleId: string) {
+    await this.findById(courseId);
+    const module = await this.prisma.courseModule.findFirst({
+      where: { id: moduleId, courseId },
+    });
+    if (!module) throw new NotFoundException('모듈을 찾을 수 없습니다.');
+    await this.prisma.courseModule.delete({ where: { id: moduleId } });
+    return { deleted: true };
+  }
+
+  async deleteLesson(moduleId: string, lessonId: string) {
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { id: lessonId, moduleId },
+    });
+    if (!lesson) throw new NotFoundException('강의를 찾을 수 없습니다.');
+    await this.prisma.lesson.delete({ where: { id: lessonId } });
+    return { deleted: true };
+  }
 }

@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { CoursesService } from './courses.service';
-import { CreateCourseDto, CourseFilterDto } from './dto/course.dto';
+import { CreateCourseDto, CourseFilterDto, UpdateCourseDto } from './dto/course.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -55,8 +55,14 @@ export class CoursesController {
 
   @Roles(UserRole.OPERATOR)
   @Patch('admin/:id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateCourseDto>) {
+  update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
     return this.coursesService.update(id, dto);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/:id')
+  getForAdmin(@Param('id') id: string) {
+    return this.coursesService.getCourseForAdmin(id);
   }
 
   @Roles(UserRole.OPERATOR)
@@ -65,15 +71,27 @@ export class CoursesController {
     return this.coursesService.delete(id);
   }
 
-  @Roles(UserRole.INSTRUCTOR)
+  @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
   @Post('admin/:id/modules')
-  addModule(@Param('id') courseId: string, @Body('title') title: string) {
+  addModule(@Param('id') courseId: string, @Body('title') title: string, @Body('sortOrder') sortOrder?: number) {
     return this.coursesService.addModule(courseId, title);
   }
 
-  @Roles(UserRole.INSTRUCTOR)
+  @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
   @Post('admin/modules/:moduleId/lessons')
   addLesson(@Param('moduleId') moduleId: string, @Body() data: any) {
     return this.coursesService.addLesson(moduleId, data);
+  }
+
+  @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
+  @Delete('admin/:id/modules/:moduleId')
+  deleteModule(@Param('id') id: string, @Param('moduleId') moduleId: string) {
+    return this.coursesService.deleteModule(id, moduleId);
+  }
+
+  @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
+  @Delete('admin/modules/:moduleId/lessons/:lessonId')
+  deleteLesson(@Param('moduleId') moduleId: string, @Param('lessonId') lessonId: string) {
+    return this.coursesService.deleteLesson(moduleId, lessonId);
   }
 }
