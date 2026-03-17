@@ -22,9 +22,10 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
-  const port = process.env.PORT ?? 4400;
-  await app.listen(port);
-  console.log(`🚀 AcademiQ API 서버 실행 중: http://localhost:${port}/api`);
+  const port = Number(process.env.PORT ?? 4400);
+  const host = process.env.HOST ?? '0.0.0.0';
+  await app.listen(port, host);
+  console.log(`🚀 AcademiQ API 서버 실행 중: http://${host}:${port}/api`);
 }
 
 bootstrap();
