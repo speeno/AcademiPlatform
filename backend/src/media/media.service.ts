@@ -25,18 +25,45 @@ export class MediaService {
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
+    const endpoint = this.config.get<string>('S3_ENDPOINT')?.trim();
+    const accessKeyId =
+      this.config.get<string>('S3_ACCESS_KEY') ||
+      this.config.get<string>('AWS_ACCESS_KEY_ID') ||
+      '';
+    const secretAccessKey =
+      this.config.get<string>('S3_SECRET_KEY') ||
+      this.config.get<string>('AWS_SECRET_ACCESS_KEY') ||
+      '';
+    const region =
+      this.config.get<string>('S3_REGION') ||
+      this.config.get<string>('AWS_REGION') ||
+      'auto';
+
     this.s3 = new S3Client({
-      region: config.get('AWS_REGION', 'ap-northeast-2'),
-      credentials: {
-        accessKeyId: config.get('AWS_ACCESS_KEY_ID', ''),
-        secretAccessKey: config.get('AWS_SECRET_ACCESS_KEY', ''),
-      },
+      region,
+      endpoint,
+      forcePathStyle: !!endpoint,
+      credentials:
+        accessKeyId && secretAccessKey
+          ? {
+              accessKeyId,
+              secretAccessKey,
+            }
+          : undefined,
     });
   }
 
   // S3 업로드용 Presigned URL 발급 (원본 비공개 버킷)
   async getUploadPresignedUrl(lessonId: string, fileName: string, contentType: string) {
-    const bucket = this.config.get('AWS_S3_BUCKET_PRIVATE', '');
+    const bucket =
+      this.config.get<string>('S3_BUCKET') ||
+      this.config.get<string>('AWS_S3_BUCKET_PRIVATE') ||
+      '';
+    if (!bucket) {
+      throw new BadRequestException(
+        '스토리지 버킷이 설정되지 않았습니다. S3_BUCKET 또는 AWS_S3_BUCKET_PRIVATE 환경변수를 설정하세요.',
+      );
+    }
     const key = `raw/${lessonId}/${Date.now()}_${fileName}`;
 
     const command = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });

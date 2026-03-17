@@ -22,18 +22,39 @@ const WATERMARK_CACHE = new Map<string, { buffer: Buffer; expiredAt: Date }>();
 @Injectable()
 export class TextbookService {
   private s3: S3Client;
+  private readonly isProduction: boolean;
 
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
+    const endpoint = this.config.get<string>('S3_ENDPOINT')?.trim();
+    const accessKeyId =
+      this.config.get<string>('S3_ACCESS_KEY') ||
+      this.config.get<string>('AWS_ACCESS_KEY_ID') ||
+      '';
+    const secretAccessKey =
+      this.config.get<string>('S3_SECRET_KEY') ||
+      this.config.get<string>('AWS_SECRET_ACCESS_KEY') ||
+      '';
+    const region =
+      this.config.get<string>('S3_REGION') ||
+      this.config.get<string>('AWS_REGION') ||
+      'auto';
+
     this.s3 = new S3Client({
-      region: config.get('AWS_REGION', 'ap-northeast-2'),
-      credentials: {
-        accessKeyId: config.get('AWS_ACCESS_KEY_ID', ''),
-        secretAccessKey: config.get('AWS_SECRET_ACCESS_KEY', ''),
-      },
+      region,
+      endpoint,
+      forcePathStyle: !!endpoint,
+      credentials:
+        accessKeyId && secretAccessKey
+          ? {
+              accessKeyId,
+              secretAccessKey,
+            }
+          : undefined,
     });
+    this.isProduction = (this.config.get<string>('NODE_ENV') ?? '').toLowerCase() === 'production';
   }
 
   async findAll(userId: string) {
@@ -142,14 +163,16 @@ export class TextbookService {
       return cached.buffer;
     }
 
-    // 원본 PDF 읽기 — localPath 우선, 없으면 S3
+    // 원본 PDF 읽기
+    // - 로컬 개발: localPath 우선 (로컬 폴더 기반)
+    // - 배포 환경: 객체 스토리지(R2/S3) 우선
     let originalPdf: Buffer;
-    if (textbook.localPath) {
+    if (!this.isProduction && textbook.localPath) {
       const absPath = path.resolve(textbook.localPath);
       originalPdf = await fs.readFile(absPath);
-    } else {
-      const bucket = this.config.get('AWS_S3_BUCKET_PRIVATE', '');
-      const command = new GetObjectCommand({ Bucket: bucket, Key: textbook.s3Key! });
+    } else if (textbook.s3Key) {
+      const bucket = this.getStorageBucket();
+      const command = new GetObjectCommand({ Bucket: bucket, Key: textbook.s3Key });
       const s3Response = await this.s3.send(command);
 
       const chunks: Buffer[] = [];
@@ -157,6 +180,12 @@ export class TextbookService {
         chunks.push(Buffer.from(chunk));
       }
       originalPdf = Buffer.concat(chunks);
+    } else if (textbook.localPath) {
+      // 운영 중이라도 데이터 정합성 문제로 localPath만 남은 경우를 대비한 안전 fallback
+      const absPath = path.resolve(textbook.localPath);
+      originalPdf = await fs.readFile(absPath);
+    } else {
+      throw new NotFoundException('교재 파일 원본을 찾을 수 없습니다.');
     }
 
     // 사용자 정보 조회
@@ -271,7 +300,7 @@ export class TextbookService {
 
   // 관리자: S3 업로드 Presigned URL 발급
   async getUploadPresignedUrl(fileName: string, contentType: string) {
-    const bucket = this.config.get('AWS_S3_BUCKET_PRIVATE', '');
+    const bucket = this.getStorageBucket();
     const key = `textbooks/${Date.now()}_${fileName}`;
     const command = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
     const presignedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
@@ -317,5 +346,20 @@ export class TextbookService {
     if (access.expiresAt && new Date() > access.expiresAt) {
       throw new ForbiddenException('교재 접근 권한이 만료되었습니다.');
     }
+  }
+
+  private getStorageBucket(): string {
+    const bucket =
+      this.config.get<string>('S3_BUCKET') ||
+      this.config.get<string>('AWS_S3_BUCKET_PRIVATE') ||
+      '';
+
+    if (!bucket) {
+      throw new BadRequestException(
+        '스토리지 버킷이 설정되지 않았습니다. S3_BUCKET 또는 AWS_S3_BUCKET_PRIVATE 환경변수를 설정하세요.',
+      );
+    }
+
+    return bucket;
   }
 }
