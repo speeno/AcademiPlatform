@@ -10,6 +10,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -53,6 +54,26 @@ export class AuthService {
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
       ...tokens,
     };
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
+    });
+    if (!user) throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    return user;
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.phone !== undefined && { phone: dto.phone || null }),
+      },
+    });
+    return this.getProfile(userId);
   }
 
   async refreshToken(userId: string) {
