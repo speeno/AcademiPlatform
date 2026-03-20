@@ -29,6 +29,18 @@ export class LmsService {
     });
   }
 
+  async getMyVouchers(userId: string) {
+    return this.prisma.bookVoucherGrant.findMany({
+      where: { userId },
+      orderBy: { grantedAt: 'desc' },
+      include: {
+        campaign: { select: { id: true, name: true, provider: true } },
+        code: { select: { code: true, status: true } },
+        course: { select: { id: true, title: true } },
+      },
+    });
+  }
+
   async getCourseWithProgress(courseId: string, userId: string) {
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },

@@ -129,6 +129,12 @@ enum TextbookGrantedBy {
   ADMIN
 }
 
+enum BookVoucherCodeStatus {
+  AVAILABLE
+  ASSIGNED
+  USED
+}
+
 enum NoticeScope {
   GLOBAL
   COURSE
@@ -176,6 +182,7 @@ model User {
   qnaAnswers          QnaAnswer[]
   createdCourses      Course[]      @relation("CourseInstructor")
   createdTextbooks    Textbook[]    @relation("TextbookCreator")
+  bookVoucherGrants   BookVoucherGrant[]
   auditLogs           AuditLog[]
 
   @@index([email])
@@ -257,6 +264,8 @@ model Course {
   notices             Notice[]
   qnaQuestions        QnaQuestion[]
   courseTextbooks     CourseTextbook[]
+  voucherCampaigns    BookVoucherCampaign[]
+  voucherGrants       BookVoucherGrant[]
 
   @@index([slug])
   @@index([status, category])
@@ -590,6 +599,55 @@ model TextbookViewLog {
 
   @@index([userId, textbookId])
   @@index([textbookId, viewedAt])
+}
+
+model BookVoucherCampaign {
+  id          String   @id @default(cuid())
+  name        String
+  provider    String   @default("BUKIO")
+  courseId    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  codes       BookVoucherCode[]
+  grants      BookVoucherGrant[]
+
+  @@index([courseId, isActive])
+}
+
+model BookVoucherCode {
+  id          String                @id @default(cuid())
+  campaignId  String
+  code        String                @unique
+  status      BookVoucherCodeStatus @default(AVAILABLE)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  campaign    BookVoucherCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  grant       BookVoucherGrant?
+
+  @@index([campaignId, status])
+}
+
+model BookVoucherGrant {
+  id          String   @id @default(cuid())
+  campaignId  String
+  codeId      String   @unique
+  userId      String
+  courseId    String?
+  enrollmentId String?
+  grantedAt   DateTime @default(now())
+  usedAt      DateTime?
+
+  campaign    BookVoucherCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  code        BookVoucherCode     @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course?             @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, campaignId])
+  @@index([userId, grantedAt])
 }
 
 // ─── 공지 / FAQ / Q&A / 문의 ────────────────────────────────────────────────

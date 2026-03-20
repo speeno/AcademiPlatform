@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { randomUUID } from 'crypto';
 import {
+  BookVoucherCodeStatus,
   DiscountType,
   InquiryStatus,
   PriceTargetType,
@@ -10,6 +12,8 @@ import {
 
 @Injectable()
 export class AdminService {
+  private readonly BOOK_OFFERS_KEY = 'book_offers';
+
   constructor(private prisma: PrismaService) {}
 
   /* 대시보드 통계 */
@@ -186,6 +190,135 @@ export class AdminService {
       create: { key, value },
       update: { value },
     });
+  }
+
+  /* 북이오 구매 링크(외부 교재 오퍼) */
+  async getBookOffers() {
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: this.BOOK_OFFERS_KEY },
+    });
+    if (!setting?.value) return [];
+    try {
+      const parsed = JSON.parse(setting.value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async createBookOffer(data: any) {
+    const offers = await this.getBookOffers();
+    const offer = {
+      id: randomUUID(),
+      code: data.code ?? '',
+      title: data.title ?? '',
+      price: Number(data.price ?? 0),
+      coverImageUrl: data.coverImageUrl ?? '',
+      purchaseUrl: data.purchaseUrl ?? '',
+      isActive: data.isActive !== false,
+      createdAt: new Date().toISOString(),
+    };
+    offers.push(offer);
+    await this.updateSetting(this.BOOK_OFFERS_KEY, JSON.stringify(offers));
+    return offer;
+  }
+
+  async updateBookOffer(id: string, patch: any) {
+    const offers = await this.getBookOffers();
+    const idx = offers.findIndex((o: any) => o.id === id);
+    if (idx < 0) throw new NotFoundException('북이오 구매 링크를 찾을 수 없습니다.');
+    offers[idx] = {
+      ...offers[idx],
+      ...patch,
+      ...(patch.price !== undefined ? { price: Number(patch.price) } : {}),
+      updatedAt: new Date().toISOString(),
+    };
+    await this.updateSetting(this.BOOK_OFFERS_KEY, JSON.stringify(offers));
+    return offers[idx];
+  }
+
+  async deleteBookOffer(id: string) {
+    const offers = await this.getBookOffers();
+    const next = offers.filter((o: any) => o.id !== id);
+    await this.updateSetting(this.BOOK_OFFERS_KEY, JSON.stringify(next));
+    return { deleted: true };
+  }
+
+  /* 북이오 무료 이용권(캠페인/코드/지급) */
+  async getVoucherCampaigns() {
+    return this.prisma.bookVoucherCampaign.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        course: { select: { id: true, title: true } },
+        _count: { select: { codes: true, grants: true } },
+      },
+    });
+  }
+
+  async createVoucherCampaign(data: { name: string; courseId?: string | null; isActive?: boolean }) {
+    return this.prisma.bookVoucherCampaign.create({
+      data: {
+        name: data.name,
+        courseId: data.courseId || null,
+        isActive: data.isActive ?? true,
+      },
+    });
+  }
+
+  async updateVoucherCampaign(id: string, data: { name?: string; courseId?: string | null; isActive?: boolean }) {
+    return this.prisma.bookVoucherCampaign.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.courseId !== undefined && { courseId: data.courseId || null }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+    });
+  }
+
+  async appendVoucherCodes(campaignId: string, codes: string[]) {
+    const campaign = await this.prisma.bookVoucherCampaign.findUnique({ where: { id: campaignId } });
+    if (!campaign) throw new NotFoundException('이용권 캠페인을 찾을 수 없습니다.');
+    const uniqueCodes = [...new Set(codes.map((c) => c.trim()).filter(Boolean))];
+    if (uniqueCodes.length === 0) return { created: 0 };
+
+    const existing = await this.prisma.bookVoucherCode.findMany({
+      where: { code: { in: uniqueCodes } },
+      select: { code: true },
+    });
+    const existingSet = new Set(existing.map((e) => e.code));
+    const payload = uniqueCodes
+      .filter((code) => !existingSet.has(code))
+      .map((code) => ({ campaignId, code, status: BookVoucherCodeStatus.AVAILABLE }));
+    if (payload.length === 0) return { created: 0 };
+
+    const result = await this.prisma.bookVoucherCode.createMany({ data: payload });
+    return { created: result.count };
+  }
+
+  async getVoucherGrants(filter: { campaignId?: string; userId?: string; page?: number; limit?: number }) {
+    const { campaignId, userId, page = 1, limit = 50 } = filter;
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (campaignId) where.campaignId = campaignId;
+    if (userId) where.userId = userId;
+
+    const [items, total] = await Promise.all([
+      this.prisma.bookVoucherGrant.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { grantedAt: 'desc' },
+        include: {
+          campaign: { select: { id: true, name: true } },
+          code: { select: { code: true, status: true } },
+          user: { select: { id: true, name: true, email: true } },
+          course: { select: { id: true, title: true } },
+        },
+      }),
+      this.prisma.bookVoucherGrant.count({ where }),
+    ]);
+    return { items, total, page, limit };
   }
 
   async updatePricingPolicy(

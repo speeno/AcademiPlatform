@@ -107,6 +107,58 @@ export class AdminController {
     return this.adminService.updateSetting(key, value);
   }
 
+  /* 북이오 구매 링크 관리 */
+  @Get('book-offers')
+  getBookOffers() {
+    return this.adminService.getBookOffers();
+  }
+
+  @Post('book-offers')
+  createBookOffer(@Body() data: any) {
+    return this.adminService.createBookOffer(data);
+  }
+
+  @Patch('book-offers/:id')
+  updateBookOffer(@Param('id') id: string, @Body() data: any) {
+    return this.adminService.updateBookOffer(id, data);
+  }
+
+  @Delete('book-offers/:id')
+  deleteBookOffer(@Param('id') id: string) {
+    return this.adminService.deleteBookOffer(id);
+  }
+
+  /* 북이오 무료 이용권 캠페인 */
+  @Get('vouchers/campaigns')
+  getVoucherCampaigns() {
+    return this.adminService.getVoucherCampaigns();
+  }
+
+  @Post('vouchers/campaigns')
+  createVoucherCampaign(@Body() data: { name: string; courseId?: string | null; isActive?: boolean }) {
+    return this.adminService.createVoucherCampaign(data);
+  }
+
+  @Patch('vouchers/campaigns/:id')
+  updateVoucherCampaign(@Param('id') id: string, @Body() data: { name?: string; courseId?: string | null; isActive?: boolean }) {
+    return this.adminService.updateVoucherCampaign(id, data);
+  }
+
+  @Post('vouchers/campaigns/:id/codes')
+  appendVoucherCodes(@Param('id') campaignId: string, @Body('codes') codes: string[]) {
+    return this.adminService.appendVoucherCodes(campaignId, codes);
+  }
+
+  @Get('vouchers/grants')
+  getVoucherGrants(
+    @Query('campaignId') campaignId?: string,
+    @Query('userId') userId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.adminService.getVoucherGrants({ campaignId, userId, page, limit });
+  }
+
   /* 가격 정책 */
   @Patch('pricing/:targetType/:targetId')
   updatePricingPolicy(

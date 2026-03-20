@@ -2,7 +2,7 @@ import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { Public } from '../common/decorators/public.decorator';
 import { AdminService } from './admin.service';
 
-const PUBLIC_ALLOWED_KEYS = ['hero_banner'];
+const PUBLIC_ALLOWED_KEYS = ['hero_banner', 'book_offers'];
 
 @Controller('settings')
 export class PublicSettingsController {

@@ -11,6 +11,11 @@ export class LmsController {
     return this.lmsService.getClassroom(user.id);
   }
 
+  @Get('vouchers/my')
+  getMyVouchers(@CurrentUser() user: any) {
+    return this.lmsService.getMyVouchers(user.id);
+  }
+
   @Get('courses/:id')
   getCourseWithProgress(@Param('id') courseId: string, @CurrentUser() user: any) {
     return this.lmsService.getCourseWithProgress(courseId, user.id);

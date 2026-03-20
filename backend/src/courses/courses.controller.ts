@@ -4,6 +4,7 @@ import {
 import { UserRole } from '@prisma/client';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, CourseFilterDto, UpdateCourseDto } from './dto/course.dto';
+import { AddLessonDto } from './dto/lesson.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -79,7 +80,7 @@ export class CoursesController {
 
   @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
   @Post('admin/modules/:moduleId/lessons')
-  addLesson(@Param('moduleId') moduleId: string, @Body() data: any) {
+  addLesson(@Param('moduleId') moduleId: string, @Body() data: AddLessonDto) {
     return this.coursesService.addLesson(moduleId, data);
   }
 

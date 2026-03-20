@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { CourseStatus, EnrollmentStatus } from '@prisma/client';
+import { BookVoucherCodeStatus, CourseStatus, EnrollmentStatus } from '@prisma/client';
 import { CreateCourseDto, CourseFilterDto } from './dto/course.dto';
+import { AddLessonDto } from './dto/lesson.dto';
 
 @Injectable()
 export class CoursesService {
@@ -136,6 +137,9 @@ export class CoursesService {
       );
     }
 
+    // 수강 등록 시 북이오 무료 이용권 자동 지급(캠페인 활성화 기준)
+    await this.grantVoucherOnEnrollment(courseId, userId, enrollment.id);
+
     return enrollment;
   }
 
@@ -174,8 +178,26 @@ export class CoursesService {
     });
   }
 
-  async addLesson(moduleId: string, data: any) {
-    return this.prisma.lesson.create({ data: { ...data, moduleId } });
+  async addLesson(moduleId: string, data: AddLessonDto) {
+    const module = await this.prisma.courseModule.findUnique({ where: { id: moduleId } });
+    if (!module) throw new NotFoundException('모듈을 찾을 수 없습니다.');
+
+    const maxOrder = await this.prisma.lesson.aggregate({
+      where: { moduleId },
+      _max: { sortOrder: true },
+    });
+
+    return this.prisma.lesson.create({
+      data: {
+        moduleId,
+        courseId: module.courseId,
+        title: data.title,
+        lessonType: data.lessonType,
+        description: data.description,
+        sortOrder: data.sortOrder ?? (maxOrder._max.sortOrder ?? 0) + 1,
+        isPreview: data.isPreview ?? false,
+      },
+    });
   }
 
   /** 관리자 편집용: id로 강좌 조회 (모듈·레슨 포함) */
@@ -194,7 +216,6 @@ export class CoursesService {
                 title: true,
                 lessonType: true,
                 sortOrder: true,
-                isFree: true,
                 isPreview: true,
               },
             },
@@ -223,5 +244,46 @@ export class CoursesService {
     if (!lesson) throw new NotFoundException('강의를 찾을 수 없습니다.');
     await this.prisma.lesson.delete({ where: { id: lessonId } });
     return { deleted: true };
+  }
+
+  private async grantVoucherOnEnrollment(courseId: string, userId: string, enrollmentId: string) {
+    const campaigns = await this.prisma.bookVoucherCampaign.findMany({
+      where: {
+        isActive: true,
+        OR: [{ courseId }, { courseId: null }],
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    if (campaigns.length === 0) return;
+
+    for (const campaign of campaigns) {
+      const existingGrant = await this.prisma.bookVoucherGrant.findUnique({
+        where: { userId_campaignId: { userId, campaignId: campaign.id } },
+      });
+      if (existingGrant) continue;
+
+      const code = await this.prisma.bookVoucherCode.findFirst({
+        where: { campaignId: campaign.id, status: BookVoucherCodeStatus.AVAILABLE },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (!code) continue;
+
+      const locked = await this.prisma.bookVoucherCode.updateMany({
+        where: { id: code.id, status: BookVoucherCodeStatus.AVAILABLE },
+        data: { status: BookVoucherCodeStatus.ASSIGNED },
+      });
+      if (locked.count === 0) continue;
+
+      await this.prisma.bookVoucherGrant.create({
+        data: {
+          campaignId: campaign.id,
+          codeId: code.id,
+          userId,
+          courseId,
+          enrollmentId,
+        },
+      });
+    }
   }
 }
