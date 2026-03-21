@@ -18,19 +18,39 @@ jobs:
 
           TARGET_URL="${KEEPALIVE_URL:-https://academiq-backend.onrender.com/api/health}"
           echo "Target: ${TARGET_URL}"
+          max_attempts=4
+          attempt=1
+          success=0
 
-          start_ms=$(date +%s%3N)
-          status=$(curl --location --silent --show-error --output /tmp/keepalive_response.txt \
-            --write-out "%{http_code}" --max-time 20 "${TARGET_URL}")
-          end_ms=$(date +%s%3N)
-          latency_ms=$((end_ms - start_ms))
+          while [ "${attempt}" -le "${max_attempts}" ]; do
+            start_ms=$(date +%s%3N)
+            status_code=$(curl --location --silent --show-error --output /tmp/keepalive_response.txt \
+              --write-out "%{http_code}" --max-time 25 "${TARGET_URL}" || true)
+            end_ms=$(date +%s%3N)
+            latency_ms=$((end_ms - start_ms))
+            body_sample=$(head -c 300 /tmp/keepalive_response.txt || true)
 
-          echo "status=${status} latency_ms=${latency_ms}"
-          head -c 300 /tmp/keepalive_response.txt || true
-          echo ""
+            echo "attempt=${attempt}/${max_attempts} status=${status_code} latency_ms=${latency_ms}"
+            echo "${body_sample}"
+            echo ""
 
-          if [ "${status}" -ne 200 ]; then
-            echo "Keepalive failed with status ${status}"
+            if [ "${status_code}" = "200" ]; then
+              success=1
+              break
+            fi
+
+            if echo "${body_sample}" | tr '[:upper:]' '[:lower:]' | grep -q "suspended by its owner"; then
+              echo "Render service is suspended-by-user. Unsuspend in Render dashboard first."
+              exit 1
+            fi
+
+            # cold start/transient failure may recover on retry
+            sleep 20
+            attempt=$((attempt + 1))
+          done
+
+          if [ "${success}" -ne 1 ]; then
+            echo "Keepalive failed after ${max_attempts} attempts"
             exit 1
           fi
 
