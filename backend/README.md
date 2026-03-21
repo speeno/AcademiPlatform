@@ -27,6 +27,28 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+### DB scripts
+
+```bash
+# prisma client 생성
+$ npm run db:generate
+
+# 배포용 migration 적용
+$ npm run db:migrate:deploy
+
+# 개발 전용 schema 동기화
+$ npm run db:sync:local
+
+# 환경변수 기반 자동 반영
+$ AUTO_DB_SYNC=true npm run start:dev:auto
+```
+
+### Storage preflight
+
+- 앱 부팅 시 스토리지 필수 키를 검사합니다.
+- 우선 키: `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`
+- fallback 키: `AWS_S3_ENDPOINT`, `AWS_S3_BUCKET_PRIVATE`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+
 ## Run tests
 
 ```bash

@@ -7,6 +7,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { StoragePreflightService } from './common/storage/storage-preflight.service';
 
 import { AuthModule } from './auth/auth.module';
 import { CoursesModule } from './courses/courses.module';
@@ -18,6 +19,7 @@ import { PaymentModule } from './payment/payment.module';
 import { IntroModule } from './intro/intro.module';
 import { NotifyModule } from './notify/notify.module';
 import { AdminModule } from './admin/admin.module';
+import { CmsModule } from './cms/cms.module';
 
 @Module({
   imports: [
@@ -34,8 +36,10 @@ import { AdminModule } from './admin/admin.module';
     IntroModule,
     NotifyModule,
     AdminModule,
+    CmsModule,
   ],
   providers: [
+    StoragePreflightService,
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

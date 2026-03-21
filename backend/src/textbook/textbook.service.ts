@@ -15,6 +15,7 @@ import { randomUUID } from 'crypto';
 import * as jwt from 'jsonwebtoken';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { ResolvedStorageConfig, resolveStorageConfig } from '../common/storage/storage-config';
 
 const VIEWER_TOKEN_TTL = 15 * 60; // 15분
 const WATERMARK_CACHE = new Map<string, { buffer: Buffer; expiredAt: Date }>();
@@ -22,35 +23,24 @@ const WATERMARK_CACHE = new Map<string, { buffer: Buffer; expiredAt: Date }>();
 @Injectable()
 export class TextbookService {
   private s3: S3Client;
+  private readonly storageConfig: ResolvedStorageConfig;
   private readonly isProduction: boolean;
 
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
-    const endpoint = this.config.get<string>('S3_ENDPOINT')?.trim();
-    const accessKeyId =
-      this.config.get<string>('S3_ACCESS_KEY') ||
-      this.config.get<string>('AWS_ACCESS_KEY_ID') ||
-      '';
-    const secretAccessKey =
-      this.config.get<string>('S3_SECRET_KEY') ||
-      this.config.get<string>('AWS_SECRET_ACCESS_KEY') ||
-      '';
-    const region =
-      this.config.get<string>('S3_REGION') ||
-      this.config.get<string>('AWS_REGION') ||
-      'auto';
+    this.storageConfig = resolveStorageConfig(this.config);
 
     this.s3 = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle: !!endpoint,
+      region: this.storageConfig.region,
+      endpoint: this.storageConfig.endpoint,
+      forcePathStyle: !!this.storageConfig.endpoint,
       credentials:
-        accessKeyId && secretAccessKey
+        this.storageConfig.accessKeyId && this.storageConfig.secretAccessKey
           ? {
-              accessKeyId,
-              secretAccessKey,
+              accessKeyId: this.storageConfig.accessKeyId,
+              secretAccessKey: this.storageConfig.secretAccessKey,
             }
           : undefined,
     });
@@ -349,10 +339,7 @@ export class TextbookService {
   }
 
   private getStorageBucket(): string {
-    const bucket =
-      this.config.get<string>('S3_BUCKET') ||
-      this.config.get<string>('AWS_S3_BUCKET_PRIVATE') ||
-      '';
+    const bucket = this.storageConfig.bucket;
 
     if (!bucket) {
       throw new BadRequestException(

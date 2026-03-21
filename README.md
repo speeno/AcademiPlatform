@@ -37,6 +37,22 @@ npx prisma migrate dev     # DB 마이그레이션
 npm run start:dev          # http://localhost:4400/api
 ```
 
+### 2-1. DB 변경 자동 반영(선택)
+
+로컬에서 백엔드 시작 시 DB 반영을 자동화하려면 아래 플래그를 사용합니다.
+
+```bash
+# migration 파일 자동 적용
+AUTO_DB_SYNC=true ./start.sh
+
+# (개발 전용) migration 적용 후 db push 추가 실행
+AUTO_DB_SYNC=true AUTO_DB_PUSH=true ./start.sh
+```
+
+주의:
+- `AUTO_DB_PUSH`는 개발 환경에서만 권장됩니다.
+- 운영/배포는 `prisma migrate deploy`만 사용하세요.
+
 ### 3. 프론트엔드 실행
 
 ```bash
@@ -108,6 +124,14 @@ JWT_SECRET=your-jwt-secret
 JWT_REFRESH_SECRET=your-refresh-secret
 REDIS_URL=redis://localhost:6379
 AWS_REGION=ap-northeast-2
+# R2(S3 호환) 표준 키
+S3_ENDPOINT=https://<accountid>.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_BUCKET=
+S3_ACCESS_KEY=
+S3_SECRET_KEY=
+
+# 레거시 AWS fallback 키
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_S3_BUCKET_PRIVATE=
@@ -117,6 +141,10 @@ PORTONE_API_KEY=
 PORTONE_API_SECRET=
 PORTONE_IMP_CODE=
 PAYMENT_ALERT_WEBHOOK_URL=
+
+# 로컬 시작 스크립트용(선택)
+AUTO_DB_SYNC=false
+AUTO_DB_PUSH=false
 ```
 
 프론트엔드 (`frontend/.env.local`):
@@ -132,3 +160,23 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3300
 
 - 결제 운영 런북: `PAYMENT_RUNBOOK.md`
 - 배포 체크리스트: `RELEASE_CHECKLIST.md`
+- Render 배포/운영 가이드: `DEPLOY.md` (무료 플랜 keep-alive 포함)
+
+## DB 자동 반영 체크리스트
+
+- 로컬
+  - 기본은 수동(`AUTO_DB_SYNC=false`)
+  - 자동 반영이 필요하면 `AUTO_DB_SYNC=true`로 시작
+  - 스키마 변경 후 migration 파일 생성 여부 확인
+- 배포
+  - 시작 시 `prisma migrate deploy`가 먼저 실행되어야 함
+  - 실패 시 `DATABASE_URL`, migration 충돌, DB 권한을 우선 점검
+
+## R2 스토리지 점검 체크리스트
+
+- 필수 키: `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`
+- fallback 키: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET_PRIVATE`
+- 주요 오류 대응
+  - `403 signature mismatch`: endpoint/region/key 불일치 확인
+  - `NoSuchBucket`: `S3_BUCKET` 오탈자/권한 확인
+  - `Credential is missing`: access/secret 키 누락 확인

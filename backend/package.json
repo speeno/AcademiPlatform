@@ -7,17 +7,26 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:sync:local": "prisma db push",
+    "db:status": "prisma migrate status",
+    "db:auto:sync": "node scripts/auto-db-sync.js",
+    "debug:storage:smoke": "node debug/r2-storage-smoke.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "start:dev:auto": "npm run db:generate && npm run db:auto:sync && nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "start:prod:auto": "npm run db:migrate:deploy && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "cms:migrate:legacy": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/migrate-lesson-content-to-cms.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

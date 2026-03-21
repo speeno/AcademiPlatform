@@ -11,6 +11,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getSignedUrl as getCFSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { EnrollmentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { ResolvedStorageConfig, resolveStorageConfig } from '../common/storage/storage-config';
 
 const MAX_CONCURRENT_SESSIONS = 1;
 const SESSION_TTL_SECONDS = 30 * 60;
@@ -19,35 +20,24 @@ const SIGNED_URL_EXPIRES = 15 * 60;
 @Injectable()
 export class MediaService {
   private s3: S3Client;
+  private readonly storageConfig: ResolvedStorageConfig;
   private aesKeys = new Map<string, string>();
 
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
-    const endpoint = this.config.get<string>('S3_ENDPOINT')?.trim();
-    const accessKeyId =
-      this.config.get<string>('S3_ACCESS_KEY') ||
-      this.config.get<string>('AWS_ACCESS_KEY_ID') ||
-      '';
-    const secretAccessKey =
-      this.config.get<string>('S3_SECRET_KEY') ||
-      this.config.get<string>('AWS_SECRET_ACCESS_KEY') ||
-      '';
-    const region =
-      this.config.get<string>('S3_REGION') ||
-      this.config.get<string>('AWS_REGION') ||
-      'auto';
+    this.storageConfig = resolveStorageConfig(this.config);
 
     this.s3 = new S3Client({
-      region,
-      endpoint,
-      forcePathStyle: !!endpoint,
+      region: this.storageConfig.region,
+      endpoint: this.storageConfig.endpoint,
+      forcePathStyle: !!this.storageConfig.endpoint,
       credentials:
-        accessKeyId && secretAccessKey
+        this.storageConfig.accessKeyId && this.storageConfig.secretAccessKey
           ? {
-              accessKeyId,
-              secretAccessKey,
+              accessKeyId: this.storageConfig.accessKeyId,
+              secretAccessKey: this.storageConfig.secretAccessKey,
             }
           : undefined,
     });
@@ -55,10 +45,7 @@ export class MediaService {
 
   // S3 업로드용 Presigned URL 발급 (원본 비공개 버킷)
   async getUploadPresignedUrl(lessonId: string, fileName: string, contentType: string) {
-    const bucket =
-      this.config.get<string>('S3_BUCKET') ||
-      this.config.get<string>('AWS_S3_BUCKET_PRIVATE') ||
-      '';
+    const bucket = this.storageConfig.bucket;
     if (!bucket) {
       throw new BadRequestException(
         '스토리지 버킷이 설정되지 않았습니다. S3_BUCKET 또는 AWS_S3_BUCKET_PRIVATE 환경변수를 설정하세요.',

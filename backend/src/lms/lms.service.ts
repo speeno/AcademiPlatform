@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { EnrollmentStatus } from '@prisma/client';
+import { CmsService } from '../cms/cms.service';
 
 @Injectable()
 export class LmsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cmsService: CmsService,
+  ) {}
 
   async getClassroom(userId: string) {
     return this.prisma.enrollment.findMany({
@@ -110,6 +114,10 @@ export class LmsService {
     }
 
     return progress;
+  }
+
+  async getLessonContent(lessonId: string, userId: string) {
+    return this.cmsService.getPublishedLessonContent(lessonId, userId);
   }
 
   private async recalculateCourseProgress(userId: string, lessonId: string) {

@@ -1,7 +1,7 @@
 import {
   Body, Controller, Delete, Get, Param, Patch, Post, Query,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { CourseStatus, LessonType, UserRole } from '@prisma/client';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, CourseFilterDto, UpdateCourseDto } from './dto/course.dto';
 import { AddLessonDto } from './dto/lesson.dto';
@@ -26,12 +26,6 @@ export class CoursesController {
     return this.coursesService.getCategories();
   }
 
-  @Public()
-  @Get(':slug')
-  findBySlug(@Param('slug') slug: string) {
-    return this.coursesService.findBySlug(slug);
-  }
-
   /* 수강 등록 */
   @Post(':id/enroll')
   enroll(
@@ -48,6 +42,17 @@ export class CoursesController {
   }
 
   /* 관리자 API */
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/list')
+  getAdminList(
+    @Query('status') status?: CourseStatus,
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.coursesService.getAdminCourses({ status, search, page, limit });
+  }
+
   @Roles(UserRole.OPERATOR)
   @Post('admin')
   create(@Body() dto: CreateCourseDto) {
@@ -72,6 +77,12 @@ export class CoursesController {
     return this.coursesService.delete(id);
   }
 
+  @Public()
+  @Get(':slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.coursesService.findBySlug(slug);
+  }
+
   @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
   @Post('admin/:id/modules')
   addModule(@Param('id') courseId: string, @Body('title') title: string, @Body('sortOrder') sortOrder?: number) {
@@ -82,6 +93,32 @@ export class CoursesController {
   @Post('admin/modules/:moduleId/lessons')
   addLesson(@Param('moduleId') moduleId: string, @Body() data: AddLessonDto) {
     return this.coursesService.addLesson(moduleId, data);
+  }
+
+  @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
+  @Patch('admin/:id/modules/:moduleId')
+  updateModule(
+    @Param('id') id: string,
+    @Param('moduleId') moduleId: string,
+    @Body() data: { title?: string; sortOrder?: number },
+  ) {
+    return this.coursesService.updateModule(id, moduleId, data);
+  }
+
+  @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
+  @Patch('admin/modules/:moduleId/lessons/:lessonId')
+  updateLesson(
+    @Param('moduleId') moduleId: string,
+    @Param('lessonId') lessonId: string,
+    @Body() data: {
+      title?: string;
+      lessonType?: LessonType;
+      description?: string;
+      sortOrder?: number;
+      isPreview?: boolean;
+    },
+  ) {
+    return this.coursesService.updateLesson(moduleId, lessonId, data);
   }
 
   @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)

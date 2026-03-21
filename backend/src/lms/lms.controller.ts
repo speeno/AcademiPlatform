@@ -21,6 +21,11 @@ export class LmsController {
     return this.lmsService.getCourseWithProgress(courseId, user.id);
   }
 
+  @Get('lessons/:id/content')
+  getLessonContent(@Param('id') lessonId: string, @CurrentUser() user: any) {
+    return this.lmsService.getLessonContent(lessonId, user.id);
+  }
+
   @Post('lessons/:id/progress')
   updateProgress(
     @Param('id') lessonId: string,

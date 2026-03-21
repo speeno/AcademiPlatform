@@ -163,6 +163,18 @@ export class AdminService {
     });
   }
 
+  async createInquiry(userId: string, data: { category: string; title: string; content: string }) {
+    return this.prisma.inquiry.create({
+      data: {
+        userId,
+        category: data.category,
+        title: data.title,
+        content: data.content,
+        status: InquiryStatus.OPEN,
+      },
+    });
+  }
+
   /* 운영 로그 */
   async getAuditLogs(page = 1, limit = 50) {
     const skip = (page - 1) * limit;

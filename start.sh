@@ -63,6 +63,23 @@ start_backend() {
   # Prisma 클라이언트 생성
   npx prisma generate &>/dev/null
 
+  # 선택적 DB 자동 반영
+  if [[ "${AUTO_DB_SYNC:-false}" == "true" ]]; then
+    info "AUTO_DB_SYNC=true: prisma migrate deploy 실행"
+    if ! npm run db:migrate:deploy >> "$LOG_DIR/backend.log" 2>&1; then
+      fail "DB 자동 반영 실패. logs/backend.log를 확인해 주세요."
+    fi
+
+    if [[ "${AUTO_DB_PUSH:-false}" == "true" ]]; then
+      warn "AUTO_DB_PUSH=true: 개발용 prisma db push 실행"
+      if ! npm run db:sync:local >> "$LOG_DIR/backend.log" 2>&1; then
+        fail "DB push 실패. logs/backend.log를 확인해 주세요."
+      fi
+    fi
+  else
+    info "AUTO_DB_SYNC=false: DB 자동 반영 건너뜀"
+  fi
+
   nohup npm run start:dev \
     > "$LOG_DIR/backend.log" 2>&1 &
   echo $! > "$PID_DIR/backend.pid"

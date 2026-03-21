@@ -153,6 +153,32 @@ enum IntroPageStatus {
   SCHEDULED
 }
 
+enum CmsContentType {
+  VIDEO_MP4
+  VIDEO_YOUTUBE
+  DOCUMENT
+  HTML
+}
+
+enum CmsContentStatus {
+  DRAFT
+  REVIEW_REQUESTED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CmsCollaboratorRole {
+  EDITOR
+  ASSISTANT
+}
+
+enum CmsReviewStatus {
+  REVIEW_REQUESTED
+  APPROVED
+  REJECTED
+}
+
 // ─── 사용자 ──────────────────────────────────────────────────────────────────
 
 model User {
@@ -181,6 +207,16 @@ model User {
   qnaQuestions        QnaQuestion[]
   qnaAnswers          QnaAnswer[]
   createdCourses      Course[]      @relation("CourseInstructor")
+  cmsOwnedCourses     Course[]      @relation("CourseCmsOwner")
+  cmsCollaborations   CourseCmsCollaborator[] @relation("CourseCmsCollaboratorUser")
+  cmsGrantedCollaborations CourseCmsCollaborator[] @relation("CourseCmsCollaboratorGrantedBy")
+  cmsContentItemsCreated ContentItem[] @relation("ContentItemCreatedBy")
+  cmsContentItemsUpdated ContentItem[] @relation("ContentItemUpdatedBy")
+  cmsContentVersionsCreated ContentVersion[] @relation("ContentVersionCreatedBy")
+  cmsContentAssetsUploaded ContentAsset[] @relation("ContentAssetUploadedBy")
+  cmsReviewRequestsRequested ContentReviewRequest[] @relation("ContentReviewRequestedBy")
+  cmsReviewRequestsReviewed ContentReviewRequest[] @relation("ContentReviewReviewedBy")
+  cmsContentAudits   ContentAuditLog[] @relation("ContentAuditActor")
   createdTextbooks    Textbook[]    @relation("TextbookCreator")
   bookVoucherGrants   BookVoucherGrant[]
   auditLogs           AuditLog[]
@@ -248,6 +284,7 @@ model Course {
   category            String?
   tags                String[]
   instructorId        String
+  cmsOwnerId          String?
   enrollmentStartAt   DateTime?
   enrollmentEndAt     DateTime?
   learningPeriodDays  Int?
@@ -258,7 +295,10 @@ model Course {
   updatedAt           DateTime     @updatedAt
 
   instructor          User         @relation("CourseInstructor", fields: [instructorId], references: [id])
+  cmsOwner            User?        @relation("CourseCmsOwner", fields: [cmsOwnerId], references: [id])
   modules             CourseModule[]
+  cmsCollaborators    CourseCmsCollaborator[]
+  contentItems        ContentItem[]
   enrollments         Enrollment[]
   assignments         Assignment[]
   notices             Notice[]
@@ -303,6 +343,7 @@ model Lesson {
   module        CourseModule? @relation(fields: [moduleId], references: [id])
   videoAsset    LessonVideoAsset?
   documents     LessonDocument[]
+  contentItem   ContentItem?
   progresses    LessonProgress[]
   versions      LessonVersion[]
 
@@ -356,6 +397,121 @@ model LessonVersion {
   lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@index([lessonId, versionNo])
+}
+
+model CourseCmsCollaborator {
+  id          String              @id @default(cuid())
+  courseId    String
+  userId      String
+  role        CmsCollaboratorRole @default(EDITOR)
+  grantedById String?
+  createdAt   DateTime            @default(now())
+
+  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        User                @relation("CourseCmsCollaboratorUser", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy   User?               @relation("CourseCmsCollaboratorGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  @@unique([courseId, userId])
+  @@index([userId, createdAt])
+}
+
+model ContentItem {
+  id                String           @id @default(cuid())
+  courseId          String
+  lessonId          String           @unique
+  contentType       CmsContentType
+  status            CmsContentStatus @default(DRAFT)
+  latestVersionNo   Int              @default(0)
+  publishedVersionNo Int?
+  createdById       String
+  updatedById       String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  course            Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson            Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  createdBy         User             @relation("ContentItemCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy         User             @relation("ContentItemUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  versions          ContentVersion[]
+  assets            ContentAsset[]
+  reviewRequests    ContentReviewRequest[]
+  auditLogs         ContentAuditLog[]
+
+  @@index([courseId, status])
+}
+
+model ContentVersion {
+  id          String   @id @default(cuid())
+  itemId      String
+  versionNo   Int
+  schemaJson  Json
+  changeNote  String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  item        ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdBy   User        @relation("ContentVersionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assets      ContentAsset[]
+  reviewRequests ContentReviewRequest[]
+
+  @@unique([itemId, versionNo])
+  @@index([itemId, createdAt])
+}
+
+model ContentAsset {
+  id          String   @id @default(cuid())
+  itemId      String
+  versionId   String?
+  assetType   String
+  mimeType    String
+  storageKey  String?
+  publicUrl   String?
+  fileName    String?
+  fileSize    Int?
+  metaJson    Json?
+  uploadedById String?
+  createdAt   DateTime @default(now())
+
+  item        ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  version     ContentVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  uploadedBy  User?       @relation("ContentAssetUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([itemId, createdAt])
+}
+
+model ContentReviewRequest {
+  id            String          @id @default(cuid())
+  itemId         String
+  versionId      String?
+  requestedById  String
+  status         CmsReviewStatus @default(REVIEW_REQUESTED)
+  reviewedById   String?
+  reviewedAt     DateTime?
+  rejectReason   String?
+  createdAt      DateTime        @default(now())
+
+  item           ContentItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  version        ContentVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  requestedBy    User            @relation("ContentReviewRequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy     User?           @relation("ContentReviewReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([itemId, createdAt])
+}
+
+model ContentAuditLog {
+  id          String   @id @default(cuid())
+  itemId       String
+  actorId      String?
+  action       String
+  payloadJson  Json?
+  createdAt    DateTime @default(now())
+
+  item         ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  actor        User?       @relation("ContentAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([itemId, createdAt])
+  @@index([action, createdAt])
 }
 
 // ─── 동영상 재생 세션 (복제 방지) ─────────────────────────────────────────────

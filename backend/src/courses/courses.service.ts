@@ -8,6 +8,37 @@ import { AddLessonDto } from './dto/lesson.dto';
 export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
+  async getAdminCourses(filter: { status?: CourseStatus; search?: string; page?: number; limit?: number }) {
+    const { status, search, page = 1, limit = 50 } = filter;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [courses, total] = await Promise.all([
+      this.prisma.course.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          instructor: { select: { id: true, name: true, email: true } },
+          _count: { select: { modules: true, enrollments: true } },
+        },
+      }),
+      this.prisma.course.count({ where }),
+    ]);
+
+    return { courses, total, page, limit };
+  }
+
   async findAll(filter: CourseFilterDto) {
     const { category, search, page = 1, limit = 12 } = filter;
     const skip = (page - 1) * limit;
@@ -200,6 +231,57 @@ export class CoursesService {
     });
   }
 
+  async updateModule(
+    courseId: string,
+    moduleId: string,
+    data: { title?: string; sortOrder?: number },
+  ) {
+    await this.findById(courseId);
+    const module = await this.prisma.courseModule.findFirst({
+      where: { id: moduleId, courseId },
+    });
+    if (!module) throw new NotFoundException('모듈을 찾을 수 없습니다.');
+
+    return this.prisma.courseModule.update({
+      where: { id: moduleId },
+      data: {
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
+      },
+    });
+  }
+
+  async updateLesson(
+    moduleId: string,
+    lessonId: string,
+    data: {
+      title?: string;
+      lessonType?: AddLessonDto['lessonType'];
+      description?: string;
+      sortOrder?: number;
+      isPreview?: boolean;
+    },
+  ) {
+    const module = await this.prisma.courseModule.findUnique({ where: { id: moduleId } });
+    if (!module) throw new NotFoundException('모듈을 찾을 수 없습니다.');
+
+    const lesson = await this.prisma.lesson.findFirst({
+      where: { id: lessonId, moduleId },
+    });
+    if (!lesson) throw new NotFoundException('강의를 찾을 수 없습니다.');
+
+    return this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: {
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.lessonType !== undefined ? { lessonType: data.lessonType } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
+        ...(data.isPreview !== undefined ? { isPreview: data.isPreview } : {}),
+      },
+    });
+  }
+
   /** 관리자 편집용: id로 강좌 조회 (모듈·레슨 포함) */
   async getCourseForAdmin(id: string) {
     const course = await this.prisma.course.findUnique({
@@ -215,6 +297,7 @@ export class CoursesService {
                 id: true,
                 title: true,
                 lessonType: true,
+                description: true,
                 sortOrder: true,
                 isPreview: true,
               },
