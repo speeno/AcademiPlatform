@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          TARGET_URL="${KEEPALIVE_URL:-https://academiq-backend.onrender.com/api/health}"
+          TARGET_URL="${KEEPALIVE_URL:-https://academiplatform.onrender.com/api/health}"
           echo "Target: ${TARGET_URL}"
           max_attempts=4
           attempt=1
