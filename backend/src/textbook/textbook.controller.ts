@@ -1,11 +1,22 @@
 import {
-  Body, Controller, Delete, Get, Param, Patch, Post, Query, Res,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { UserRole } from '@prisma/client';
 import { TextbookService } from './textbook.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('textbooks')
 export class TextbookController {
@@ -69,6 +80,16 @@ export class TextbookController {
     @Body('contentType') contentType: string,
   ) {
     return this.textbookService.getUploadPresignedUrl(fileName, contentType);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Post('admin/upload-local')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadLocalPdf(
+    @UploadedFile()
+    file: { originalname?: string; mimetype?: string; buffer?: Buffer } | undefined,
+  ) {
+    return this.textbookService.uploadLocalPdf(file);
   }
 
   @Roles(UserRole.OPERATOR)

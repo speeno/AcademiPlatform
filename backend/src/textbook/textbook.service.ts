@@ -19,6 +19,7 @@ import { ResolvedStorageConfig, resolveStorageConfig } from '../common/storage/s
 
 const VIEWER_TOKEN_TTL = 15 * 60; // 15분
 const WATERMARK_CACHE = new Map<string, { buffer: Buffer; expiredAt: Date }>();
+type UploadPdfInput = { originalname?: string; mimetype?: string; buffer?: Buffer } | undefined;
 
 @Injectable()
 export class TextbookService {
@@ -291,10 +292,38 @@ export class TextbookService {
   // 관리자: S3 업로드 Presigned URL 발급
   async getUploadPresignedUrl(fileName: string, contentType: string) {
     const bucket = this.getStorageBucket();
-    const key = `textbooks/${Date.now()}_${fileName}`;
+    const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const key = `textbooks/${Date.now()}_${safeFileName}`;
     const command = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
     const presignedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
     return { presignedUrl, s3Key: key };
+  }
+
+  async uploadLocalPdf(file: UploadPdfInput) {
+    if (!file) {
+      throw new BadRequestException('업로드할 파일이 없습니다.');
+    }
+
+    const mimeType = (file.mimetype ?? '').toLowerCase();
+    const fileName = file.originalname ?? 'textbook.pdf';
+    const isPdf =
+      mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      throw new BadRequestException('PDF 파일만 업로드할 수 있습니다.');
+    }
+    if (!file.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('파일 버퍼를 읽지 못했습니다.');
+    }
+
+    const uploadsDir = path.resolve(process.cwd(), 'static/textbooks/uploads');
+    await fs.mkdir(uploadsDir, { recursive: true });
+
+    const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const localFileName = `${Date.now()}_${randomUUID()}_${safeFileName}`;
+    const absolutePath = path.join(uploadsDir, localFileName);
+    await fs.writeFile(absolutePath, file.buffer);
+
+    return { localPath: absolutePath };
   }
 
   async listAdminTextbooks() {
