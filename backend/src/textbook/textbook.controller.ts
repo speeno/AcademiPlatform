@@ -18,18 +18,20 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
+type AuthenticatedUser = { id: string };
+
 @Controller('textbooks')
 export class TextbookController {
   constructor(private textbookService: TextbookService) {}
 
   /* 사용자 API */
   @Get()
-  findAll(@CurrentUser() user: any) {
+  findAll(@CurrentUser() user: AuthenticatedUser) {
     return this.textbookService.findAll(user.id);
   }
 
   @Get('store')
-  findStore(@CurrentUser() user: any) {
+  findStore(@CurrentUser() user: AuthenticatedUser) {
     return this.textbookService.findStore(user.id);
   }
 
@@ -45,7 +47,10 @@ export class TextbookController {
   }
 
   @Get(':id/token')
-  getViewerToken(@Param('id') id: string, @CurrentUser() user: any) {
+  getViewerToken(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.textbookService.getViewerToken(id, user.id);
   }
 
@@ -53,10 +58,14 @@ export class TextbookController {
   async viewPdf(
     @Param('id') id: string,
     @Query('token') viewerToken: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
     @Res() res: Response,
   ) {
-    const buffer = await this.textbookService.streamPdf(id, viewerToken, user.id);
+    const buffer = await this.textbookService.streamPdf(
+      id,
+      viewerToken,
+      user.id,
+    );
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': 'inline',
@@ -68,7 +77,10 @@ export class TextbookController {
   }
 
   @Post(':id/purchase')
-  requestPurchase(@Param('id') id: string, @CurrentUser() user: any) {
+  requestPurchase(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.textbookService.requestPurchase(id, user.id);
   }
 
@@ -87,20 +99,25 @@ export class TextbookController {
   @UseInterceptors(FileInterceptor('file'))
   uploadLocalPdf(
     @UploadedFile()
-    file: { originalname?: string; mimetype?: string; buffer?: Buffer } | undefined,
+    file:
+      | { originalname?: string; mimetype?: string; buffer?: Buffer }
+      | undefined,
   ) {
     return this.textbookService.uploadLocalPdf(file);
   }
 
   @Roles(UserRole.OPERATOR)
   @Post('admin')
-  createTextbook(@Body() data: any, @CurrentUser() user: any) {
+  createTextbook(
+    @Body() data: unknown,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.textbookService.createTextbook(data, user.id);
   }
 
   @Roles(UserRole.OPERATOR)
   @Patch('admin/:id')
-  updateTextbook(@Param('id') id: string, @Body() data: any) {
+  updateTextbook(@Param('id') id: string, @Body() data: unknown) {
     return this.textbookService.updateTextbook(id, data);
   }
 
@@ -109,14 +126,17 @@ export class TextbookController {
   grantAccess(
     @Param('id') textbookId: string,
     @Body('userId') userId: string,
-    @CurrentUser() admin: any,
+    @CurrentUser() admin: AuthenticatedUser,
   ) {
     return this.textbookService.grantAccess(textbookId, userId, admin.id);
   }
 
   @Roles(UserRole.OPERATOR)
   @Delete('admin/:id/grant/:userId')
-  revokeAccess(@Param('id') textbookId: string, @Param('userId') userId: string) {
+  revokeAccess(
+    @Param('id') textbookId: string,
+    @Param('userId') userId: string,
+  ) {
     return this.textbookService.revokeAccess(textbookId, userId);
   }
 

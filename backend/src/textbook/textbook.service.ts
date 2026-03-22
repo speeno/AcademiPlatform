@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import { TextbookGrantedBy, TextbookStatus } from '@prisma/client';
@@ -15,11 +19,36 @@ import { randomUUID } from 'crypto';
 import * as jwt from 'jsonwebtoken';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ResolvedStorageConfig, resolveStorageConfig } from '../common/storage/storage-config';
+import {
+  ResolvedStorageConfig,
+  resolveStorageConfig,
+} from '../common/storage/storage-config';
 
 const VIEWER_TOKEN_TTL = 15 * 60; // 15분
 const WATERMARK_CACHE = new Map<string, { buffer: Buffer; expiredAt: Date }>();
-type UploadPdfInput = { originalname?: string; mimetype?: string; buffer?: Buffer } | undefined;
+type UploadPdfInput =
+  | { originalname?: string; mimetype?: string; buffer?: Buffer }
+  | undefined;
+type ViewerTokenPayload = { sub: string; textbookId: string; type: string };
+type TextbookPayload = {
+  title?: string;
+  description?: string | null;
+  coverImageUrl?: string | null;
+  s3Key?: string | null;
+  localPath?: string | null;
+  totalPages?: number | null;
+  price?: number;
+  currency?: string;
+  basePrice?: number;
+  salePrice?: number | null;
+  discountType?: 'NONE' | 'PERCENT' | 'FIXED';
+  discountValue?: number;
+  priceValidFrom?: Date | string | null;
+  priceValidUntil?: Date | string | null;
+  pricePolicyVersion?: number;
+  isStandalone?: boolean;
+  status?: TextbookStatus;
+};
 
 @Injectable()
 export class TextbookService {
@@ -45,7 +74,9 @@ export class TextbookService {
             }
           : undefined,
     });
-    this.isProduction = (this.config.get<string>('NODE_ENV') ?? '').toLowerCase() === 'production';
+    this.isProduction =
+      (this.config.get<string>('NODE_ENV') ?? '').toLowerCase() ===
+      'production';
   }
 
   async findAll(userId: string) {
@@ -58,8 +89,13 @@ export class TextbookService {
       include: {
         textbook: {
           select: {
-            id: true, title: true, description: true, coverImageUrl: true,
-            totalPages: true, price: true, status: true,
+            id: true,
+            title: true,
+            description: true,
+            coverImageUrl: true,
+            totalPages: true,
+            price: true,
+            status: true,
           },
         },
       },
@@ -103,8 +139,13 @@ export class TextbookService {
     const textbook = await this.prisma.textbook.findUnique({
       where: { id: textbookId, status: TextbookStatus.PUBLISHED },
       select: {
-        id: true, title: true, description: true, coverImageUrl: true,
-        totalPages: true, price: true, isStandalone: true,
+        id: true,
+        title: true,
+        description: true,
+        coverImageUrl: true,
+        totalPages: true,
+        price: true,
+        isStandalone: true,
       },
     });
     if (!textbook) throw new NotFoundException('교재를 찾을 수 없습니다.');
@@ -115,7 +156,7 @@ export class TextbookService {
   async getViewerToken(textbookId: string, userId: string) {
     await this.verifyAccess(textbookId, userId);
 
-    const secret = this.config.get('JWT_SECRET', 'changeme');
+    const secret = this.config.get<string>('JWT_SECRET', 'changeme');
     const token = jwt.sign(
       { sub: userId, textbookId, type: 'textbook-viewer' },
       secret,
@@ -126,12 +167,20 @@ export class TextbookService {
   }
 
   // PDF 스트리밍 — 서버 사이드 동적 워터마킹
-  async streamPdf(textbookId: string, viewerToken: string, userId: string): Promise<Buffer> {
+  async streamPdf(
+    textbookId: string,
+    viewerToken: string,
+    userId: string,
+  ): Promise<Buffer> {
     // 토큰 검증
-    const secret = this.config.get('JWT_SECRET', 'changeme');
-    let payload: any;
+    const secret = this.config.get<string>('JWT_SECRET', 'changeme');
+    let payload: ViewerTokenPayload;
     try {
-      payload = jwt.verify(viewerToken, secret);
+      const verified = jwt.verify(viewerToken, secret);
+      if (!verified || typeof verified !== 'object') {
+        throw new Error('invalid token payload');
+      }
+      payload = verified as ViewerTokenPayload;
     } catch {
       throw new ForbiddenException('유효하지 않은 뷰어 토큰입니다.');
     }
@@ -140,7 +189,9 @@ export class TextbookService {
       throw new ForbiddenException('접근 권한이 없습니다.');
     }
 
-    const textbook = await this.prisma.textbook.findUnique({ where: { id: textbookId } });
+    const textbook = await this.prisma.textbook.findUnique({
+      where: { id: textbookId },
+    });
     if (!textbook) throw new NotFoundException('교재를 찾을 수 없습니다.');
 
     if (!textbook.s3Key && !textbook.localPath) {
@@ -154,30 +205,10 @@ export class TextbookService {
       return cached.buffer;
     }
 
-    // 원본 PDF 읽기
-    // - 로컬 개발: localPath 우선 (로컬 폴더 기반)
-    // - 배포 환경: 객체 스토리지(R2/S3) 우선
-    let originalPdf: Buffer;
-    if (!this.isProduction && textbook.localPath) {
-      const absPath = path.resolve(textbook.localPath);
-      originalPdf = await fs.readFile(absPath);
-    } else if (textbook.s3Key) {
-      const bucket = this.getStorageBucket();
-      const command = new GetObjectCommand({ Bucket: bucket, Key: textbook.s3Key });
-      const s3Response = await this.s3.send(command);
-
-      const chunks: Buffer[] = [];
-      for await (const chunk of s3Response.Body as Readable) {
-        chunks.push(Buffer.from(chunk));
-      }
-      originalPdf = Buffer.concat(chunks);
-    } else if (textbook.localPath) {
-      // 운영 중이라도 데이터 정합성 문제로 localPath만 남은 경우를 대비한 안전 fallback
-      const absPath = path.resolve(textbook.localPath);
-      originalPdf = await fs.readFile(absPath);
-    } else {
-      throw new NotFoundException('교재 파일 원본을 찾을 수 없습니다.');
-    }
+    const originalPdf = await this.loadOriginalPdfBuffer(
+      textbook.s3Key,
+      textbook.localPath,
+    );
 
     // 사용자 정보 조회
     const user = await this.prisma.user.findUnique({
@@ -185,7 +216,7 @@ export class TextbookService {
       select: { name: true, email: true },
     });
 
-    const watermarkText = `${user?.name ?? '익명'} | ${user?.email?.slice(0, 4) ?? '****'}@** | ${new Date().toLocaleDateString('ko-KR')}`;
+    const watermarkText = this.buildWatermarkText(userId, user?.email ?? '');
 
     // pdf-lib으로 워터마킹 삽입
     const pdfDoc = await PDFDocument.load(originalPdf);
@@ -240,11 +271,16 @@ export class TextbookService {
   }
 
   // 구매 완료 후 접근 권한 자동 생성 (payments 서비스에서 호출)
-  async grantAccessAfterPurchase(textbookId: string, userId: string, paymentId: string) {
+  async grantAccessAfterPurchase(
+    textbookId: string,
+    userId: string,
+    paymentId: string,
+  ) {
     return this.prisma.textbookAccess.upsert({
       where: { userId_textbookId: { userId, textbookId } },
       create: {
-        userId, textbookId,
+        userId,
+        textbookId,
         grantedBy: TextbookGrantedBy.PURCHASE,
         sourceId: paymentId,
       },
@@ -257,7 +293,8 @@ export class TextbookService {
     return this.prisma.textbookAccess.upsert({
       where: { userId_textbookId: { userId, textbookId } },
       create: {
-        userId, textbookId,
+        userId,
+        textbookId,
         grantedBy: TextbookGrantedBy.ADMIN,
         sourceId: adminId,
       },
@@ -294,8 +331,14 @@ export class TextbookService {
     const bucket = this.getStorageBucket();
     const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
     const key = `textbooks/${Date.now()}_${safeFileName}`;
-    const command = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
-    const presignedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    const presignedUrl = await getSignedUrl(this.s3, command, {
+      expiresIn: 3600,
+    });
     return { presignedUrl, s3Key: key };
   }
 
@@ -315,7 +358,7 @@ export class TextbookService {
       throw new BadRequestException('파일 버퍼를 읽지 못했습니다.');
     }
 
-    const uploadsDir = path.resolve(process.cwd(), 'static/textbooks/uploads');
+    const uploadsDir = this.resolveTextbookStoragePath();
     await fs.mkdir(uploadsDir, { recursive: true });
 
     const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -333,15 +376,100 @@ export class TextbookService {
   }
 
   // 관리자: 교재 등록
-  async createTextbook(data: any, adminId: string) {
+  async createTextbook(data: unknown, adminId: string) {
+    const payload = data as TextbookPayload;
+    const title = payload.title?.trim();
+    if (!title) {
+      throw new BadRequestException('교재명(title)은 필수입니다.');
+    }
+
     return this.prisma.textbook.create({
-      data: { ...data, createdById: adminId },
+      data: {
+        title,
+        description: payload.description ?? undefined,
+        coverImageUrl: payload.coverImageUrl ?? undefined,
+        s3Key: payload.s3Key ?? undefined,
+        localPath: payload.localPath ?? undefined,
+        totalPages: payload.totalPages ?? undefined,
+        price: payload.price ?? 0,
+        currency: payload.currency ?? 'KRW',
+        basePrice: payload.basePrice ?? 0,
+        salePrice: payload.salePrice ?? undefined,
+        discountType: payload.discountType ?? 'NONE',
+        discountValue: payload.discountValue ?? 0,
+        priceValidFrom: payload.priceValidFrom
+          ? new Date(payload.priceValidFrom)
+          : undefined,
+        priceValidUntil: payload.priceValidUntil
+          ? new Date(payload.priceValidUntil)
+          : undefined,
+        pricePolicyVersion: payload.pricePolicyVersion ?? 1,
+        isStandalone: payload.isStandalone ?? false,
+        status: payload.status ?? TextbookStatus.DRAFT,
+        createdById: adminId,
+      },
     });
   }
 
   // 관리자: 교재 수정
-  async updateTextbook(id: string, data: any) {
-    return this.prisma.textbook.update({ where: { id }, data });
+  async updateTextbook(id: string, data: unknown) {
+    const payload = data as TextbookPayload;
+    return this.prisma.textbook.update({
+      where: { id },
+      data: {
+        ...(payload.title !== undefined ? { title: payload.title.trim() } : {}),
+        ...(payload.description !== undefined
+          ? { description: payload.description }
+          : {}),
+        ...(payload.coverImageUrl !== undefined
+          ? { coverImageUrl: payload.coverImageUrl }
+          : {}),
+        ...(payload.s3Key !== undefined ? { s3Key: payload.s3Key } : {}),
+        ...(payload.localPath !== undefined
+          ? { localPath: payload.localPath }
+          : {}),
+        ...(payload.totalPages !== undefined
+          ? { totalPages: payload.totalPages }
+          : {}),
+        ...(payload.price !== undefined ? { price: payload.price } : {}),
+        ...(payload.currency !== undefined
+          ? { currency: payload.currency }
+          : {}),
+        ...(payload.basePrice !== undefined
+          ? { basePrice: payload.basePrice }
+          : {}),
+        ...(payload.salePrice !== undefined
+          ? { salePrice: payload.salePrice }
+          : {}),
+        ...(payload.discountType !== undefined
+          ? { discountType: payload.discountType }
+          : {}),
+        ...(payload.discountValue !== undefined
+          ? { discountValue: payload.discountValue }
+          : {}),
+        ...(payload.priceValidFrom !== undefined
+          ? {
+              priceValidFrom: payload.priceValidFrom
+                ? new Date(payload.priceValidFrom)
+                : null,
+            }
+          : {}),
+        ...(payload.priceValidUntil !== undefined
+          ? {
+              priceValidUntil: payload.priceValidUntil
+                ? new Date(payload.priceValidUntil)
+                : null,
+            }
+          : {}),
+        ...(payload.pricePolicyVersion !== undefined
+          ? { pricePolicyVersion: payload.pricePolicyVersion }
+          : {}),
+        ...(payload.isStandalone !== undefined
+          ? { isStandalone: payload.isStandalone }
+          : {}),
+        ...(payload.status !== undefined ? { status: payload.status } : {}),
+      },
+    });
   }
 
   private async verifyAccess(textbookId: string, userId: string) {
@@ -377,5 +505,133 @@ export class TextbookService {
     }
 
     return bucket;
+  }
+
+  private buildWatermarkText(userId: string, email: string): string {
+    const emailPrefix = (email.split('@')[0] || 'unknown').slice(0, 12);
+    const raw = `uid:${userId.slice(0, 12)} | email:${emailPrefix} | at:${new Date().toISOString()}`;
+    return raw.replace(/[^\x20-\x7E]/g, '?');
+  }
+
+  private resolveTextbookStoragePath(): string {
+    const configured = (
+      this.config.get<string>('TEXTBOOK_STORAGE_PATH') ?? ''
+    ).trim();
+    if (configured) {
+      return path.resolve(configured, 'uploads');
+    }
+    return path.resolve(process.cwd(), 'static/textbooks/uploads');
+  }
+
+  private resolveLocalCandidatePaths(localPathValue: string): string[] {
+    const candidates = new Set<string>();
+    const trimmed = localPathValue.trim();
+    if (!trimmed) return [];
+
+    if (path.isAbsolute(trimmed)) {
+      candidates.add(trimmed);
+      return Array.from(candidates);
+    }
+
+    candidates.add(path.resolve(trimmed));
+    candidates.add(path.resolve(process.cwd(), trimmed));
+
+    const storageBase = (
+      this.config.get<string>('TEXTBOOK_STORAGE_PATH') ?? ''
+    ).trim();
+    if (storageBase) {
+      candidates.add(path.resolve(storageBase, trimmed));
+      candidates.add(
+        path.resolve(storageBase, 'uploads', path.basename(trimmed)),
+      );
+    }
+
+    return Array.from(candidates);
+  }
+
+  private async loadFromLocal(localPathValue?: string | null): Promise<Buffer> {
+    if (!localPathValue) throw new Error('localPath가 비어 있습니다.');
+
+    const candidates = this.resolveLocalCandidatePaths(localPathValue);
+    let lastError: unknown;
+    for (const candidate of candidates) {
+      try {
+        return await fs.readFile(candidate);
+      } catch (err: unknown) {
+        lastError = err;
+      }
+    }
+
+    const reason =
+      lastError instanceof Error
+        ? lastError.message
+        : '로컬 파일을 찾지 못했습니다.';
+    throw new Error(`로컬 교재 파일 로드 실패(${localPathValue}): ${reason}`);
+  }
+
+  private async loadFromS3(s3Key?: string | null): Promise<Buffer> {
+    if (!s3Key) throw new Error('s3Key가 비어 있습니다.');
+    const bucket = this.getStorageBucket();
+    const command = new GetObjectCommand({ Bucket: bucket, Key: s3Key });
+    const s3Response = await this.s3.send(command);
+
+    if (!s3Response.Body) {
+      throw new Error(`스토리지 응답 바디가 비어 있습니다. key=${s3Key}`);
+    }
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of s3Response.Body as Readable) {
+      chunks.push(
+        Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array),
+      );
+    }
+    return Buffer.concat(chunks);
+  }
+
+  private async loadOriginalPdfBuffer(
+    s3Key?: string | null,
+    localPathValue?: string | null,
+  ): Promise<Buffer> {
+    const errors: string[] = [];
+    const pushError = (source: 'local' | 's3', err: unknown) => {
+      const reason = err instanceof Error ? err.message : String(err);
+      errors.push(`${source}: ${reason}`);
+    };
+
+    if (!this.isProduction) {
+      if (localPathValue) {
+        try {
+          return await this.loadFromLocal(localPathValue);
+        } catch (err: unknown) {
+          pushError('local', err);
+        }
+      }
+      if (s3Key) {
+        try {
+          return await this.loadFromS3(s3Key);
+        } catch (err: unknown) {
+          pushError('s3', err);
+        }
+      }
+    } else {
+      if (s3Key) {
+        try {
+          return await this.loadFromS3(s3Key);
+        } catch (err: unknown) {
+          pushError('s3', err);
+        }
+      }
+      if (localPathValue) {
+        try {
+          return await this.loadFromLocal(localPathValue);
+        } catch (err: unknown) {
+          pushError('local', err);
+        }
+      }
+    }
+
+    throw new NotFoundException(
+      `교재 파일 원본을 찾을 수 없습니다. ${errors.join(' | ')}`.trim(),
+    );
   }
 }

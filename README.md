@@ -182,6 +182,18 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3300
   - `NoSuchBucket`: `S3_BUCKET` 오탈자/권한 확인
   - `Credential is missing`: access/secret 키 누락 확인
 
+## 교재 PDF 업로드/열람 운영 규칙
+
+- 로컬 개발
+  - S3 미설정 시 관리자 교재 업로드는 `upload-local` 경로로 저장
+  - 저장 위치 기본값: `backend/static/textbooks/uploads` (`TEXTBOOK_STORAGE_PATH` 설정 시 해당 경로 사용)
+  - 교재 레코드에는 `localPath`가 저장되어 사용자 열람 시 로컬 파일을 우선 읽음
+- 배포 환경
+  - 기본은 `s3Key`(R2/S3) 기반 업로드/열람 권장
+  - 운영에서도 `localPath` fallback이 가능하지만 `TEXTBOOK_STORAGE_PATH`를 영속 디스크 경로(Render Disk 등)로 맞춰야 함
+- 공통
+  - PDF 열람 시 워터마크는 ASCII 안전 문자열로 생성되어 한글 이름 계정에서도 인코딩 오류 없이 동작
+
 ## 강사 다중배정 Q&A 운영 체크리스트
 
 - 질문 생성 전제

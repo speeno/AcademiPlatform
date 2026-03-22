@@ -33,3 +33,4 @@ Thumbs.db
 # 대용량 PDF 교재 파일 (Render Disk 또는 S3에서 별도 관리)
 backend/static/textbooks/*.pdf
 .vercel
+backend/static/textbooks/uploads/*.pdf
