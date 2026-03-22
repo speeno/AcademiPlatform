@@ -82,6 +82,41 @@ export class CmsService {
     if (!allowed) throw new ForbiddenException('해당 강좌의 CMS 편집 권한이 없습니다.');
   }
 
+  private async canReadPublishedCourse(userId: string, courseId: string, isPreview: boolean): Promise<boolean> {
+    const role = await this.getUserRole(userId);
+    if (role === UserRole.OPERATOR || role === UserRole.SUPER_ADMIN) return true;
+    if (await this.canEditCourse(userId, courseId)) return true;
+    if (isPreview) return true;
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { status: true },
+    });
+    return enrollment?.status === EnrollmentStatus.ACTIVE;
+  }
+
+  private async readBufferFromS3(storageKey: string): Promise<Buffer> {
+    const bucket = this.storageConfig.bucket;
+    if (!bucket) {
+      throw new BadRequestException('스토리지 버킷 설정이 누락되었습니다.');
+    }
+
+    const object = await this.s3.send(new GetObjectCommand({ Bucket: bucket, Key: storageKey }));
+    if (!object.Body) {
+      throw new NotFoundException('스토리지 파일 본문을 찾을 수 없습니다.');
+    }
+
+    const bodyStream = object.Body.transformToWebStream();
+    const reader = bodyStream.getReader();
+    const chunks: Uint8Array[] = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) chunks.push(value);
+    }
+    return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)));
+  }
+
   private async ensureCanEditLesson(userId: string, lessonId: string): Promise<{ courseId: string; lessonId: string }> {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -628,6 +663,65 @@ export class CmsService {
       versionNo: version.versionNo,
       schemaJson: version.schemaJson,
       assets,
+    };
+  }
+
+  async getPublishedAssetFile(assetId: string, userId: string) {
+    const asset = await this.prisma.contentAsset.findUnique({
+      where: { id: assetId },
+      include: {
+        item: {
+          select: {
+            status: true,
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+                courseId: true,
+                isPreview: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!asset || !asset.item?.lesson) {
+      throw new NotFoundException('에셋을 찾을 수 없습니다.');
+    }
+    if (asset.item.status !== CmsContentStatus.PUBLISHED) {
+      throw new ForbiddenException('게시되지 않은 콘텐츠 에셋입니다.');
+    }
+
+    const canRead = await this.canReadPublishedCourse(
+      userId,
+      asset.item.lesson.courseId,
+      asset.item.lesson.isPreview,
+    );
+    if (!canRead) {
+      throw new ForbiddenException('해당 에셋을 열람할 권한이 없습니다.');
+    }
+
+    let buffer: Buffer | null = null;
+    if (asset.storageKey) {
+      buffer = await this.readBufferFromS3(asset.storageKey);
+    } else if (asset.publicUrl) {
+      const response = await fetch(asset.publicUrl);
+      if (!response.ok) {
+        throw new NotFoundException('공개 URL 에셋을 불러오지 못했습니다.');
+      }
+      const data = await response.arrayBuffer();
+      buffer = Buffer.from(data);
+    }
+
+    if (!buffer) {
+      throw new NotFoundException('에셋 원본을 찾을 수 없습니다.');
+    }
+
+    return {
+      buffer,
+      fileName: asset.fileName || `${asset.item.lesson.title}.pdf`,
+      mimeType: asset.mimeType || 'application/octet-stream',
     };
   }
 }

@@ -7,8 +7,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 import { CmsCollaboratorRole, CmsReviewStatus, UserRole } from '@prisma/client';
+import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CmsService } from './cms.service';
@@ -74,6 +77,20 @@ export class CmsController {
   @Get('lessons/:lessonId/content')
   getLessonContent(@Param('lessonId') lessonId: string, @CurrentUser() user: any) {
     return this.cmsService.getLessonContent(lessonId, user.id);
+  }
+
+  @Roles(UserRole.USER)
+  @Get('assets/:assetId/file')
+  async streamAssetFile(
+    @Param('assetId') assetId: string,
+    @CurrentUser() user: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const file = await this.cmsService.getPublishedAssetFile(assetId, user.id);
+    res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.fileName)}"`);
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+    return new StreamableFile(file.buffer);
   }
 
   @Roles(UserRole.USER)
