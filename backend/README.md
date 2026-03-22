@@ -49,6 +49,26 @@ $ AUTO_DB_SYNC=true npm run start:dev:auto
 - 우선 키: `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`
 - fallback 키: `AWS_S3_ENDPOINT`, `AWS_S3_BUCKET_PRIVATE`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
+### Q&A API (강사 다중배정)
+
+```bash
+# 학생: 질문 생성 / 내 질문 목록/상세
+POST /api/qna/questions
+GET  /api/qna/my-questions
+GET  /api/qna/my-questions/:id
+
+# 강사: 배정 질문 목록 / 답변 작성
+GET  /api/qna/instructor/questions?status=OPEN
+POST /api/qna/questions/:id/answers
+
+# 공통: 강좌별 질문 가능 강사 조회
+GET  /api/qna/courses/:courseId/instructors
+```
+
+- 질문 작성은 수강중(`Enrollment.ACTIVE`) 강좌만 허용됩니다.
+- 답변은 배정 강사 본인 또는 운영자/슈퍼관리자만 허용됩니다.
+- 답변 등록 시 `QnaQuestion.status=ANSWERED`, `answeredAt`가 갱신되고 학생에게 이메일이 발송됩니다.
+
 ## Run tests
 
 ```bash

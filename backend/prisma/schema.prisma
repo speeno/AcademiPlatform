@@ -146,6 +146,12 @@ enum InquiryStatus {
   CLOSED
 }
 
+enum QnaQuestionStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
 enum IntroPageStatus {
   DRAFT
   PUBLISHED
@@ -206,6 +212,7 @@ model User {
   videoPlaySessions   VideoPlaySession[]
   qnaQuestions        QnaQuestion[]
   qnaAnswers          QnaAnswer[]
+  assignedQnaQuestions QnaQuestion[] @relation("QnaAssignedInstructor")
   createdCourses      Course[]      @relation("CourseInstructor")
   cmsOwnedCourses     Course[]      @relation("CourseCmsOwner")
   cmsCollaborations   CourseCmsCollaborator[] @relation("CourseCmsCollaboratorUser")
@@ -841,18 +848,23 @@ model QnaQuestion {
   id         String      @id @default(cuid())
   courseId   String
   userId     String
+  assignedInstructorId String
   title      String
   content    String
+  status     QnaQuestionStatus @default(OPEN)
   isPrivate  Boolean     @default(false)
   isClosed   Boolean     @default(false)
+  answeredAt DateTime?
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
   course     Course      @relation(fields: [courseId], references: [id])
   user       User        @relation(fields: [userId], references: [id])
+  assignedInstructor User @relation("QnaAssignedInstructor", fields: [assignedInstructorId], references: [id])
   answers    QnaAnswer[]
 
   @@index([courseId, createdAt])
+  @@index([assignedInstructorId, status, createdAt])
 }
 
 model QnaAnswer {

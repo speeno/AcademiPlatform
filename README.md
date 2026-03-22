@@ -91,6 +91,7 @@ npm run dev                # http://localhost:3300
 │   │   ├── payment/                # 포트원 PG 연동
 │   │   ├── intro/                  # 소개 페이지 CMS
 │   │   ├── notify/                 # 이메일/SMS 알림
+│   │   ├── qna/                    # 학생-강사 Q&A
 │   │   ├── admin/                  # 관리자 공통 (공지, FAQ, 문의, 회원)
 │   │   └── common/                 # Guards, Decorators, Filters
 │   └── prisma/schema.prisma        # 전체 DB 스키마
@@ -180,3 +181,24 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3300
   - `403 signature mismatch`: endpoint/region/key 불일치 확인
   - `NoSuchBucket`: `S3_BUCKET` 오탈자/권한 확인
   - `Credential is missing`: access/secret 키 누락 확인
+
+## 강사 다중배정 Q&A 운영 체크리스트
+
+- 질문 생성 전제
+  - 학생은 `Enrollment.ACTIVE` 상태인 강좌에만 질문 가능
+  - 질문 작성 시 `assignedInstructorId`는 해당 강좌 배정 강사 목록에서만 선택 가능
+- 강사 배정 소스(중복 모델 없이)
+  - `Course.instructorId`
+  - `Course.cmsOwnerId`
+  - `CourseCmsCollaborator`
+- 상태 전이
+  - 질문 생성: `OPEN`
+  - 강사/운영자 답변 등록: `ANSWERED` + `answeredAt` 갱신
+  - 닫힘 처리(`CLOSED`) 질문은 답변 차단
+- 점검 API
+  - 학생: `POST /api/qna/questions`, `GET /api/qna/my-questions`
+  - 강사: `GET /api/qna/instructor/questions`, `POST /api/qna/questions/:id/answers`
+  - 공통: `GET /api/qna/courses/:courseId/instructors`
+- 이메일 점검
+  - 강사 답변 직후 `NotifyService`의 email 전송 로그/SES 전송 여부 확인
+  - 개발 환경에서 SES 미연동 시, 실패 로그를 기준으로 템플릿/수신자/권한 확인

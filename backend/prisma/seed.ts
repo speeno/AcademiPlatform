@@ -214,26 +214,64 @@ const courseData = [
   },
 ];
 
+type SeedUserInput = {
+  email: string;
+  name: string;
+  password: string;
+  role: UserRole;
+  status?: UserStatus;
+};
+
+async function ensureUser(input: SeedUserInput) {
+  const passwordHash = await bcrypt.hash(input.password, 12);
+  const user = await prisma.user.upsert({
+    where: { email: input.email },
+    create: {
+      email: input.email,
+      name: input.name,
+      passwordHash,
+      role: input.role,
+      status: input.status ?? UserStatus.ACTIVE,
+    },
+    update: {
+      name: input.name,
+      passwordHash,
+      role: input.role,
+      status: input.status ?? UserStatus.ACTIVE,
+    },
+  });
+  return user;
+}
+
 async function main() {
   console.log('Seeding database...');
 
-  // 관리자 계정 upsert
-  const adminEmail = 'admin@academiq.kr';
-  let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
-  if (!admin) {
-    const hashed = await bcrypt.hash('Admin1234!', 12);
-    admin = await prisma.user.create({
-      data: {
-        email: adminEmail,
-        name: 'AcademiQ 관리자',
-        passwordHash: hashed,
-        role: UserRole.SUPER_ADMIN,
-        status: UserStatus.ACTIVE,
-      },
+  // 기본 관리자 계정
+  const admin = await ensureUser({
+    email: 'admin@academiq.kr',
+    name: 'AcademiQ 관리자',
+    password: 'Admin1234!',
+    role: UserRole.SUPER_ADMIN,
+  });
+  console.log(`Ensured admin: ${admin.email}`);
+
+  // 로컬/개발 환경용 테스트 계정
+  const nodeEnv = (process.env.NODE_ENV ?? 'development').toLowerCase();
+  if (nodeEnv !== 'production') {
+    const testAdmin = await ensureUser({
+      email: 'admin.test@academiq.kr',
+      name: '테스트 관리자',
+      password: 'AdminTest1234!',
+      role: UserRole.SUPER_ADMIN,
     });
-    console.log(`Created admin: ${adminEmail}`);
-  } else {
-    console.log(`Existing admin: ${adminEmail}`);
+    const testInstructor = await ensureUser({
+      email: 'instructor.test@academiq.kr',
+      name: '테스트 강사',
+      password: 'InstructorTest1234!',
+      role: UserRole.INSTRUCTOR,
+    });
+    console.log(`Ensured local test admin: ${testAdmin.email}`);
+    console.log(`Ensured local test instructor: ${testInstructor.email}`);
   }
 
   // 교재 4권 upsert (coverImageUrl 포함)

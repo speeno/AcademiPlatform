@@ -22,6 +22,7 @@ import { IntroModule } from './intro/intro.module';
 import { NotifyModule } from './notify/notify.module';
 import { AdminModule } from './admin/admin.module';
 import { CmsModule } from './cms/cms.module';
+import { QnaModule } from './qna/qna.module';
 
 @Module({
   controllers: [AppController],
@@ -38,6 +39,7 @@ import { CmsModule } from './cms/cms.module';
     PaymentModule,
     IntroModule,
     NotifyModule,
+    QnaModule,
     AdminModule,
     CmsModule,
   ],
