@@ -197,18 +197,23 @@ export function SecurePdfViewer({
         </div>
       </div>
 
-      <div className={`${heightClassName} overflow-auto bg-gray-100 flex items-start justify-center p-4`}>
-        {loading ? (
-          <div className="h-full flex items-center justify-center text-sm text-gray-500">
+      <div className={`${heightClassName} overflow-auto bg-gray-100 flex items-start justify-center p-4 relative`}>
+        <canvas
+          ref={canvasRef}
+          className={`shadow-md bg-white select-none ${loading || !!error ? 'opacity-0' : 'opacity-100'}`}
+        />
+
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 bg-gray-100/80">
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
             PDF 렌더링 중...
           </div>
-        ) : error ? (
-          <div className="h-full flex items-center justify-center text-sm text-red-500">
+        )}
+
+        {!loading && error && (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-red-500 bg-gray-100/80 px-4 text-center">
             PDF를 불러오지 못했습니다: {error}
           </div>
-        ) : (
-          <canvas ref={canvasRef} className="shadow-md bg-white select-none" />
         )}
       </div>
     </div>
