@@ -107,6 +107,18 @@ export class TextbookController {
   }
 
   @Roles(UserRole.OPERATOR)
+  @Post('admin/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadPdfToStorage(
+    @UploadedFile()
+    file:
+      | { originalname?: string; mimetype?: string; buffer?: Buffer }
+      | undefined,
+  ) {
+    return this.textbookService.uploadPdfToStorage(file);
+  }
+
+  @Roles(UserRole.OPERATOR)
   @Post('admin')
   createTextbook(
     @Body() data: unknown,

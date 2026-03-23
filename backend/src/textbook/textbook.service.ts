@@ -369,6 +369,36 @@ export class TextbookService {
     return { localPath: absolutePath };
   }
 
+  async uploadPdfToStorage(file: UploadPdfInput) {
+    if (!file) {
+      throw new BadRequestException('업로드할 파일이 없습니다.');
+    }
+
+    const mimeType = (file.mimetype ?? '').toLowerCase();
+    const fileName = file.originalname ?? 'textbook.pdf';
+    const isPdf =
+      mimeType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      throw new BadRequestException('PDF 파일만 업로드할 수 있습니다.');
+    }
+    if (!file.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('파일 버퍼를 읽지 못했습니다.');
+    }
+
+    const bucket = this.getStorageBucket();
+    const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const s3Key = `textbooks/${Date.now()}_${safeFileName}`;
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: s3Key,
+      ContentType: file.mimetype || 'application/pdf',
+      Body: file.buffer,
+    });
+    await this.s3.send(command);
+
+    return { s3Key };
+  }
+
   async listAdminTextbooks() {
     return this.prisma.textbook.findMany({
       orderBy: { createdAt: 'desc' },
