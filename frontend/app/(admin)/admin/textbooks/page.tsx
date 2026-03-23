@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Plus, Save, Trash2, Upload } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { API_BASE } from '@/lib/api-base';
@@ -71,6 +71,7 @@ function detectUploadMode(form: TextbookForm): UploadMode {
 export default function AdminTextbooksPage() {
   const [items, setItems] = useState<TextbookItem[]>([]);
   const [selectedId, setSelectedId] = useState('');
+  const selectedIdRef = useRef('');
   const [form, setForm] = useState<TextbookForm>(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,7 +80,11 @@ export default function AdminTextbooksPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadMode, setUploadMode] = useState<UploadMode>('none');
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  const load = useCallback(async (preferredId?: string) => {
     try {
       const res = await fetch(`${API_BASE}/textbooks/admin`, {
         headers: buildAuthHeader(false),
@@ -96,7 +101,8 @@ export default function AdminTextbooksPage() {
         setUploadMode('none');
         return;
       }
-      const target = selectedId ? list.find((item) => item.id === selectedId) ?? list[0] : list[0];
+      const targetId = preferredId ?? selectedIdRef.current;
+      const target = targetId ? list.find((item) => item.id === targetId) ?? list[0] : list[0];
       setSelectedId(target.id);
       const nextForm = toForm(target);
       setForm(nextForm);
@@ -107,7 +113,7 @@ export default function AdminTextbooksPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedId]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -220,6 +226,7 @@ export default function AdminTextbooksPage() {
 
   const saveItem = async () => {
     if (!selectedId) return;
+    const currentSelectedId = selectedId;
     if (!payload.title) return toast.error('교재명을 입력하세요.');
     if (!payload.s3Key && !payload.localPath) {
       return toast.error('PDF 파일(s3Key/localPath)을 먼저 업로드하거나 입력하세요.');
@@ -235,7 +242,7 @@ export default function AdminTextbooksPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message ?? '교재 저장에 실패했습니다.');
-      await load();
+      await load(currentSelectedId);
       toast.success('교재가 저장되었습니다.');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '교재 저장에 실패했습니다.';
@@ -260,8 +267,7 @@ export default function AdminTextbooksPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.message ?? '교재 등록에 실패했습니다.');
-      await load();
-      if (data?.id) setSelectedId(data.id);
+      await load(data?.id);
       toast.success('교재가 등록되었습니다.');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '교재 등록에 실패했습니다.';
