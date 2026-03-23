@@ -95,8 +95,8 @@ export function SecurePdfViewer({
       try {
         const pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as PdfJsModule;
         if (pdfjs.GlobalWorkerOptions) {
-          pdfjs.GlobalWorkerOptions.workerSrc =
-            'https://unpkg.com/pdfjs-dist@5.5.207/legacy/build/pdf.worker.min.mjs';
+          // Use local static worker to avoid CSP/network issues in production.
+          pdfjs.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs';
         }
         const loaded = await pdfjs.getDocument({
           url: src,
@@ -157,7 +157,7 @@ export function SecurePdfViewer({
     <div ref={wrapperRef} className="bg-white border rounded-xl overflow-hidden">
       <div className="flex items-center justify-between border-b px-3 py-2 bg-gray-50">
         <div className="text-xs text-gray-500">
-          PDF 보안 뷰어 (복사/다운로드 차단)
+          AcademiQ 보안 PDF 뷰어
         </div>
         <div className="flex items-center gap-2">
           <BrandButton
