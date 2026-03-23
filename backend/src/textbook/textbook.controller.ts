@@ -134,6 +134,12 @@ export class TextbookController {
   }
 
   @Roles(UserRole.OPERATOR)
+  @Delete('admin/:id')
+  deleteTextbook(@Param('id') id: string) {
+    return this.textbookService.deleteTextbook(id);
+  }
+
+  @Roles(UserRole.OPERATOR)
   @Post('admin/:id/grant')
   grantAccess(
     @Param('id') textbookId: string,

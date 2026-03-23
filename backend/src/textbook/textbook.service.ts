@@ -8,12 +8,18 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
 import {
   S3Client,
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
-import { TextbookGrantedBy, TextbookStatus } from '@prisma/client';
+import { Logger } from '@nestjs/common';
+import {
+  PaymentTarget,
+  TextbookGrantedBy,
+  TextbookStatus,
+} from '@prisma/client';
 import { Readable } from 'stream';
 import { randomUUID } from 'crypto';
 import * as jwt from 'jsonwebtoken';
@@ -52,6 +58,7 @@ type TextbookPayload = {
 
 @Injectable()
 export class TextbookService {
+  private readonly logger = new Logger(TextbookService.name);
   private s3: S3Client;
   private readonly storageConfig: ResolvedStorageConfig;
   private readonly isProduction: boolean;
@@ -502,6 +509,73 @@ export class TextbookService {
     });
   }
 
+  async deleteTextbook(id: string) {
+    const textbook = await this.prisma.$transaction(async (tx) => {
+      const target = await tx.textbook.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          s3Key: true,
+          localPath: true,
+        },
+      });
+      if (!target) {
+        throw new NotFoundException('삭제할 교재를 찾을 수 없습니다.');
+      }
+      if (target.status === TextbookStatus.PUBLISHED) {
+        throw new BadRequestException(
+          '배포(PUBLISHED) 상태 교재는 삭제할 수 없습니다.',
+        );
+      }
+
+      const [accessCount, paymentCount] = await Promise.all([
+        tx.textbookAccess.count({
+          where: { textbookId: id },
+        }),
+        tx.payment.count({
+          where: {
+            targetType: PaymentTarget.TEXTBOOK,
+            targetId: id,
+          },
+        }),
+      ]);
+
+      if (accessCount > 0 || paymentCount > 0) {
+        throw new BadRequestException(
+          '판매 또는 권한 이력이 있는 교재는 삭제할 수 없습니다.',
+        );
+      }
+
+      await tx.textbookViewLog.deleteMany({
+        where: { textbookId: id },
+      });
+      await tx.courseTextbook.deleteMany({
+        where: { textbookId: id },
+      });
+      await tx.textbook.delete({
+        where: { id },
+      });
+
+      return target;
+    });
+
+    const warnings: string[] = [];
+    const s3Warning = await this.deleteStoredS3Object(textbook.s3Key);
+    if (s3Warning) warnings.push(s3Warning);
+
+    const localWarning = await this.deleteStoredLocalFile(textbook.localPath);
+    if (localWarning) warnings.push(localWarning);
+
+    return {
+      deleted: true,
+      textbookId: textbook.id,
+      title: textbook.title,
+      warnings,
+    };
+  }
+
   private async verifyAccess(textbookId: string, userId: string) {
     // 관리자(SUPER_ADMIN, OPERATOR)는 모든 교재 열람 가능
     const user = await this.prisma.user.findUnique({
@@ -663,5 +737,61 @@ export class TextbookService {
     throw new NotFoundException(
       `교재 파일 원본을 찾을 수 없습니다. ${errors.join(' | ')}`.trim(),
     );
+  }
+
+  private async deleteStoredS3Object(
+    s3Key?: string | null,
+  ): Promise<string | null> {
+    if (!s3Key) return null;
+
+    try {
+      const bucket = this.getStorageBucket();
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: s3Key,
+        }),
+      );
+      return null;
+    } catch (err: unknown) {
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `교재 스토리지 파일 삭제 실패 key=${s3Key}, reason=${reason}`,
+      );
+      return `스토리지 파일 삭제 실패(${s3Key}): ${reason}`;
+    }
+  }
+
+  private async deleteStoredLocalFile(
+    localPathValue?: string | null,
+  ): Promise<string | null> {
+    if (!localPathValue) return null;
+
+    const candidates = this.resolveLocalCandidatePaths(localPathValue);
+    if (candidates.length === 0) return null;
+
+    let seenError: string | null = null;
+    for (const candidate of candidates) {
+      try {
+        await fs.unlink(candidate);
+        return null;
+      } catch (err: unknown) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          (err as { code?: string }).code === 'ENOENT'
+        ) {
+          continue;
+        }
+        seenError = err instanceof Error ? err.message : String(err);
+      }
+    }
+
+    if (!seenError) return null;
+    this.logger.warn(
+      `교재 로컬 파일 삭제 실패 path=${localPathValue}, reason=${seenError}`,
+    );
+    return `로컬 파일 삭제 실패(${localPathValue}): ${seenError}`;
   }
 }
