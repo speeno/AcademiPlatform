@@ -1,0 +1,102 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { CreditCard, Loader2 } from 'lucide-react';
+import { BrandBadge } from '@/components/ui/brand-badge';
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+
+const targetTypeLabel: Record<string, string> = {
+  ENROLLMENT:       '수강 신청',
+  EXAM_APPLICATION: '시험 접수',
+  TEXTBOOK:         '교재 구매',
+};
+
+const paymentStatusInfo: Record<string, { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
+  PENDING:   { label: '결제 대기', variant: 'orange' },
+  PAID:      { label: '결제 완료', variant: 'green' },
+  FAILED:    { label: '결제 실패', variant: 'red' },
+  CANCELLED: { label: '취소됨', variant: 'default' },
+  REFUNDED:  { label: '환불 완료', variant: 'default' },
+};
+
+interface Payment {
+  id: string;
+  targetType: string;
+  orderNo: string;
+  amount: number;
+  paymentStatus: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export default function PaymentsPage() {
+  const router = useRouter();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch_ = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) { router.push('/login'); return; }
+      try {
+        const res = await fetch(`${API}/payments/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setPayments(await res.json());
+      } catch { /* ignore */ }
+      finally { setLoading(false); }
+    };
+    fetch_();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>결제 내역</h1>
+        <p className="text-sm text-gray-500 mt-1">결제 및 환불 내역을 확인하세요.</p>
+      </div>
+
+      {payments.length === 0 ? (
+        <div className="text-center py-20">
+          <CreditCard className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+          <p className="text-gray-500">결제 내역이 없습니다.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {payments.map((p) => {
+            const s = paymentStatusInfo[p.paymentStatus] ?? { label: p.paymentStatus, variant: 'default' as const };
+            return (
+              <div key={p.id} className="bg-white rounded-xl border px-5 py-4 flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <BrandBadge variant={s.variant} className="text-xs">{s.label}</BrandBadge>
+                    <span className="text-xs text-gray-400">{targetTypeLabel[p.targetType] ?? p.targetType}</span>
+                  </div>
+                  <p className="text-xs text-gray-400">주문번호: {p.orderNo}</p>
+                  <p className="text-xs text-gray-400">
+                    {p.paidAt
+                      ? `결제일: ${new Date(p.paidAt).toLocaleDateString('ko-KR')}`
+                      : `생성일: ${new Date(p.createdAt).toLocaleDateString('ko-KR')}`}
+                  </p>
+                </div>
+                <span className="font-extrabold text-lg flex-shrink-0" style={{ color: 'var(--brand-orange)' }}>
+                  {p.amount.toLocaleString()}원
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

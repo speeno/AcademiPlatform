@@ -34,3 +34,4 @@ Thumbs.db
 backend/static/textbooks/*.pdf
 .vercel
 backend/static/textbooks/uploads/*.pdf
+.git_frontend_backup_*/

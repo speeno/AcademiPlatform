@@ -1,0 +1,261 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── AcademiQ 브랜드 컬러 토큰 ─────────────────────────────────────────── */
+:root {
+  /* Primary — 로얄 블루 ("Academi" 텍스트, 졸업모자) */
+  --brand-blue:         #1A3F9C;
+  --brand-blue-dark:    #122D74;
+  --brand-blue-light:   #2E56BB;
+  --brand-blue-subtle:  #EBF0FB;
+
+  /* Accent — 오렌지 ("Q" 텍스트, 궤도 링, CTA) */
+  --brand-orange:        #F5A023;
+  --brand-orange-dark:   #D4850D;
+  --brand-orange-light:  #FFB830;
+  --brand-orange-subtle: #FEF3E0;
+
+  /* Secondary — 스카이 블루 */
+  --brand-sky:        #3AADE8;
+  --brand-sky-dark:   #2280BB;
+  --brand-sky-subtle: #E8F4FB;
+
+  /* Logo gradient 중간값 */
+  --brand-green: #5AB85C;
+  --brand-lime:  #A8C840;
+
+  /* Logo 5색 그라디언트 */
+  --gradient-logo: linear-gradient(90deg,
+    #1A6EC5 0%,
+    #3AADE8 25%,
+    #5AB85C 50%,
+    #A8C840 75%,
+    #F5A023 100%
+  );
+
+  /* Hero 배경 그라디언트 */
+  --gradient-hero: linear-gradient(135deg, #EBF0FB 0%, #E8F4FB 100%);
+
+  /* Text */
+  --text-primary:   #111827;
+  --text-secondary: #4B5563;
+  --text-muted:     #9CA3AF;
+  --text-slogan:    #6B7280;
+
+  /* shadcn/ui 변수 — AcademiQ 브랜드로 오버라이드 */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.14 0.02 264);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.14 0.02 264);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.14 0.02 264);
+
+  /* Primary: 로얄 블루 #1A3F9C */
+  --primary: oklch(0.37 0.17 264);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary: 연한 배경 계열 */
+  --secondary: oklch(0.97 0.005 264);
+  --secondary-foreground: oklch(0.37 0.17 264);
+
+  /* Muted */
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+
+  /* Accent: 오렌지 #F5A023 */
+  --accent: oklch(0.73 0.16 56);
+  --accent-foreground: oklch(1 0 0);
+
+  /* Destructive */
+  --destructive: oklch(0.577 0.245 27.325);
+
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.37 0.17 264);
+
+  /* Chart — 로고 그라디언트 5색 */
+  --chart-1: oklch(0.45 0.16 264);  /* Deep Blue  #1A6EC5 */
+  --chart-2: oklch(0.65 0.14 220);  /* Sky Blue   #3AADE8 */
+  --chart-3: oklch(0.65 0.14 145);  /* Green      #5AB85C */
+  --chart-4: oklch(0.72 0.14 120);  /* Lime       #A8C840 */
+  --chart-5: oklch(0.73 0.16 56);   /* Orange     #F5A023 */
+
+  --radius: 0.625rem;
+
+  /* Sidebar */
+  --sidebar: oklch(0.97 0.005 264);
+  --sidebar-foreground: oklch(0.14 0.02 264);
+  --sidebar-primary: oklch(0.37 0.17 264);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.93 0.01 264);
+  --sidebar-accent-foreground: oklch(0.37 0.17 264);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.37 0.17 264);
+}
+
+.dark {
+  --background: oklch(0.14 0.02 264);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.20 0.02 264);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.20 0.02 264);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.57 0.17 264);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.27 0.02 264);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.27 0.02 264);
+  --muted-foreground: oklch(0.71 0 0);
+  --accent: oklch(0.73 0.16 56);
+  --accent-foreground: oklch(0.14 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.57 0.17 264);
+  --sidebar: oklch(0.20 0.02 264);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.57 0.17 264);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.27 0.02 264);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.57 0.17 264);
+}
+
+/* ─── Tailwind v4 @theme — 브랜드 컬러 유틸리티 등록 ──────────────────── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* shadcn 기본 매핑 */
+  --color-card:                var(--card);
+  --color-card-foreground:     var(--card-foreground);
+  --color-popover:             var(--popover);
+  --color-popover-foreground:  var(--popover-foreground);
+  --color-primary:             var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+  --color-secondary:           var(--secondary);
+  --color-secondary-foreground:var(--secondary-foreground);
+  --color-muted:               var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+  --color-accent:              var(--accent);
+  --color-accent-foreground:   var(--accent-foreground);
+  --color-destructive:         var(--destructive);
+  --color-border:              var(--border);
+  --color-input:               var(--input);
+  --color-ring:                var(--ring);
+  --color-chart-1:             var(--chart-1);
+  --color-chart-2:             var(--chart-2);
+  --color-chart-3:             var(--chart-3);
+  --color-chart-4:             var(--chart-4);
+  --color-chart-5:             var(--chart-5);
+  --color-sidebar-ring:                var(--sidebar-ring);
+  --color-sidebar-border:              var(--sidebar-border);
+  --color-sidebar-accent-foreground:   var(--sidebar-accent-foreground);
+  --color-sidebar-accent:              var(--sidebar-accent);
+  --color-sidebar-primary-foreground:  var(--sidebar-primary-foreground);
+  --color-sidebar-primary:             var(--sidebar-primary);
+  --color-sidebar-foreground:          var(--sidebar-foreground);
+  --color-sidebar:                     var(--sidebar);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* AcademiQ 브랜드 커스텀 컬러 */
+  --color-brand-blue:          #1A3F9C;
+  --color-brand-blue-dark:     #122D74;
+  --color-brand-blue-light:    #2E56BB;
+  --color-brand-blue-subtle:   #EBF0FB;
+
+  --color-brand-orange:        #F5A023;
+  --color-brand-orange-dark:   #D4850D;
+  --color-brand-orange-light:  #FFB830;
+  --color-brand-orange-subtle: #FEF3E0;
+
+  --color-brand-sky:           #3AADE8;
+  --color-brand-sky-dark:      #2280BB;
+  --color-brand-sky-subtle:    #E8F4FB;
+
+  --color-brand-green:         #5AB85C;
+  --color-brand-lime:          #A8C840;
+
+  /* 폰트 */
+  --font-sans: 'Pretendard Variable', 'Inter', system-ui, sans-serif;
+  --font-heading: 'Pretendard Variable', 'Inter', sans-serif;
+}
+
+/* ─── 유틸리티 클래스 ──────────────────────────────────────────────────── */
+@layer utilities {
+  .bg-logo-gradient {
+    background: var(--gradient-logo);
+  }
+  .bg-hero-gradient {
+    background: var(--gradient-hero);
+  }
+  .text-gradient-logo {
+    background: var(--gradient-logo);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* ─── 기본 스타일 ──────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Pretendard Variable', 'Inter', system-ui, sans-serif;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Pretendard Variable', 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--brand-blue);
+  }
+
+  /* 스크롤바 커스터마이징 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--brand-blue-subtle);
+  }
+}
+
+/* 브랜드 배너 그라디언트 유틸리티 */
+.bg-banner-gradient {
+  background: linear-gradient(
+    110deg,
+    #0F2771 0%,
+    #1A3F9C 25%,
+    #1A9AC5 50%,
+    #5AB85C 70%,
+    #F5A023 100%
+  );
+}
+
+.bg-join-gradient {
+  background: linear-gradient(90deg, #5AB85C 0%, #F5A023 100%);
+}
