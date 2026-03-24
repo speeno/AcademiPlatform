@@ -76,17 +76,11 @@ export class CmsService {
 
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { instructorId: true, cmsOwnerId: true },
+      select: { cmsOwnerId: true },
     });
     if (!course) throw new NotFoundException('강좌를 찾을 수 없습니다.');
-    if (course.instructorId === userId || course.cmsOwnerId === userId)
-      return true;
-
-    const collaborator = await this.prisma.courseCmsCollaborator.findUnique({
-      where: { courseId_userId: { courseId, userId } },
-      select: { id: true },
-    });
-    return !!collaborator;
+    if (role === UserRole.INSTRUCTOR) return course.cmsOwnerId === userId;
+    return false;
   }
 
   private async ensureCanEditCourse(userId: string, courseId: string) {
@@ -148,13 +142,9 @@ export class CmsService {
     const where =
       role === UserRole.OPERATOR || role === UserRole.SUPER_ADMIN
         ? {}
-        : {
-            OR: [
-              { instructorId: userId },
-              { cmsOwnerId: userId },
-              { cmsCollaborators: { some: { userId } } },
-            ],
-          };
+        : role === UserRole.INSTRUCTOR
+          ? { cmsOwnerId: userId }
+          : { id: '__no_access__' };
 
     return this.prisma.course.findMany({
       where,

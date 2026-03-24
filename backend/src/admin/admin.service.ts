@@ -77,6 +77,10 @@ export class AdminService {
     return this.prisma.user.update({ where: { id: userId }, data: { status } });
   }
 
+  async updateUserRole(userId: string, role: UserRole) {
+    return this.prisma.user.update({ where: { id: userId }, data: { role } });
+  }
+
   /* 공지사항 */
   async createNotice(data: {
     title: string; content: string; isPinned?: boolean;

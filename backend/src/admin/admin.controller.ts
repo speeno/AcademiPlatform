@@ -33,6 +33,11 @@ export class AdminController {
     return this.adminService.updateUserStatus(id, status);
   }
 
+  @Patch('users/:id/role')
+  updateUserRole(@Param('id') id: string, @Body('role') role: UserRole) {
+    return this.adminService.updateUserRole(id, role);
+  }
+
   /* 공지사항 */
   @Post('notices')
   createNotice(@Body() data: any) {
