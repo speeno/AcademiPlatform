@@ -5,6 +5,8 @@ import { Upload, Send, Save, Plus, RefreshCcw } from 'lucide-react';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
 import { BrandButton } from '@/components/ui/brand-button';
+import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
+import { sanitizeCmsHtml } from '@/lib/html-sanitize';
 import { toast } from 'sonner';
 
 type ContentType = 'VIDEO_MP4' | 'VIDEO_YOUTUBE' | 'DOCUMENT' | 'HTML';
@@ -236,7 +238,7 @@ export default function CmsInstructorPage() {
   const buildSchema = () => {
     if (contentType === 'VIDEO_YOUTUBE') return { youtubeUrl };
     if (contentType === 'VIDEO_MP4') return { videoUrl };
-    if (contentType === 'HTML') return { html: htmlContent };
+    if (contentType === 'HTML') return { html: sanitizeCmsHtml(htmlContent) };
     return { note: documentNote };
   };
 
@@ -483,12 +485,7 @@ export default function CmsInstructorPage() {
             </>
           )}
           {contentType === 'HTML' && (
-            <textarea
-              className="border rounded-lg px-3 py-2 text-sm w-full min-h-56 font-mono"
-              placeholder="<h1>콘텐츠 HTML</h1>"
-              value={htmlContent}
-              onChange={(e) => setHtmlContent(e.target.value)}
-            />
+            <HtmlWysiwygEditor value={htmlContent} onChange={setHtmlContent} maxImageSizeMb={2} />
           )}
 
           <div className="flex justify-end gap-2">
