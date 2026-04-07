@@ -20,7 +20,6 @@ const footerLinks = {
   시험접수: [
     { label: '시험 안내', href: '/about/exam' },
     { label: '시험 일정', href: '/exam' },
-    { label: '온라인 접수', href: '/exam/apply' },
     { label: '마이페이지', href: '/mypage' },
   ],
   고객지원: [
