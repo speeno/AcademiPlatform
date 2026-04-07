@@ -8,6 +8,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Captcha } from '@/components/ui/captcha';
 import { setAccessToken } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ export default function RegisterPage() {
     name: '', phone: '', agreedTerms: false, agreedPrivacy: false,
   });
   const [loading, setLoading] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +30,10 @@ export default function RegisterPage() {
     }
     if (!form.agreedTerms || !form.agreedPrivacy) {
       toast.error('필수 약관에 동의해주세요.');
+      return;
+    }
+    if (!captchaVerified) {
+      toast.error('사람 인증을 완료해주세요.');
       return;
     }
     setLoading(true);
@@ -117,6 +123,8 @@ export default function RegisterPage() {
             </label>
           </div>
         </div>
+
+        <Captcha onVerified={setCaptchaVerified} />
 
         <BrandButton type="submit" variant="primary" size="lg" fullWidth loading={loading}>
           <UserPlus className="w-4 h-4" />
