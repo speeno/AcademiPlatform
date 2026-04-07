@@ -18,6 +18,10 @@ const VideoPlayer = dynamic(
   () => import('@/components/player/VideoPlayer').then((m) => ({ default: m.VideoPlayer })),
   { ssr: false },
 );
+const CoursePackageViewer = dynamic(
+  () => import('@/components/course-package/CoursePackageViewer').then((m) => ({ default: m.CoursePackageViewer })),
+  { ssr: false },
+);
 const API = API_BASE;
 
 interface LessonProgress {
@@ -63,7 +67,7 @@ interface CourseData {
 
 interface CmsLessonContent {
   lessonId: string;
-  contentType: 'VIDEO_MP4' | 'VIDEO_YOUTUBE' | 'DOCUMENT' | 'HTML';
+  contentType: 'VIDEO_MP4' | 'VIDEO_YOUTUBE' | 'DOCUMENT' | 'HTML' | 'COURSE_PACKAGE';
   schemaJson: Record<string, unknown>;
   assets: Array<{
     id: string;
@@ -281,6 +285,16 @@ export default function CoursePlayerPage() {
                   className="w-full h-[70vh] bg-white"
                   srcDoc={String(cmsContent.schemaJson?.html ?? '<p>콘텐츠가 없습니다.</p>')}
                 />
+              ) : cmsContent?.contentType === 'COURSE_PACKAGE' ? (
+                <div className="h-[70vh]">
+                  <CoursePackageViewer
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    schema={cmsContent.schemaJson as any}
+                    assetBaseUrl={`${API}/cms/package-asset`}
+                    lessonId={selectedLesson.id}
+                    authHeaders={viewerAuthHeaders}
+                  />
+                </div>
               ) : cmsContent?.contentType === 'DOCUMENT' ? (
                 cmsAssetUrl && cmsPrimaryAsset?.mimeType?.includes('pdf') ? (
                   <SecurePdfViewer

@@ -9,7 +9,7 @@ import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
 import { sanitizeCmsHtml } from '@/lib/html-sanitize';
 import { toast } from 'sonner';
 
-type ContentType = 'VIDEO_MP4' | 'VIDEO_YOUTUBE' | 'DOCUMENT' | 'HTML';
+type ContentType = 'VIDEO_MP4' | 'VIDEO_YOUTUBE' | 'DOCUMENT' | 'HTML' | 'COURSE_PACKAGE';
 type CollaboratorRole = 'EDITOR' | 'ASSISTANT';
 
 interface CmsCourse {
@@ -78,6 +78,11 @@ export default function CmsInstructorPage() {
   const [collaboratorRole, setCollaboratorRole] = useState<CollaboratorRole>('EDITOR');
   const [instructors, setInstructors] = useState<InstructorOption[]>([]);
   const [instructorsLoading, setInstructorsLoading] = useState(false);
+  const [packageUploading, setPackageUploading] = useState(false);
+  const [packageUploadProgress, setPackageUploadProgress] = useState(0);
+  const [packageResult, setPackageResult] = useState<{
+    chapters: Array<{ chapterId: string; title: string; hasVideo: boolean; hasSubtitle: boolean; hasScript: boolean; hasQuiz: boolean }>;
+  } | null>(null);
   const ownerSelectRef = useRef<HTMLSelectElement | null>(null);
 
   const selectedLesson = useMemo(
@@ -162,12 +167,29 @@ export default function CmsInstructorPage() {
     if (!res.ok) throw new Error(data?.message ?? '레슨 콘텐츠를 불러오지 못했습니다.');
     const latest = data?.item?.versions?.[0];
     const schema = latest?.schemaJson ?? {};
-    const nextType: ContentType = data?.item?.contentType ?? 'VIDEO_YOUTUBE';
+    const rawType: string = data?.item?.contentType ?? 'VIDEO_YOUTUBE';
+    const nextType: ContentType = (['VIDEO_MP4', 'VIDEO_YOUTUBE', 'DOCUMENT', 'HTML', 'COURSE_PACKAGE'].includes(rawType)
+      ? rawType
+      : 'VIDEO_YOUTUBE') as ContentType;
     setContentType(nextType);
     setYoutubeUrl(schema?.youtubeUrl ?? '');
     setHtmlContent(schema?.html ?? '');
     setVideoUrl(schema?.videoUrl ?? '');
     setDocumentNote(schema?.note ?? '');
+    if (nextType === 'COURSE_PACKAGE' && schema?.chapters) {
+      setPackageResult({
+        chapters: (schema.chapters as Array<Record<string, unknown>>).map((ch: Record<string, unknown>) => ({
+          chapterId: (ch.chapterId as string) ?? '',
+          title: (ch.title as string) ?? '',
+          hasVideo: !!ch.videoStorageKey,
+          hasSubtitle: !!ch.subtitleStorageKey,
+          hasScript: !!ch.script && Object.keys(ch.script as Record<string, unknown>).length > 0,
+          hasQuiz: !!ch.quiz && Object.keys(ch.quiz as Record<string, unknown>).length > 0,
+        })),
+      });
+    } else {
+      setPackageResult(null);
+    }
 
     const historyRes = await fetch(`${API_BASE}/cms/lessons/${lessonId}/history`, {
       headers: buildAuthHeader(false),
@@ -362,6 +384,37 @@ export default function CmsInstructorPage() {
     await loadTree(selectedCourseId);
   };
 
+  const handlePackageUpload = async (file: File | null) => {
+    if (!file || !selectedLessonId) return;
+    if (!file.name.endsWith('.zip')) return toast.error('ZIP 파일만 업로드할 수 있습니다.');
+    setPackageUploading(true);
+    setPackageUploadProgress(10);
+    setPackageResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      setPackageUploadProgress(30);
+      const res = await fetch(`${API_BASE}/cms/lessons/${selectedLessonId}/course-package`, {
+        method: 'POST',
+        headers: buildAuthHeader(false),
+        credentials: 'include',
+        body: formData,
+      });
+      setPackageUploadProgress(80);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message ?? '패키지 업로드에 실패했습니다.');
+      setPackageResult({ chapters: data.chapters ?? [] });
+      setPackageUploadProgress(100);
+      toast.success(`강의 패키지가 업로드되었습니다. (${data.chapters?.length ?? 0}개 챕터)`);
+      await loadTree(selectedCourseId);
+      await loadLessonContent(selectedLessonId);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : '패키지 업로드에 실패했습니다.');
+    } finally {
+      setPackageUploading(false);
+    }
+  };
+
   if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
 
   return (
@@ -427,6 +480,7 @@ export default function CmsInstructorPage() {
               <option value="VIDEO_YOUTUBE">VIDEO_YOUTUBE</option>
               <option value="DOCUMENT">DOCUMENT</option>
               <option value="HTML">HTML</option>
+              <option value="COURSE_PACKAGE">COURSE_PACKAGE (강의 패키지)</option>
             </select>
             <input
               className="border rounded-lg px-3 py-2 text-sm"
@@ -486,6 +540,46 @@ export default function CmsInstructorPage() {
           )}
           {contentType === 'HTML' && (
             <HtmlWysiwygEditor value={htmlContent} onChange={setHtmlContent} maxImageSizeMb={2} />
+          )}
+          {contentType === 'COURSE_PACKAGE' && (
+            <div className="space-y-3">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                <p className="text-sm text-gray-600 mb-2">강의 패키지 ZIP 파일을 업로드하세요</p>
+                <p className="text-xs text-gray-400 mb-3">chapters.json, 챕터별 동영상·자막·스크립트·퀴즈 포함</p>
+                <label className={`inline-flex items-center text-sm px-4 py-2 rounded-lg cursor-pointer ${packageUploading ? 'bg-gray-200 text-gray-400' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  {packageUploading ? '업로드 중...' : 'ZIP 파일 선택'}
+                  <input
+                    type="file"
+                    accept=".zip,application/zip"
+                    className="hidden"
+                    disabled={packageUploading}
+                    onChange={(e) => handlePackageUpload(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
+              {packageUploading && (
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${packageUploadProgress}%` }} />
+                </div>
+              )}
+              {packageResult && (
+                <div className="border rounded-xl p-3 space-y-2">
+                  <p className="text-sm font-semibold text-green-700">업로드 완료: {packageResult.chapters.length}개 챕터</p>
+                  <div className="max-h-48 overflow-auto space-y-1">
+                    {packageResult.chapters.map((ch) => (
+                      <div key={ch.chapterId} className="flex items-center gap-2 text-xs border rounded px-2 py-1">
+                        <span className="font-medium text-gray-800 flex-1">{ch.title}</span>
+                        <span className={ch.hasVideo ? 'text-green-600' : 'text-gray-400'}>영상{ch.hasVideo ? '✓' : '✗'}</span>
+                        <span className={ch.hasSubtitle ? 'text-green-600' : 'text-gray-400'}>자막{ch.hasSubtitle ? '✓' : '✗'}</span>
+                        <span className={ch.hasScript ? 'text-green-600' : 'text-gray-400'}>스크립트{ch.hasScript ? '✓' : '✗'}</span>
+                        <span className={ch.hasQuiz ? 'text-green-600' : 'text-gray-400'}>퀴즈{ch.hasQuiz ? '✓' : '✗'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="flex justify-end gap-2">

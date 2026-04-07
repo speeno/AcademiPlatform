@@ -26,7 +26,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
-
+.data/
 # Prisma migrations (선택적)
 # backend/prisma/migrations/
 
@@ -35,3 +35,4 @@ backend/static/textbooks/*.pdf
 .vercel
 backend/static/textbooks/uploads/*.pdf
 .git_frontend_backup_*/
+.data

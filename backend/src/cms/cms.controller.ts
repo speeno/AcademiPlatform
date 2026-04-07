@@ -9,7 +9,10 @@ import {
   Query,
   Res,
   StreamableFile,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CmsCollaboratorRole, CmsReviewStatus, UserRole } from '@prisma/client';
 import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -174,5 +177,30 @@ export class CmsController {
     @CurrentUser() user: any,
   ) {
     return this.cmsService.rollbackLesson(lessonId, Number(versionNo), user.id);
+  }
+
+  @Roles(UserRole.USER)
+  @Get('package-asset')
+  async streamPackageAsset(
+    @Query('storageKey') storageKey: string,
+    @Query('lessonId') lessonId: string,
+    @CurrentUser() user: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const file = await this.cmsService.getPackageAssetFile(storageKey, lessonId, user.id);
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    return new StreamableFile(file.buffer);
+  }
+
+  @Roles(UserRole.USER)
+  @Post('lessons/:lessonId/course-package')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 500 * 1024 * 1024 } }))
+  uploadCoursePackage(
+    @Param('lessonId') lessonId: string,
+    @UploadedFile() file: { buffer: Buffer; originalname: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.cmsService.processCoursePackageUpload(lessonId, user.id, file);
   }
 }

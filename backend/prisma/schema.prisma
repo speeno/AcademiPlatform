@@ -164,6 +164,7 @@ enum CmsContentType {
   VIDEO_YOUTUBE
   DOCUMENT
   HTML
+  COURSE_PACKAGE
 }
 
 enum CmsContentStatus {
