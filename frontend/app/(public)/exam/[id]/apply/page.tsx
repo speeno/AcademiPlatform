@@ -8,7 +8,6 @@ import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { buildAuthHeader } from '@/lib/auth';
-import { runPortOneCheckout } from '@/lib/payment';
 
 const FORM_FIELDS = [
   { key: 'applicantName', label: '신청자 성명', required: true, type: 'text', placeholder: '홍길동' },
@@ -61,7 +60,7 @@ export default function ExamApplyPage() {
     setStep('payment');
   };
 
-  const handlePayment = async () => {
+  const handleSubmitApplication = async () => {
     setLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exam/sessions/${sessionId}/apply`, {
@@ -71,18 +70,6 @@ export default function ExamApplyPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? '접수에 실패했습니다.');
-      const applicationId = data.id as string;
-
-      if (fee > 0) {
-        await runPortOneCheckout({
-          targetType: 'EXAM_APPLICATION',
-          targetId: applicationId,
-          amountHint: fee,
-          name: `${sessionName} 응시료`,
-          buyerName: formData.applicantName,
-          buyerEmail: formData.email,
-        });
-      }
       toast.success('시험 접수가 완료되었습니다.');
       setStep('complete');
     } catch (err: any) {
@@ -95,7 +82,7 @@ export default function ExamApplyPage() {
   if (step === 'complete') {
     return (
       <div className="min-h-screen bg-hero-gradient flex items-center justify-center p-4">
-        <BrandCard padding="lg" className="max-w-md w-full text-center">
+        <BrandCard padding="lg" className="max-w-lg w-full text-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
             style={{ backgroundColor: 'var(--brand-blue-subtle)' }}
@@ -105,7 +92,14 @@ export default function ExamApplyPage() {
           <h2 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--brand-blue)' }}>
             접수 완료
           </h2>
-          <p className="text-gray-500 mb-6">시험 접수가 완료되었습니다.<br />마이페이지에서 접수 내역을 확인할 수 있습니다.</p>
+          <p className="text-gray-600 mb-5">시험 접수가 완료되었습니다.</p>
+
+          <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 mb-6 text-left space-y-2">
+            <p className="text-sm text-blue-800">
+              📧 접수비 입금 계좌 안내 및 학습 교재는 등록하신 이메일로 전달될 예정입니다.
+            </p>
+          </div>
+
           <BrandButton variant="primary" onClick={() => router.push('/mypage')} fullWidth>
             마이페이지 이동
           </BrandButton>
@@ -119,7 +113,7 @@ export default function ExamApplyPage() {
       <div className="max-w-2xl mx-auto">
         {/* 진행 단계 표시 */}
         <div className="flex items-center justify-center gap-4 mb-8">
-          {['접수 정보', '결제'].map((label, i) => (
+          {['접수 정보', '접수 확인'].map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
@@ -142,7 +136,7 @@ export default function ExamApplyPage() {
 
         <BrandCard padding="lg">
           <h1 className="text-2xl font-extrabold mb-6" style={{ color: 'var(--brand-blue)' }}>
-            {step === 'form' ? '시험 접수 신청' : '응시료 결제'}
+            {step === 'form' ? '시험 접수 신청' : '접수 확인'}
           </h1>
 
           {step === 'form' && (
@@ -176,7 +170,7 @@ export default function ExamApplyPage() {
               </div>
 
               <BrandButton type="submit" variant="primary" size="lg" fullWidth>
-                다음 단계 (결제)
+                다음 단계
               </BrandButton>
             </form>
           )}
@@ -189,6 +183,10 @@ export default function ExamApplyPage() {
                   <span className="font-medium">{formData.applicantName}</span>
                 </div>
                 <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">이메일</span>
+                  <span className="font-medium">{formData.email}</span>
+                </div>
+                <div className="flex justify-between text-sm">
                   <span className="text-gray-500">응시료</span>
                   <span className="font-bold text-base" style={{ color: 'var(--brand-orange)' }}>
                     {fee.toLocaleString()}원
@@ -196,12 +194,18 @@ export default function ExamApplyPage() {
                 </div>
               </div>
 
+              <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
+                <p className="text-sm text-blue-800">
+                  📧 접수비 입금 계좌 안내 및 학습 교재는 등록하신 이메일로 전달될 예정입니다.
+                </p>
+              </div>
+
               <div className="flex gap-3">
                 <BrandButton variant="outline" onClick={() => setStep('form')} size="lg" className="flex-1">
                   이전
                 </BrandButton>
-                <BrandButton variant="primary" onClick={handlePayment} loading={loading} size="lg" className="flex-1">
-                  결제하기
+                <BrandButton variant="primary" onClick={handleSubmitApplication} loading={loading} size="lg" className="flex-1">
+                  접수 완료
                 </BrandButton>
               </div>
             </div>
