@@ -7,6 +7,7 @@ import {
   CourseStatus,
   LessonType,
   EncodingStatus,
+  ExamSessionStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as path from 'path';
@@ -390,6 +391,49 @@ async function main() {
         });
         console.log(`  → Linked textbook "${textbookKey}"`);
       }
+    }
+  }
+
+  // 시험 세션 시드
+  const examSessionData = [
+    {
+      qualificationName: 'AI 활용 전문가',
+      roundName: '2026년 제1회',
+      applyStartAt: new Date('2026-03-01T00:00:00Z'),
+      applyEndAt: new Date('2026-03-31T23:59:59Z'),
+      examAt: new Date('2026-04-20T10:00:00Z'),
+      place: '서울 강남구',
+      fee: 80000,
+      basePrice: 80000,
+      status: ExamSessionStatus.OPEN,
+      capacity: 100,
+    },
+    {
+      qualificationName: 'AI 교육 지도사',
+      roundName: '2026년 제1회',
+      applyStartAt: new Date('2026-04-01T00:00:00Z'),
+      applyEndAt: new Date('2026-04-30T23:59:59Z'),
+      examAt: new Date('2026-05-18T10:00:00Z'),
+      place: '서울 강남구',
+      fee: 90000,
+      basePrice: 90000,
+      status: ExamSessionStatus.UPCOMING,
+      capacity: 100,
+    },
+  ];
+
+  for (const session of examSessionData) {
+    const existing = await prisma.examSession.findFirst({
+      where: {
+        qualificationName: session.qualificationName,
+        roundName: session.roundName,
+      },
+    });
+    if (!existing) {
+      await prisma.examSession.create({ data: session });
+      console.log(`Created exam session: "${session.qualificationName} ${session.roundName}"`);
+    } else {
+      console.log(`Exam session already exists: "${session.qualificationName} ${session.roundName}"`);
     }
   }
 
