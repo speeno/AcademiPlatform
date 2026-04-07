@@ -4,6 +4,7 @@ import { Clock, Users, BookOpen, ArrowRight } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PriceDisplay } from '@/components/ui/price-display';
 import type { Metadata } from 'next';
 import { API_BASE } from '@/lib/api-base';
 
@@ -88,9 +89,11 @@ export default async function CoursesPage() {
                     </div>
 
                     <div className="mt-auto flex items-center justify-between">
-                      <span className="text-lg font-extrabold" style={{ color: 'var(--brand-orange)' }}>
-                        {course.price === 0 ? '무료' : `${course.price.toLocaleString()}원`}
-                      </span>
+                      <PriceDisplay
+                        price={course.price ?? 0}
+                        className="text-lg font-extrabold"
+                        style={{ color: 'var(--brand-orange)' }}
+                      />
                       <span className="text-xs font-medium" style={{ color: 'var(--brand-blue)' }}>
                         상세 보기 →
                       </span>

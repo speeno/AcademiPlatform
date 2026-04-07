@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BrandButton } from '@/components/ui/brand-button';
 import { runPortOneCheckout } from '@/lib/payment';
@@ -14,7 +14,12 @@ interface Props {
 
 export default function EnrollButton({ courseId, price }: Props) {
   const [loading, setLoading] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem('accessToken'));
+  }, []);
 
   const handleEnroll = async () => {
     const token = localStorage.getItem('accessToken');
@@ -53,9 +58,15 @@ export default function EnrollButton({ courseId, price }: Props) {
     }
   };
 
+  const buttonLabel = !isLoggedIn
+    ? '로그인 후 수강 신청'
+    : price === 0
+      ? '무료 수강 신청'
+      : '수강 및 전자책 구매';
+
   return (
     <BrandButton variant="primary" fullWidth loading={loading} onClick={handleEnroll} size="lg">
-      {price === 0 ? '무료 수강 신청' : '수강 및 전자책 구매'}
+      {buttonLabel}
     </BrandButton>
   );
 }

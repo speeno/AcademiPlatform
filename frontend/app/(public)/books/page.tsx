@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ExternalLink, BookOpen } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PriceDisplay } from '@/components/ui/price-display';
 import { API_BASE } from '@/lib/api-base';
 
 export const metadata: Metadata = {
@@ -74,9 +75,11 @@ export default async function BooksPage() {
                 <BrandCardTitle className="text-sm line-clamp-2 mb-2">{book.title}</BrandCardTitle>
                 <p className="text-xs text-gray-500 mb-4">(소장)</p>
                 <div className="mt-auto space-y-3">
-                  <p className="text-sm font-semibold" style={{ color: 'var(--brand-orange)' }}>
-                    {book.price.toLocaleString()} 원
-                  </p>
+                  <PriceDisplay
+                    price={book.price}
+                    className="text-sm font-semibold"
+                    style={{ color: 'var(--brand-orange)' }}
+                  />
                   <Link href={book.purchaseUrl} target="_blank" rel="noopener noreferrer">
                     <BrandButton variant="primary" size="sm" fullWidth>
                       구매하기

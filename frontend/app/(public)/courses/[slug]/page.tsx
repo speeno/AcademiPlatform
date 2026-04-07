@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Clock, Users, BookOpen, PlayCircle, FileText, ChevronDown, Award } from 'lucide-react';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PriceDisplay } from '@/components/ui/price-display';
 import EnrollButton from './EnrollButton';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
@@ -118,9 +119,11 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
               </div>
 
               <div className="mb-5">
-                <span className="text-3xl font-extrabold" style={{ color: 'var(--brand-orange)' }}>
-                  {course.price === 0 ? '무료' : `${(course.price ?? 0).toLocaleString()}원`}
-                </span>
+                <PriceDisplay
+                  price={course.price ?? 0}
+                  className="text-3xl font-extrabold"
+                  style={{ color: 'var(--brand-orange)' }}
+                />
               </div>
 
               {course.enrollmentStartAt && course.enrollmentEndAt && (
