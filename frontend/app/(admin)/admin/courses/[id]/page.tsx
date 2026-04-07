@@ -53,7 +53,7 @@ export default function AdminCourseEditorPage() {
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [addingLesson, setAddingLesson] = useState<string | null>(null);
   const [newLesson, setNewLesson] = useState({ title: '', lessonType: 'VIDEO_UPLOAD' });
-  const basePriceNum = Number(basicForm.basePrice || basicForm.price || 0);
+  const basePriceNum = Number(basicForm.basePrice) || Number(basicForm.price) || 0;
   const salePriceNum = basicForm.salePrice === '' ? basePriceNum : Number(basicForm.salePrice || 0);
   const discountValueNum = Number(basicForm.discountValue || 0);
   const discountAmount =
@@ -83,7 +83,7 @@ export default function AdminCourseEditorPage() {
         summary: d.summary ?? '',
         description: d.description ?? '',
         currency: d.currency ?? 'KRW',
-        basePrice: String(d.basePrice ?? d.price ?? 0),
+        basePrice: String((d.basePrice && d.basePrice > 0) ? d.basePrice : (d.price ?? 0)),
         salePrice: d.salePrice == null ? '' : String(d.salePrice),
         discountType: d.discountType ?? 'NONE',
         discountValue: String(d.discountValue ?? 0),
@@ -117,7 +117,7 @@ export default function AdminCourseEditorPage() {
           headers: authHeader(),
           body: JSON.stringify({
             currency: basicForm.currency,
-            basePrice: Number(basicForm.basePrice || basicForm.price || 0),
+            basePrice: Number(basicForm.basePrice) || Number(basicForm.price) || 0,
             salePrice: basicForm.salePrice === '' ? null : Number(basicForm.salePrice),
             discountType: basicForm.discountType,
             discountValue: Number(basicForm.discountValue || 0),
@@ -197,7 +197,7 @@ export default function AdminCourseEditorPage() {
             <div>
               <label className="block text-sm font-medium mb-1">상태</label>
               <select value={basicForm.status} onChange={(e) => setBasicForm((p) => ({ ...p, status: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                {['DRAFT', 'PUBLISHED', 'CLOSED', 'ARCHIVED'].map((v) => <option key={v} value={v}>{v}</option>)}
+                {['DRAFT', 'UPCOMING', 'ACTIVE', 'CLOSED', 'ARCHIVED'].map((v) => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
             <div className="md:col-span-2">

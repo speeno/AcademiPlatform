@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { Plus, Users, Loader2, Pencil } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { API_BASE } from '@/lib/api-base';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+const API = API_BASE;
 
 const sessionStatusInfo: Record<string, { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
   UPCOMING: { label: '예정', variant: 'default' },
@@ -61,7 +62,7 @@ export default function AdminExamPage() {
     reason: '',
   });
   const [saving, setSaving] = useState(false);
-  const basePriceNum = Number(form.basePrice || form.fee || 0);
+  const basePriceNum = Number(form.basePrice) || Number(form.fee) || 0;
   const salePriceNum = form.salePrice === '' ? basePriceNum : Number(form.salePrice || 0);
   const discountValueNum = Number(form.discountValue || 0);
   const discountAmount =
@@ -79,7 +80,7 @@ export default function AdminExamPage() {
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/exam/sessions?limit=50`, { headers: authHeader() });
+      const res = await fetch(`${API}/exam/admin/sessions?limit=50`, { headers: authHeader() });
       if (res.ok) { const d = await res.json(); setSessions(d.sessions ?? d); }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
@@ -122,7 +123,7 @@ export default function AdminExamPage() {
       capacity: String(s.capacity ?? ''),
       status: s.status,
       currency: s.currency ?? 'KRW',
-      basePrice: String(s.basePrice ?? s.fee),
+      basePrice: String((s.basePrice && s.basePrice > 0) ? s.basePrice : s.fee),
       salePrice: s.salePrice == null ? '' : String(s.salePrice),
       discountType: s.discountType ?? 'NONE',
       discountValue: String(s.discountValue ?? 0),
@@ -156,7 +157,7 @@ export default function AdminExamPage() {
           headers: authHeader(),
           body: JSON.stringify({
             currency: form.currency,
-            basePrice: Number(form.basePrice || form.fee || 0),
+            basePrice: Number(form.basePrice) || Number(form.fee) || 0,
             salePrice: form.salePrice === '' ? null : Number(form.salePrice),
             discountType: form.discountType,
             discountValue: Number(form.discountValue || 0),

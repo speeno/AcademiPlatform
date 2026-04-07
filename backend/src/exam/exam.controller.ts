@@ -50,6 +50,16 @@ export class ExamController {
 
   /* 관리자 API */
   @Roles(UserRole.OPERATOR)
+  @Get('admin/sessions')
+  listAllSessions(
+    @Query('status') status?: ExamSessionStatus,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.examService.findAllSessions({ status, page, limit });
+  }
+
+  @Roles(UserRole.OPERATOR)
   @Post('admin/sessions')
   createSession(@Body() data: any) {
     return this.examService.createSession(data);

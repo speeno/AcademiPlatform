@@ -118,13 +118,46 @@ export class ExamService {
   }
 
   /* 관리자 API */
+  async findAllSessions(filter: { status?: ExamSessionStatus; page?: number; limit?: number }) {
+    const { status, page = 1, limit = 50 } = filter;
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (status) where.status = status;
+
+    const [sessions, total] = await Promise.all([
+      this.prisma.examSession.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { examAt: 'desc' },
+        include: { _count: { select: { applications: true } } },
+      }),
+      this.prisma.examSession.count({ where }),
+    ]);
+    return { sessions, total, page, limit };
+  }
+
   async createSession(data: any) {
-    return this.prisma.examSession.create({ data });
+    return this.prisma.examSession.create({ data: this.normalizeSessionData(data) });
   }
 
   async updateSession(id: string, data: any) {
     await this.findSessionById(id);
-    return this.prisma.examSession.update({ where: { id }, data });
+    return this.prisma.examSession.update({ where: { id }, data: this.normalizeSessionData(data) });
+  }
+
+  private normalizeSessionData(data: any) {
+    const dateFields = ['examAt', 'applyStartAt', 'applyEndAt'] as const;
+    const result = { ...data };
+    for (const field of dateFields) {
+      if (typeof result[field] === 'string' && result[field]) {
+        result[field] = new Date(result[field]);
+      }
+    }
+    if (typeof result.fee === 'string') result.fee = Number(result.fee);
+    if (typeof result.capacity === 'string') result.capacity = Number(result.capacity) || null;
+    if (result.basePrice !== undefined && typeof result.basePrice === 'string') result.basePrice = Number(result.basePrice);
+    return result;
   }
 
   async getApplicationsBySession(sessionId: string, page = 1, limit = 50) {
