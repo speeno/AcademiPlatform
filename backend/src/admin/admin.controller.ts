@@ -133,6 +133,27 @@ export class AdminController {
     return this.adminService.deleteBookOffer(id);
   }
 
+  /* 홍보영상 갤러리 관리 */
+  @Get('shorts-gallery')
+  getShortsGallery() {
+    return this.adminService.getShortsGallery();
+  }
+
+  @Post('shorts-gallery')
+  createShortsItem(@Body() data: any) {
+    return this.adminService.createShortsItem(data);
+  }
+
+  @Patch('shorts-gallery/:id')
+  updateShortsItem(@Param('id') id: string, @Body() data: any) {
+    return this.adminService.updateShortsItem(id, data);
+  }
+
+  @Delete('shorts-gallery/:id')
+  deleteShortsItem(@Param('id') id: string) {
+    return this.adminService.deleteShortsItem(id);
+  }
+
   /* 북이오 무료 이용권 캠페인 */
   @Get('vouchers/campaigns')
   getVoucherCampaigns() {

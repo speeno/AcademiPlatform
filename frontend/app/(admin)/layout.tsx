@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
-  MessageSquare, Library, ImageIcon, Link as LinkIcon,
+  MessageSquare, Library, ImageIcon, Link as LinkIcon, Video,
 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 
@@ -48,6 +48,7 @@ const navGroups = [
       { href: '/admin/banner', icon: ImageIcon, label: '히어로 배너' },
       { href: '/admin/intro', icon: FileText, label: '소개 페이지 CMS' },
       { href: '/admin/book-offers', icon: LinkIcon, label: '북이오 링크 관리' },
+      { href: '/admin/shorts', icon: Video, label: '홍보영상 관리' },
       { href: '/admin/settings', icon: Settings, label: '시스템 설정' },
     ],
   },

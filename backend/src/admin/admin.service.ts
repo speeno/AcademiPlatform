@@ -13,6 +13,7 @@ import {
 @Injectable()
 export class AdminService {
   private readonly BOOK_OFFERS_KEY = 'book_offers';
+  private readonly SHORTS_GALLERY_KEY = 'shorts_gallery';
 
   constructor(private prisma: PrismaService) {}
 
@@ -257,6 +258,53 @@ export class AdminService {
     const offers = await this.getBookOffers();
     const next = offers.filter((o: any) => o.id !== id);
     await this.updateSetting(this.BOOK_OFFERS_KEY, JSON.stringify(next));
+    return { deleted: true };
+  }
+
+  /* 홍보영상 갤러리 */
+  async getShortsGallery() {
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: this.SHORTS_GALLERY_KEY },
+    });
+    if (!setting?.value) return [];
+    try {
+      const parsed = JSON.parse(setting.value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async createShortsItem(data: any) {
+    const items = await this.getShortsGallery();
+    const item = {
+      id: randomUUID(),
+      type: data.type ?? 'youtube',
+      videoId: data.videoId ?? '',
+      title: data.title ?? '',
+      thumbnailUrl: data.thumbnailUrl ?? '',
+      linkUrl: data.linkUrl ?? '',
+      isActive: data.isActive !== false,
+      createdAt: new Date().toISOString(),
+    };
+    items.push(item);
+    await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(items));
+    return item;
+  }
+
+  async updateShortsItem(id: string, patch: any) {
+    const items = await this.getShortsGallery();
+    const idx = items.findIndex((o: any) => o.id === id);
+    if (idx < 0) throw new NotFoundException('홍보영상을 찾을 수 없습니다.');
+    items[idx] = { ...items[idx], ...patch, updatedAt: new Date().toISOString() };
+    await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(items));
+    return items[idx];
+  }
+
+  async deleteShortsItem(id: string) {
+    const items = await this.getShortsGallery();
+    const next = items.filter((o: any) => o.id !== id);
+    await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(next));
     return { deleted: true };
   }
 

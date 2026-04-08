@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { Clock, Users, BookOpen, PlayCircle, FileText, ChevronDown, Award } from 'lucide-react';
+import { Clock, Users, BookOpen, PlayCircle, FileText, ChevronDown, Award, Video } from 'lucide-react';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
 import EnrollButton from './EnrollButton';
+import { API_BASE } from '@/lib/api-base';
+import { MainShortsSection } from '@/components/shorts/MainShortsSection';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
 
@@ -47,9 +49,34 @@ const lessonTypeLabel: Record<string, string> = {
   QUIZ:          '퀴즈',
 };
 
+async function getShortsForCourse() {
+  try {
+    const [galleryRes, displayRes] = await Promise.all([
+      fetch(`${API_BASE}/settings/public/shorts_gallery`, { next: { revalidate: 30 } }),
+      fetch(`${API_BASE}/settings/public/shorts_display`, { next: { revalidate: 30 } }),
+    ]);
+    let items: any[] = [];
+    let show = true;
+    if (galleryRes.ok) {
+      const g = await galleryRes.json().catch(() => ({}));
+      items = Array.isArray(g?.value) ? g.value.filter((v: any) => v?.isActive !== false) : [];
+    }
+    if (displayRes.ok) {
+      const d = await displayRes.json().catch(() => ({}));
+      try {
+        const parsed = JSON.parse(d?.value ?? '{}');
+        show = parsed.showOnCourseDetail !== false;
+      } catch {}
+    }
+    return { items, show };
+  } catch {
+    return { items: [], show: true };
+  }
+}
+
 export default async function CourseDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const course = await getCourse(slug);
+  const [course, shortsData] = await Promise.all([getCourse(slug), getShortsForCourse()]);
 
   if (!course) notFound();
 
@@ -226,6 +253,17 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
                   </div>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* 관련 홍보 영상 */}
+          {shortsData.show && shortsData.items.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Video className="w-5 h-5" style={{ color: 'var(--brand-blue)' }} />
+                <h2 className="text-xl font-bold" style={{ color: 'var(--brand-blue)' }}>관련 홍보 영상</h2>
+              </div>
+              <MainShortsSection items={shortsData.items} maxItems={3} />
             </section>
           )}
         </div>

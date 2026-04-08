@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Video } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import type { Metadata } from 'next';
 import { HeroBanner } from '@/components/hero/HeroBanner';
+import { API_BASE } from '@/lib/api-base';
+import { MainShortsSection } from '@/components/shorts/MainShortsSection';
 
 export const metadata: Metadata = {
   title: 'AcademiQ — Learn. Certify. Succeed.',
@@ -42,7 +44,31 @@ const stats = [
   { value: '4.9', label: '2026년 목표 수강 만족도' },
 ];
 
-export default function HomePage() {
+async function getShortsData() {
+  try {
+    const [galleryRes, displayRes] = await Promise.all([
+      fetch(`${API_BASE}/settings/public/shorts_gallery`, { next: { revalidate: 30 } }),
+      fetch(`${API_BASE}/settings/public/shorts_display`, { next: { revalidate: 30 } }),
+    ]);
+    let items: any[] = [];
+    let display = { showOnMain: true, mainMaxItems: 6 };
+    if (galleryRes.ok) {
+      const g = await galleryRes.json().catch(() => ({}));
+      items = Array.isArray(g?.value) ? g.value.filter((v: any) => v?.isActive !== false) : [];
+    }
+    if (displayRes.ok) {
+      const d = await displayRes.json().catch(() => ({}));
+      try { display = { ...display, ...JSON.parse(d?.value ?? '{}') }; } catch {}
+    }
+    return { items, display };
+  } catch {
+    return { items: [], display: { showOnMain: true, mainMaxItems: 6 } };
+  }
+}
+
+export default async function HomePage() {
+  const { items: shortsItems, display: shortsDisplay } = await getShortsData();
+
   return (
     <div>
       {/* Hero 배너 (관리자 설정 가능) */}
@@ -84,6 +110,36 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 홍보영상 캐러셀 */}
+      {shortsDisplay.showOnMain && shortsItems.length > 0 && (
+        <section className="py-16 bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: 'var(--brand-blue-subtle)' }}
+                >
+                  <Video className="w-5 h-5" style={{ color: 'var(--brand-blue)' }} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-gray-900">AI 교육 영상 한눈에 보기</h2>
+                  <p className="text-sm text-gray-500">AI 교육 홍보 영상을 확인하세요</p>
+                </div>
+              </div>
+              <Link
+                href="/shorts"
+                className="text-sm font-medium hover:underline flex items-center gap-1"
+                style={{ color: 'var(--brand-blue)' }}
+              >
+                전체 보기 <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <MainShortsSection items={shortsItems} maxItems={shortsDisplay.mainMaxItems} />
+          </div>
+        </section>
+      )}
 
       {/* 수강 절차 섹션 */}
       <section className="py-20 bg-white">
