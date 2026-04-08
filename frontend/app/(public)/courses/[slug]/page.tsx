@@ -63,10 +63,8 @@ async function getShortsForCourse() {
     }
     if (displayRes.ok) {
       const d = await displayRes.json().catch(() => ({}));
-      try {
-        const parsed = JSON.parse(d?.value ?? '{}');
-        show = parsed.showOnCourseDetail !== false;
-      } catch {}
+      const val = typeof d?.value === 'string' ? (() => { try { return JSON.parse(d.value); } catch { return {}; } })() : (d?.value ?? {});
+      show = val.showOnCourseDetail !== false;
     }
     return { items, show };
   } catch {

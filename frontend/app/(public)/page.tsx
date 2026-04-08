@@ -58,7 +58,11 @@ async function getShortsData() {
     }
     if (displayRes.ok) {
       const d = await displayRes.json().catch(() => ({}));
-      try { display = { ...display, ...JSON.parse(d?.value ?? '{}') }; } catch {}
+      if (d?.value && typeof d.value === 'object') {
+        display = { ...display, ...d.value };
+      } else if (typeof d?.value === 'string') {
+        try { display = { ...display, ...JSON.parse(d.value) }; } catch {}
+      }
     }
     return { items, display };
   } catch {
@@ -136,7 +140,7 @@ export default async function HomePage() {
                 전체 보기 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
-            <MainShortsSection items={shortsItems} maxItems={shortsDisplay.mainMaxItems} />
+            <MainShortsSection items={shortsItems} maxItems={shortsDisplay.mainMaxItems} autoPlay />
           </div>
         </section>
       )}
