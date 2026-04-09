@@ -227,6 +227,7 @@ model User {
   cmsContentAudits   ContentAuditLog[] @relation("ContentAuditActor")
   createdTextbooks    Textbook[]    @relation("TextbookCreator")
   bookVoucherGrants   BookVoucherGrant[]
+  instructorPosts     InstructorPost[]
   auditLogs           AuditLog[]
 
   @@index([email])
@@ -646,7 +647,7 @@ model ExamSession {
 model ExamApplication {
   id              String                @id @default(cuid())
   examSessionId   String
-  userId          String
+  userId          String?
   status          ExamApplicationStatus @default(TEMP_SAVED)
   formJson        Json
   referrerCode    String?
@@ -656,7 +657,7 @@ model ExamApplication {
   updatedAt       DateTime              @updatedAt
 
   examSession     ExamSession @relation(fields: [examSessionId], references: [id])
-  user            User        @relation(fields: [userId], references: [id])
+  user            User?       @relation(fields: [userId], references: [id])
 
   @@index([examSessionId, status])
   @@index([userId])
@@ -897,6 +898,24 @@ model Inquiry {
   user       User          @relation(fields: [userId], references: [id])
 
   @@index([userId, status])
+}
+
+// ─── 강사 게시판 ─────────────────────────────────────────────────────────────
+
+model InstructorPost {
+  id          String   @id @default(cuid())
+  authorId    String
+  title       String
+  content     String
+  isPinned    Boolean  @default(false)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@index([isPinned, createdAt])
 }
 
 // ─── 시스템 설정 / 감사 로그 ──────────────────────────────────────────────────

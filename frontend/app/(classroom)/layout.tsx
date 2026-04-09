@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
-  BookOpen, ClipboardList, CreditCard, User, Library, MessageSquare,
+  BookOpen, ClipboardList, CreditCard, User, Library, MessageSquare, FileText,
 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 import { API_BASE } from '@/lib/api-base';
@@ -25,6 +25,7 @@ const baseNavItems: NavItem[] = [
 const instructorNavItems: NavItem[] = [
   { href: '/classroom/instructor/cms', icon: BookOpen, label: '강사 CMS' },
   { href: '/classroom/instructor/questions', icon: MessageSquare, label: '강사 질문함' },
+  { href: '/classroom/instructor/board', icon: FileText, label: '강사 게시판' },
 ];
 
 export default function ClassroomLayout({ children }: { children: React.ReactNode }) {

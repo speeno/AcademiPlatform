@@ -41,7 +41,7 @@ export class ExamService {
     return session;
   }
 
-  async createApplication(sessionId: string, userId: string, formJson: object) {
+  async createApplication(sessionId: string, userId: string | null, formJson: object) {
     const session = await this.findSessionById(sessionId);
 
     if (session.status !== ExamSessionStatus.OPEN) {
@@ -64,15 +64,17 @@ export class ExamService {
       if (count >= session.capacity) throw new BadRequestException('정원이 초과되었습니다.');
     }
 
-    // 중복 접수 확인
-    const existing = await this.prisma.examApplication.findFirst({
-      where: {
-        examSessionId: sessionId,
-        userId,
-        status: { notIn: [ExamApplicationStatus.CANCELLED, ExamApplicationStatus.REFUNDED] },
-      },
-    });
-    if (existing) throw new BadRequestException('이미 접수하셨습니다.');
+    // 중복 접수 확인 (로그인 사용자만 userId 기반 체크)
+    if (userId) {
+      const existing = await this.prisma.examApplication.findFirst({
+        where: {
+          examSessionId: sessionId,
+          userId,
+          status: { notIn: [ExamApplicationStatus.CANCELLED, ExamApplicationStatus.REFUNDED] },
+        },
+      });
+      if (existing) throw new BadRequestException('이미 접수하셨습니다.');
+    }
 
     const form = formJson as any;
     const referrerCode = typeof form?.referrerCode === 'string' ? form.referrerCode || null : null;
@@ -83,10 +85,8 @@ export class ExamService {
         userId,
         formJson: formJson as any,
         referrerCode,
-        status: session.fee > 0
-          ? ExamApplicationStatus.PAYMENT_PENDING
-          : ExamApplicationStatus.APPLIED,
-        paymentStatus: session.fee > 0 ? PaymentStatus.PENDING : PaymentStatus.PAID,
+        status: ExamApplicationStatus.APPLIED,
+        paymentStatus: PaymentStatus.PAID,
       },
     });
   }

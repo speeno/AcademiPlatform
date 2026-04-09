@@ -4,12 +4,25 @@ import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Loader2, Pin } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
 import { buildAuthHeader } from '@/lib/auth';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
 
-interface Notice { id: string; title: string; isPinned: boolean; isPublished: boolean; createdAt: string; }
-interface ModalState { open: boolean; mode: 'create' | 'edit'; data?: Notice; }
+interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  isPinned: boolean;
+  isPublished: boolean;
+  createdAt: string;
+}
+
+interface ModalState {
+  open: boolean;
+  mode: 'create' | 'edit';
+  data?: Notice;
+}
 
 export default function AdminNoticesPage() {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -21,15 +34,37 @@ export default function AdminNoticesPage() {
   const load = async () => {
     try {
       const res = await fetch(`${API}/admin/notices`, { headers: buildAuthHeader(false) });
-      if (res.ok) { const d = await res.json(); setNotices(d.notices ?? d); }
+      if (res.ok) {
+        const d = await res.json();
+        setNotices(d.notices ?? d);
+      }
     } catch { /* ignore */ }
     finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setForm({ title: '', content: '', isPinned: false, isPublished: true }); setModal({ open: true, mode: 'create' }); };
-  const openEdit = (n: Notice) => { setForm({ title: n.title, content: '', isPinned: n.isPinned, isPublished: n.isPublished }); setModal({ open: true, mode: 'edit', data: n }); };
+  const openCreate = () => {
+    setForm({ title: '', content: '', isPinned: false, isPublished: true });
+    setModal({ open: true, mode: 'create' });
+  };
+
+  const openEdit = async (n: Notice) => {
+    let content = n.content ?? '';
+    if (!content) {
+      try {
+        const res = await fetch(`${API}/admin/notices`, { headers: buildAuthHeader(false) });
+        if (res.ok) {
+          const d = await res.json();
+          const list: Notice[] = d.notices ?? d;
+          const found = list.find((item) => item.id === n.id);
+          if (found) content = found.content ?? '';
+        }
+      } catch { /* ignore */ }
+    }
+    setForm({ title: n.title, content, isPinned: n.isPinned, isPublished: n.isPublished });
+    setModal({ open: true, mode: 'edit', data: n });
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -100,10 +135,9 @@ export default function AdminNoticesPage() {
         </table>
       </div>
 
-      {/* 모달 */}
       {modal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold mb-5">{modal.mode === 'create' ? '공지 등록' : '공지 수정'}</h2>
             <div className="space-y-4">
               <div>
@@ -112,7 +146,10 @@ export default function AdminNoticesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">내용</label>
-                <textarea value={form.content} onChange={(e) => setForm((p) => ({ ...p, content: e.target.value }))} rows={5} className="w-full border rounded-lg px-3 py-2 text-sm resize-none" />
+                <HtmlWysiwygEditor
+                  value={form.content}
+                  onChange={(html) => setForm((p) => ({ ...p, content: html }))}
+                />
               </div>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">

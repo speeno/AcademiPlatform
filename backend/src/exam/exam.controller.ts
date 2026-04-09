@@ -28,14 +28,14 @@ export class ExamController {
     return this.examService.findSessionById(id);
   }
 
-  /* 인증 필요 */
+  @Public()
   @Post('sessions/:id/apply')
   createApplication(
     @Param('id') sessionId: string,
     @CurrentUser() user: any,
     @Body() formJson: object,
   ) {
-    return this.examService.createApplication(sessionId, user.id, formJson);
+    return this.examService.createApplication(sessionId, user?.id ?? null, formJson);
   }
 
   @Get('my/applications')

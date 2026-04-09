@@ -23,6 +23,8 @@ import { NotifyModule } from './notify/notify.module';
 import { AdminModule } from './admin/admin.module';
 import { CmsModule } from './cms/cms.module';
 import { QnaModule } from './qna/qna.module';
+import { NoticesModule } from './notices/notices.module';
+import { InstructorPostsModule } from './instructor-posts/instructor-posts.module';
 
 @Module({
   controllers: [AppController],
@@ -42,6 +44,8 @@ import { QnaModule } from './qna/qna.module';
     QnaModule,
     AdminModule,
     CmsModule,
+    NoticesModule,
+    InstructorPostsModule,
   ],
   providers: [
     AppService,
