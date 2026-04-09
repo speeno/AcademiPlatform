@@ -6,7 +6,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import type { Metadata } from 'next';
 
 const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; roles: string[] }> = {
-  'AI 프롬프트 엔지니어': {
+  'AI 프롬프트 엔지니어링 전문가': {
     subtitle: 'AI 프롬프트 엔지니어',
     coreWork: '취업 및 AI 모델에 적합한 프롬프트 설계 및 최적화',
     roles: [
@@ -15,7 +15,7 @@ const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; r
       '데이터 분석 및 보고서 자동화 프롬프트 개발',
     ],
   },
-  'AI 교육 지도사': {
+  '인공지능 교육 지도사': {
     subtitle: 'AI 교육지도사',
     coreWork: 'AI 활용 교육과 지도 및 컨설팅',
     roles: [
@@ -23,6 +23,15 @@ const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; r
       '교재·커리큘럼 개발 및 강의 진행',
       '기업 직원 AI 역량 강화 교육 및 AI 도입 컨설팅',
       '일반인 대상 AI 리터러시(활용법, 윤리, 안전) 교육',
+    ],
+  },
+  'AI 크리에이터 전문가': {
+    subtitle: 'AI 크리에이터 전문가',
+    coreWork: 'AI 도구를 활용한 콘텐츠 기획·제작 및 크리에이티브 업무',
+    roles: [
+      'AI 기반 이미지·영상·텍스트 콘텐츠 제작',
+      '마케팅·브랜딩 콘텐츠 자동화 설계',
+      '크리에이티브 워크플로우에 AI 도구 통합',
     ],
   },
 };
