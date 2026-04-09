@@ -649,6 +649,7 @@ model ExamApplication {
   userId          String
   status          ExamApplicationStatus @default(TEMP_SAVED)
   formJson        Json
+  referrerCode    String?
   paymentId       String?
   paymentStatus   PaymentStatus         @default(PENDING)
   appliedAt       DateTime              @default(now())

@@ -14,6 +14,7 @@ import {
 export class AdminService {
   private readonly BOOK_OFFERS_KEY = 'book_offers';
   private readonly SHORTS_GALLERY_KEY = 'shorts_gallery';
+  private readonly REFERRER_GROUPS_KEY = 'referrer_groups';
 
   constructor(private prisma: PrismaService) {}
 
@@ -305,6 +306,50 @@ export class AdminService {
     const items = await this.getShortsGallery();
     const next = items.filter((o: any) => o.id !== id);
     await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(next));
+    return { deleted: true };
+  }
+
+  /* 권유자 그룹 관리 */
+  async getReferrerGroups() {
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: this.REFERRER_GROUPS_KEY },
+    });
+    if (!setting?.value) return [];
+    try {
+      const parsed = JSON.parse(setting.value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async createReferrerGroup(data: any) {
+    const groups = await this.getReferrerGroups();
+    const group = {
+      id: randomUUID(),
+      groupName: data.groupName ?? '',
+      members: Array.isArray(data.members) ? data.members : [],
+      isActive: data.isActive !== false,
+      createdAt: new Date().toISOString(),
+    };
+    groups.push(group);
+    await this.updateSetting(this.REFERRER_GROUPS_KEY, JSON.stringify(groups));
+    return group;
+  }
+
+  async updateReferrerGroup(id: string, patch: any) {
+    const groups = await this.getReferrerGroups();
+    const idx = groups.findIndex((g: any) => g.id === id);
+    if (idx < 0) throw new NotFoundException('권유자 그룹을 찾을 수 없습니다.');
+    groups[idx] = { ...groups[idx], ...patch, updatedAt: new Date().toISOString() };
+    await this.updateSetting(this.REFERRER_GROUPS_KEY, JSON.stringify(groups));
+    return groups[idx];
+  }
+
+  async deleteReferrerGroup(id: string) {
+    const groups = await this.getReferrerGroups();
+    const next = groups.filter((g: any) => g.id !== id);
+    await this.updateSetting(this.REFERRER_GROUPS_KEY, JSON.stringify(next));
     return { deleted: true };
   }
 

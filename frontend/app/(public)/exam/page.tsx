@@ -1,9 +1,31 @@
 import Link from 'next/link';
-import { Calendar, MapPin, Users, ArrowRight, ClipboardList } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowRight, ClipboardList, Briefcase, CheckCircle2 } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import type { Metadata } from 'next';
+
+const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; roles: string[] }> = {
+  'AI 프롬프트 엔지니어': {
+    subtitle: 'AI 프롬프트 엔지니어',
+    coreWork: '취업 및 AI 모델에 적합한 프롬프트 설계 및 최적화',
+    roles: [
+      '기업/교육기관에서 AI 활용 가이드 제작',
+      '챗봇, 자동화 시스템의 대화 시나리오 설계',
+      '데이터 분석 및 보고서 자동화 프롬프트 개발',
+    ],
+  },
+  'AI 교육 지도사': {
+    subtitle: 'AI 교육지도사',
+    coreWork: 'AI 활용 교육과 지도 및 컨설팅',
+    roles: [
+      '학교, 학원, 기업에서 AI 활용 교육 프로그램 운영',
+      '교재·커리큘럼 개발 및 강의 진행',
+      '기업 직원 AI 역량 강화 교육 및 AI 도입 컨설팅',
+      '일반인 대상 AI 리터러시(활용법, 윤리, 안전) 교육',
+    ],
+  },
+};
 
 export const metadata: Metadata = {
   title: '시험 접수',
@@ -118,6 +140,50 @@ export default async function ExamPage() {
           )}
         </div>
       </section>
+
+      {/* 자격 소개 섹션 */}
+      {sessions && sessions.length > 0 && (() => {
+        const qualNames: string[] = [...new Set<string>(sessions.map((s: any) => s.qualificationName as string))];
+        const matched = qualNames.filter((name: string) => QUALIFICATION_INFO[name]);
+        if (matched.length === 0) return null;
+        return (
+          <section className="py-12 bg-gray-50 border-t">
+            <div className="max-w-5xl mx-auto px-4">
+              <h2 className="text-2xl font-extrabold mb-8 text-center" style={{ color: 'var(--brand-blue)' }}>
+                자격 소개
+              </h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                {matched.map((name) => {
+                  const info = QUALIFICATION_INFO[name];
+                  return (
+                    <BrandCard key={name} padding="lg">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">{info.subtitle}</h3>
+                      <div className="flex items-start gap-2 mb-4">
+                        <Briefcase className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand-orange)' }} />
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">업무 핵심</p>
+                          <p className="text-sm text-gray-800 font-medium">{info.coreWork}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-2">가능한 역할</p>
+                        <ul className="space-y-1.5">
+                          {info.roles.map((role) => (
+                            <li key={role} className="flex items-start gap-2 text-sm text-gray-700">
+                              <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-green-500" />
+                              {role}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </BrandCard>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 }

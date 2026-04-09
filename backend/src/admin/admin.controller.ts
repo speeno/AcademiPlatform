@@ -154,6 +154,27 @@ export class AdminController {
     return this.adminService.deleteShortsItem(id);
   }
 
+  /* 권유자 그룹 관리 */
+  @Get('referrer-groups')
+  getReferrerGroups() {
+    return this.adminService.getReferrerGroups();
+  }
+
+  @Post('referrer-groups')
+  createReferrerGroup(@Body() data: any) {
+    return this.adminService.createReferrerGroup(data);
+  }
+
+  @Patch('referrer-groups/:id')
+  updateReferrerGroup(@Param('id') id: string, @Body() data: any) {
+    return this.adminService.updateReferrerGroup(id, data);
+  }
+
+  @Delete('referrer-groups/:id')
+  deleteReferrerGroup(@Param('id') id: string) {
+    return this.adminService.deleteReferrerGroup(id);
+  }
+
   /* 북이오 무료 이용권 캠페인 */
   @Get('vouchers/campaigns')
   getVoucherCampaigns() {

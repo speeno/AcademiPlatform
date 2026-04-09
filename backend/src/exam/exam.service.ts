@@ -74,11 +74,15 @@ export class ExamService {
     });
     if (existing) throw new BadRequestException('이미 접수하셨습니다.');
 
+    const form = formJson as any;
+    const referrerCode = typeof form?.referrerCode === 'string' ? form.referrerCode || null : null;
+
     return this.prisma.examApplication.create({
       data: {
         examSessionId: sessionId,
         userId,
         formJson: formJson as any,
+        referrerCode,
         status: session.fee > 0
           ? ExamApplicationStatus.PAYMENT_PENDING
           : ExamApplicationStatus.APPLIED,

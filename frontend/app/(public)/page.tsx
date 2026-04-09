@@ -128,8 +128,8 @@ export default async function HomePage() {
                   <Video className="w-5 h-5" style={{ color: 'var(--brand-blue)' }} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-extrabold text-gray-900">AI 교육 영상 한눈에 보기</h2>
-                  <p className="text-sm text-gray-500">AI 교육 홍보 영상을 확인하세요</p>
+                  <h2 className="text-xl font-extrabold text-gray-900">AI Tip 영상</h2>
+                  <p className="text-sm text-gray-500">AI 활용 팁 영상을 확인하세요</p>
                 </div>
               </div>
               <Link

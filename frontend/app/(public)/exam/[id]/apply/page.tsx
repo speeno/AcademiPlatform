@@ -8,6 +8,7 @@ import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { buildAuthHeader } from '@/lib/auth';
+import { API_BASE } from '@/lib/api-base';
 
 const FORM_FIELDS = [
   { key: 'applicantName', label: '신청자 성명', required: true, type: 'text', placeholder: '홍길동' },
@@ -19,6 +20,18 @@ const FORM_FIELDS = [
   { key: 'occupation', label: '직업/소속', required: false, type: 'text', placeholder: '(주)회사명 또는 직업' },
   { key: 'experience', label: 'AI 관련 경력 (년)', required: false, type: 'number', placeholder: '0' },
 ];
+
+interface ReferrerMember {
+  code: string;
+  label: string;
+}
+
+interface ReferrerGroup {
+  id: string;
+  groupName: string;
+  members: ReferrerMember[];
+  isActive: boolean;
+}
 
 export default function ExamApplyPage() {
   const router = useRouter();
@@ -32,20 +45,37 @@ export default function ExamApplyPage() {
   const [fee, setFee] = useState(0);
   const [sessionName, setSessionName] = useState('시험 접수');
 
+  const [referrerGroups, setReferrerGroups] = useState<ReferrerGroup[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [selectedMemberCode, setSelectedMemberCode] = useState('');
+
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exam/sessions/${sessionId}`);
+        const res = await fetch(`${API_BASE}/exam/sessions/${sessionId}`);
         if (!res.ok) return;
         const data = await res.json();
         setFee(Number(data.fee) || 0);
         setSessionName(`${data.qualificationName ?? '시험'} ${data.roundName ?? ''}`.trim());
-      } catch {
-        // ignore
-      }
+      } catch {}
     };
+
+    const fetchReferrerGroups = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/settings/public/referrer_groups`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const groups = Array.isArray(data?.value) ? data.value : [];
+        setReferrerGroups(groups.filter((g: ReferrerGroup) => g.isActive !== false));
+      } catch {}
+    };
+
     fetchSession();
+    fetchReferrerGroups();
   }, [sessionId]);
+
+  const selectedGroup = referrerGroups.find((g) => g.id === selectedGroupId);
+  const selectedMember = selectedGroup?.members.find((m) => m.code === selectedMemberCode);
 
   const handleFormChange = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -63,10 +93,14 @@ export default function ExamApplyPage() {
   const handleSubmitApplication = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exam/sessions/${sessionId}/apply`, {
+      const body = {
+        ...formData,
+        ...(selectedMemberCode ? { referrerCode: selectedMemberCode } : {}),
+      };
+      const res = await fetch(`${API_BASE}/exam/sessions/${sessionId}/apply`, {
         method: 'POST',
         headers: buildAuthHeader(),
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? '접수에 실패했습니다.');
@@ -111,7 +145,6 @@ export default function ExamApplyPage() {
   return (
     <div className="min-h-screen bg-hero-gradient py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        {/* 진행 단계 표시 */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {['접수 정보', '접수 확인'].map((label, i) => (
             <div key={label} className="flex items-center gap-2">
@@ -156,6 +189,39 @@ export default function ExamApplyPage() {
                 </div>
               ))}
 
+              {referrerGroups.length > 0 && (
+                <div className="rounded-lg border bg-gray-50 p-4 space-y-3">
+                  <label className="text-sm font-medium text-gray-700 block">
+                    권유자 <span className="text-gray-400 font-normal">(선택사항)</span>
+                  </label>
+                  <select
+                    className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                    value={selectedGroupId}
+                    onChange={(e) => {
+                      setSelectedGroupId(e.target.value);
+                      setSelectedMemberCode('');
+                    }}
+                  >
+                    <option value="">없음</option>
+                    {referrerGroups.map((g) => (
+                      <option key={g.id} value={g.id}>{g.groupName}</option>
+                    ))}
+                  </select>
+                  {selectedGroup && selectedGroup.members.length > 0 && (
+                    <select
+                      className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                      value={selectedMemberCode}
+                      onChange={(e) => setSelectedMemberCode(e.target.value)}
+                    >
+                      <option value="">선택하세요</option>
+                      {selectedGroup.members.map((m) => (
+                        <option key={m.code} value={m.code}>{m.label}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-start gap-3 pt-3 border-t border-border">
                 <input
                   type="checkbox"
@@ -192,6 +258,12 @@ export default function ExamApplyPage() {
                     {fee.toLocaleString()}원
                   </span>
                 </div>
+                {selectedMember && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">권유자</span>
+                    <span className="font-medium">{selectedMember.label}</span>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">

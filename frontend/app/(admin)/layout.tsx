@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
-  MessageSquare, Library, ImageIcon, Link as LinkIcon, Video,
+  MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck,
 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 
@@ -24,6 +24,7 @@ const navGroups = [
     label: '시험 & 결제',
     items: [
       { href: '/admin/exam', icon: ClipboardList, label: '시험 접수 관리' },
+      { href: '/admin/referrers', icon: UserCheck, label: '권유자 관리' },
       { href: '/admin/payments', icon: CreditCard, label: '결제 관리' },
       { href: '/admin/vouchers', icon: CreditCard, label: '무료 이용권 관리' },
     ],
