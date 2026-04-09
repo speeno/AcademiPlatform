@@ -58,6 +58,63 @@ async function main() {
     console.log('Created shorts display settings.');
   }
 
+  // 자격 소개 시드
+  const qualIntrosKey = 'qualification_intros';
+  const existingQualIntros = await prisma.systemSetting.findUnique({ where: { key: qualIntrosKey } });
+  if (!existingQualIntros) {
+    const qualIntrosData = [
+      {
+        id: crypto.randomUUID(),
+        keywords: ['프롬프트', '엔지니어'],
+        subtitle: 'AI 프롬프트 엔지니어',
+        coreWork: '취업 및 AI 모델에 적합한 프롬프트 설계 및 최적화',
+        roles: [
+          '기업/교육기관에서 AI 활용 가이드 제작',
+          '챗봇, 자동화 시스템의 대화 시나리오 설계',
+          '데이터 분석 및 보고서 자동화 프롬프트 개발',
+        ],
+        isActive: true,
+        order: 0,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: crypto.randomUUID(),
+        keywords: ['교육', '지도'],
+        subtitle: 'AI 교육지도사',
+        coreWork: 'AI 활용 교육과 지도 및 컨설팅',
+        roles: [
+          '학교, 학원, 기업에서 AI 활용 교육 프로그램 운영',
+          '교재·커리큘럼 개발 및 강의 진행',
+          '기업 직원 AI 역량 강화 교육 및 AI 도입 컨설팅',
+          '일반인 대상 AI 리터러시(활용법, 윤리, 안전) 교육',
+        ],
+        isActive: true,
+        order: 1,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: crypto.randomUUID(),
+        keywords: ['크리에이터'],
+        subtitle: 'AI 크리에이터 전문가',
+        coreWork: 'AI 도구를 활용한 콘텐츠 기획·제작 및 크리에이티브 업무',
+        roles: [
+          'AI 기반 이미지·영상·텍스트 콘텐츠 제작',
+          '마케팅·브랜딩 콘텐츠 자동화 설계',
+          '크리에이티브 워크플로우에 AI 도구 통합',
+        ],
+        isActive: true,
+        order: 2,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    await prisma.systemSetting.create({
+      data: { key: qualIntrosKey, value: JSON.stringify(qualIntrosData) },
+    });
+    console.log(`Created qualification intros: ${qualIntrosData.length} items`);
+  } else {
+    console.log('Qualification intros already exists, skipping.');
+  }
+
   console.log('\nSeeding complete.');
 }
 
