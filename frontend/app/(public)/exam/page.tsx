@@ -72,6 +72,11 @@ async function getExamSessions() {
 export default async function ExamPage() {
   const { sessions } = await getExamSessions();
 
+  const qualNames: string[] = Array.isArray(sessions) && sessions.length > 0
+    ? [...new Set<string>(sessions.map((s: any) => s.qualificationName as string))]
+    : [];
+  const matchedQualifications = qualNames.filter((name) => QUALIFICATION_INFO[name]);
+
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
@@ -150,49 +155,43 @@ export default async function ExamPage() {
         </div>
       </section>
 
-      {/* 자격 소개 섹션 */}
-      {sessions && sessions.length > 0 && (() => {
-        const qualNames: string[] = [...new Set<string>(sessions.map((s: any) => s.qualificationName as string))];
-        const matched = qualNames.filter((name: string) => QUALIFICATION_INFO[name]);
-        if (matched.length === 0) return null;
-        return (
-          <section className="py-12 bg-gray-50 border-t">
-            <div className="max-w-5xl mx-auto px-4">
-              <h2 className="text-2xl font-extrabold mb-8 text-center" style={{ color: 'var(--brand-blue)' }}>
-                자격 소개
-              </h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                {matched.map((name) => {
-                  const info = QUALIFICATION_INFO[name];
-                  return (
-                    <BrandCard key={name} padding="lg">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">{info.subtitle}</h3>
-                      <div className="flex items-start gap-2 mb-4">
-                        <Briefcase className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand-orange)' }} />
-                        <div>
-                          <p className="text-xs font-medium text-gray-500">업무 핵심</p>
-                          <p className="text-sm text-gray-800 font-medium">{info.coreWork}</p>
-                        </div>
-                      </div>
+      {matchedQualifications.length > 0 && (
+        <section className="py-12 bg-gray-50 border-t">
+          <div className="max-w-5xl mx-auto px-4">
+            <h2 className="text-2xl font-extrabold mb-8 text-center" style={{ color: 'var(--brand-blue)' }}>
+              자격 소개
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {matchedQualifications.map((name) => {
+                const info = QUALIFICATION_INFO[name];
+                return (
+                  <BrandCard key={name} padding="lg">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{info.subtitle}</h3>
+                    <div className="flex items-start gap-2 mb-4">
+                      <Briefcase className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand-orange)' }} />
                       <div>
-                        <p className="text-xs font-medium text-gray-500 mb-2">가능한 역할</p>
-                        <ul className="space-y-1.5">
-                          {info.roles.map((role) => (
-                            <li key={role} className="flex items-start gap-2 text-sm text-gray-700">
-                              <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-green-500" />
-                              {role}
-                            </li>
-                          ))}
-                        </ul>
+                        <p className="text-xs font-medium text-gray-500">업무 핵심</p>
+                        <p className="text-sm text-gray-800 font-medium">{info.coreWork}</p>
                       </div>
-                    </BrandCard>
-                  );
-                })}
-              </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-2">가능한 역할</p>
+                      <ul className="space-y-1.5">
+                        {info.roles.map((role) => (
+                          <li key={role} className="flex items-start gap-2 text-sm text-gray-700">
+                            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-green-500" />
+                            {role}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </BrandCard>
+                );
+              })}
             </div>
-          </section>
-        );
-      })()}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
