@@ -14,7 +14,7 @@ const footerLinks = {
     { label: '과정 목록', href: '/courses' },
     { label: '수강 신청', href: '/courses#enroll' },
     { label: '라이브/설명회', href: '/live' },
-    { label: '홍보영상', href: '/shorts' },
+    { label: 'AI Tip 영상', href: '/shorts' },
     { label: '온라인 교재', href: '/textbooks' },
     { label: '교재 별도 구매', href: '/books' },
   ],

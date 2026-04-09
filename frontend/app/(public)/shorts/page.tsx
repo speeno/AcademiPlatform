@@ -4,8 +4,8 @@ import { API_BASE } from '@/lib/api-base';
 import { ShortsGalleryClient } from './ShortsGalleryClient';
 
 export const metadata: Metadata = {
-  title: 'AI 교육 홍보영상 | AcademiQ',
-  description: 'AcademiQ AI 교육 홍보 영상을 한눈에 확인하세요.',
+  title: 'AI Tip 영상 | AcademiQ',
+  description: 'AI 활용 팁 영상을 한눈에 확인하세요.',
 };
 
 async function getShortsItems() {
@@ -33,13 +33,13 @@ export default async function ShortsPage() {
             style={{ borderColor: 'var(--brand-blue)', color: 'var(--brand-blue)', background: 'var(--brand-blue-subtle)' }}
           >
             <Video className="w-3.5 h-3.5" />
-            <span>홍보영상</span>
+            <span>AI Tip 영상</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">
-            AI 교육 <span style={{ color: 'var(--brand-blue)' }}>홍보 영상</span>
+            AI <span style={{ color: 'var(--brand-blue)' }}>Tip 영상</span>
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            AI 자격증 교육과 관련된 다양한 홍보 영상을 확인하세요.
+            AI 활용 팁 영상을 확인하세요.
           </p>
         </div>
       </section>
@@ -48,7 +48,7 @@ export default async function ShortsPage() {
         <div className="max-w-6xl mx-auto px-4">
           {items.length === 0 ? (
             <div className="rounded-xl border bg-white p-10 text-center text-gray-500">
-              현재 등록된 홍보영상이 없습니다.
+              현재 등록된 영상이 없습니다.
             </div>
           ) : (
             <ShortsGalleryClient items={items} />

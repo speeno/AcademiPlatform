@@ -13,7 +13,7 @@ const navItems = [
   { label: '교육과정', href: '/courses' },
   { label: '시험접수', href: '/exam' },
   { label: '라이브/설명회', href: '/live' },
-  { label: '홍보영상', href: '/shorts' },
+  { label: 'AI Tip 영상', href: '/shorts' },
   { label: '공지사항', href: '/notices' },
   { label: 'FAQ', href: '/faq' },
 ];
