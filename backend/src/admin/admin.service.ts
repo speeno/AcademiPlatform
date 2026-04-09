@@ -15,6 +15,7 @@ export class AdminService {
   private readonly BOOK_OFFERS_KEY = 'book_offers';
   private readonly SHORTS_GALLERY_KEY = 'shorts_gallery';
   private readonly REFERRER_GROUPS_KEY = 'referrer_groups';
+  private readonly QUALIFICATION_INTROS_KEY = 'qualification_intros';
 
   constructor(private prisma: PrismaService) {}
 
@@ -350,6 +351,53 @@ export class AdminService {
     const groups = await this.getReferrerGroups();
     const next = groups.filter((g: any) => g.id !== id);
     await this.updateSetting(this.REFERRER_GROUPS_KEY, JSON.stringify(next));
+    return { deleted: true };
+  }
+
+  /* 자격 소개 관리 */
+  async getQualificationIntros() {
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: this.QUALIFICATION_INTROS_KEY },
+    });
+    if (!setting?.value) return [];
+    try {
+      const parsed = JSON.parse(setting.value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async createQualificationIntro(data: any) {
+    const items = await this.getQualificationIntros();
+    const item = {
+      id: randomUUID(),
+      keywords: Array.isArray(data.keywords) ? data.keywords : [],
+      subtitle: data.subtitle ?? '',
+      coreWork: data.coreWork ?? '',
+      roles: Array.isArray(data.roles) ? data.roles : [],
+      isActive: data.isActive !== false,
+      order: typeof data.order === 'number' ? data.order : items.length,
+      createdAt: new Date().toISOString(),
+    };
+    items.push(item);
+    await this.updateSetting(this.QUALIFICATION_INTROS_KEY, JSON.stringify(items));
+    return item;
+  }
+
+  async updateQualificationIntro(id: string, patch: any) {
+    const items = await this.getQualificationIntros();
+    const idx = items.findIndex((i: any) => i.id === id);
+    if (idx < 0) throw new NotFoundException('자격 소개 항목을 찾을 수 없습니다.');
+    items[idx] = { ...items[idx], ...patch, updatedAt: new Date().toISOString() };
+    await this.updateSetting(this.QUALIFICATION_INTROS_KEY, JSON.stringify(items));
+    return items[idx];
+  }
+
+  async deleteQualificationIntro(id: string) {
+    const items = await this.getQualificationIntros();
+    const next = items.filter((i: any) => i.id !== id);
+    await this.updateSetting(this.QUALIFICATION_INTROS_KEY, JSON.stringify(next));
     return { deleted: true };
   }
 

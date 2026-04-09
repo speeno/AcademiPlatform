@@ -175,6 +175,27 @@ export class AdminController {
     return this.adminService.deleteReferrerGroup(id);
   }
 
+  /* 자격 소개 관리 */
+  @Get('qualification-intros')
+  getQualificationIntros() {
+    return this.adminService.getQualificationIntros();
+  }
+
+  @Post('qualification-intros')
+  createQualificationIntro(@Body() data: any) {
+    return this.adminService.createQualificationIntro(data);
+  }
+
+  @Patch('qualification-intros/:id')
+  updateQualificationIntro(@Param('id') id: string, @Body() data: any) {
+    return this.adminService.updateQualificationIntro(id, data);
+  }
+
+  @Delete('qualification-intros/:id')
+  deleteQualificationIntro(@Param('id') id: string) {
+    return this.adminService.deleteQualificationIntro(id);
+  }
+
   /* 북이오 무료 이용권 캠페인 */
   @Get('vouchers/campaigns')
   getVoucherCampaigns() {

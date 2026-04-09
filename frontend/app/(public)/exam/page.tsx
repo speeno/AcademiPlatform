@@ -10,9 +10,11 @@ interface QualificationEntry {
   subtitle: string;
   coreWork: string;
   roles: string[];
+  isActive?: boolean;
+  order?: number;
 }
 
-const QUALIFICATIONS: QualificationEntry[] = [
+const DEFAULT_QUALIFICATIONS: QualificationEntry[] = [
   {
     keywords: ['프롬프트', '엔지니어'],
     subtitle: 'AI 프롬프트 엔지니어',
@@ -45,10 +47,6 @@ const QUALIFICATIONS: QualificationEntry[] = [
     ],
   },
 ];
-
-function findQualInfo(name: string): QualificationEntry | undefined {
-  return QUALIFICATIONS.find((q) => q.keywords.every((kw) => name.includes(kw)));
-}
 
 export const metadata: Metadata = {
   title: '시험 접수',
@@ -83,14 +81,39 @@ async function getExamSessions() {
   }
 }
 
+async function getQualificationIntros(): Promise<QualificationEntry[]> {
+  try {
+    const res = await fetch(
+      `${getApiBase()}/settings/public/qualification_intros`,
+      { next: { revalidate: 60 } },
+    );
+    if (!res.ok) return DEFAULT_QUALIFICATIONS;
+    const data = await res.json();
+    const items = Array.isArray(data?.value) ? data.value : [];
+    if (items.length === 0) return DEFAULT_QUALIFICATIONS;
+    return items
+      .filter((i: any) => i.isActive !== false)
+      .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+  } catch {
+    return DEFAULT_QUALIFICATIONS;
+  }
+}
+
+function findQualInfo(qualifications: QualificationEntry[], name: string): QualificationEntry | undefined {
+  return qualifications.find((q) => q.keywords.every((kw) => name.includes(kw)));
+}
+
 export default async function ExamPage() {
-  const { sessions } = await getExamSessions();
+  const [{ sessions }, qualifications] = await Promise.all([
+    getExamSessions(),
+    getQualificationIntros(),
+  ]);
 
   const qualNames: string[] = Array.isArray(sessions) && sessions.length > 0
     ? [...new Set<string>(sessions.map((s: any) => s.qualificationName as string))]
     : [];
   const matchedQualifications = qualNames
-    .map((name) => ({ name, info: findQualInfo(name) }))
+    .map((name) => ({ name, info: findQualInfo(qualifications, name) }))
     .filter((m): m is { name: string; info: QualificationEntry } => !!m.info);
 
   return (
