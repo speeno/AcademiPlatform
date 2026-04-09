@@ -5,8 +5,16 @@ import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import type { Metadata } from 'next';
 
-const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; roles: string[] }> = {
-  'AI 프롬프트 엔지니어링 전문가': {
+interface QualificationEntry {
+  keywords: string[];
+  subtitle: string;
+  coreWork: string;
+  roles: string[];
+}
+
+const QUALIFICATIONS: QualificationEntry[] = [
+  {
+    keywords: ['프롬프트', '엔지니어'],
     subtitle: 'AI 프롬프트 엔지니어',
     coreWork: '취업 및 AI 모델에 적합한 프롬프트 설계 및 최적화',
     roles: [
@@ -15,7 +23,8 @@ const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; r
       '데이터 분석 및 보고서 자동화 프롬프트 개발',
     ],
   },
-  '인공지능 교육 지도사': {
+  {
+    keywords: ['교육', '지도'],
     subtitle: 'AI 교육지도사',
     coreWork: 'AI 활용 교육과 지도 및 컨설팅',
     roles: [
@@ -25,7 +34,8 @@ const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; r
       '일반인 대상 AI 리터러시(활용법, 윤리, 안전) 교육',
     ],
   },
-  'AI 크리에이터 전문가': {
+  {
+    keywords: ['크리에이터'],
     subtitle: 'AI 크리에이터 전문가',
     coreWork: 'AI 도구를 활용한 콘텐츠 기획·제작 및 크리에이티브 업무',
     roles: [
@@ -34,7 +44,11 @@ const QUALIFICATION_INFO: Record<string, { subtitle: string; coreWork: string; r
       '크리에이티브 워크플로우에 AI 도구 통합',
     ],
   },
-};
+];
+
+function findQualInfo(name: string): QualificationEntry | undefined {
+  return QUALIFICATIONS.find((q) => q.keywords.every((kw) => name.includes(kw)));
+}
 
 export const metadata: Metadata = {
   title: '시험 접수',
@@ -75,7 +89,9 @@ export default async function ExamPage() {
   const qualNames: string[] = Array.isArray(sessions) && sessions.length > 0
     ? [...new Set<string>(sessions.map((s: any) => s.qualificationName as string))]
     : [];
-  const matchedQualifications = qualNames.filter((name) => QUALIFICATION_INFO[name]);
+  const matchedQualifications = qualNames
+    .map((name) => ({ name, info: findQualInfo(name) }))
+    .filter((m): m is { name: string; info: QualificationEntry } => !!m.info);
 
   return (
     <div>
@@ -162,9 +178,7 @@ export default async function ExamPage() {
               자격 소개
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
-              {matchedQualifications.map((name) => {
-                const info = QUALIFICATION_INFO[name];
-                return (
+              {matchedQualifications.map(({ name, info }) => (
                   <BrandCard key={name} padding="lg">
                     <h3 className="text-lg font-bold text-gray-900 mb-2">{info.subtitle}</h3>
                     <div className="flex items-start gap-2 mb-4">
@@ -186,8 +200,7 @@ export default async function ExamPage() {
                       </ul>
                     </div>
                   </BrandCard>
-                );
-              })}
+              ))}
             </div>
           </div>
         </section>
