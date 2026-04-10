@@ -175,6 +175,12 @@ export class AdminController {
     return this.adminService.deleteReferrerGroup(id);
   }
 
+  /* 권유자별 접수 통계 */
+  @Get('referrer-stats')
+  getReferrerStats() {
+    return this.adminService.getReferrerStats();
+  }
+
   /* 자격 소개 관리 */
   @Get('qualification-intros')
   getQualificationIntros() {

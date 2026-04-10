@@ -21,6 +21,7 @@ interface Application {
   id: string;
   status: string;
   appliedAt: string;
+  referrerCode?: string | null;
   formJson?: Record<string, any>;
   user: { name: string; email: string; phone: string | null } | null;
   payment: { amount: number; paymentStatus: string } | null;
@@ -84,11 +85,11 @@ export default function ExamApplicationsPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
-            <tr>{['이름', '이메일', '연락처', '접수일', '상태', '결제금액', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>)}</tr>
+            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '상태', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y">
             {apps.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-400">접수자가 없습니다.</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-400">접수자가 없습니다.</td></tr>
             ) : apps.map((a) => {
               const si = statusInfo[a.status] ?? { label: a.status, variant: 'default' as const };
               return (
@@ -96,9 +97,10 @@ export default function ExamApplicationsPage() {
                   <td className="px-4 py-3 font-medium text-gray-800">{getApplicantName(a)}</td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{getApplicantEmail(a)}</td>
                   <td className="px-4 py-3 text-gray-600 text-xs">{getApplicantPhone(a)}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{(a.formJson?.occupation as string) || '-'}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{a.referrerCode || '-'}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{new Date(a.appliedAt).toLocaleDateString('ko-KR')}</td>
                   <td className="px-4 py-3"><BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge></td>
-                  <td className="px-4 py-3 text-gray-600">{a.payment ? `${a.payment.amount.toLocaleString()}원` : '-'}</td>
                   <td className="px-4 py-3">
                     <select
                       value={a.status}

@@ -354,6 +354,44 @@ export class AdminService {
     return { deleted: true };
   }
 
+  /* 권유자별 접수 통계 */
+  async getReferrerStats() {
+    const grouped = await this.prisma.examApplication.groupBy({
+      by: ['referrerCode'],
+      where: { referrerCode: { not: null } },
+      _count: { id: true },
+    });
+
+    const groups = await this.getReferrerGroups();
+    const codeToInfo = new Map<string, { memberName: string; groupName: string }>();
+    for (const g of groups as any[]) {
+      const groupName = g.groupName ?? '';
+      if (Array.isArray(g.members)) {
+        for (const m of g.members) {
+          codeToInfo.set(m.code, { memberName: m.name ?? m.code, groupName });
+        }
+      }
+    }
+
+    const stats = grouped.map((row) => {
+      const code = row.referrerCode!;
+      const info = codeToInfo.get(code);
+      return {
+        code,
+        memberName: info?.memberName ?? code,
+        groupName: info?.groupName ?? '-',
+        count: row._count.id,
+      };
+    });
+
+    stats.sort((a, b) => b.count - a.count);
+
+    return {
+      stats,
+      totalCount: stats.reduce((sum, s) => sum + s.count, 0),
+    };
+  }
+
   /* 자격 소개 관리 */
   async getQualificationIntros() {
     const setting = await this.prisma.systemSetting.findUnique({
