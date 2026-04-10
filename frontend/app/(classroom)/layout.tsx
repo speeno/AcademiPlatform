@@ -30,22 +30,35 @@ const instructorNavItems: NavItem[] = [
 
 export default function ClassroomLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string>('');
+  const [roleLoaded, setRoleLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
     const loadMe = async () => {
       try {
+        const headers = buildAuthHeader(false);
+        if (!headers.Authorization) {
+          if (active) setRoleLoaded(true);
+          return;
+        }
         const res = await fetch(`${API_BASE}/auth/me`, {
-          headers: buildAuthHeader(false),
+          headers,
           credentials: 'include',
         });
-        if (!res.ok || !active) return;
+        if (!active) return;
+        if (!res.ok) {
+          console.warn('[classroom] /auth/me failed:', res.status);
+          setRoleLoaded(true);
+          return;
+        }
         const me = await res.json().catch(() => ({}));
         if (!active) return;
         setRole(typeof me?.role === 'string' ? me.role : '');
-      } catch {
+      } catch (err) {
         if (!active) return;
-        setRole('');
+        console.warn('[classroom] /auth/me error:', err);
+      } finally {
+        if (active) setRoleLoaded(true);
       }
     };
     loadMe();

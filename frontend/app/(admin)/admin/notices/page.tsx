@@ -6,8 +6,8 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
 import { buildAuthHeader } from '@/lib/auth';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { API_BASE } from '@/lib/api-base';
+import { toast } from 'sonner';
 
 interface Notice {
   id: string;
@@ -33,7 +33,7 @@ export default function AdminNoticesPage() {
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/admin/notices`, { headers: buildAuthHeader(false) });
+      const res = await fetch(`${API_BASE}/admin/notices`, { headers: buildAuthHeader(false) });
       if (res.ok) {
         const d = await res.json();
         setNotices(d.notices ?? d);
@@ -53,7 +53,7 @@ export default function AdminNoticesPage() {
     let content = n.content ?? '';
     if (!content) {
       try {
-        const res = await fetch(`${API}/admin/notices`, { headers: buildAuthHeader(false) });
+        const res = await fetch(`${API_BASE}/admin/notices`, { headers: buildAuthHeader(false) });
         if (res.ok) {
           const d = await res.json();
           const list: Notice[] = d.notices ?? d;
@@ -67,20 +67,35 @@ export default function AdminNoticesPage() {
   };
 
   const handleSave = async () => {
+    if (!form.title.trim()) { toast.error('제목을 입력해주세요.'); return; }
     setSaving(true);
     try {
-      const url = modal.mode === 'create' ? `${API}/admin/notices` : `${API}/admin/notices/${modal.data?.id}`;
+      const url = modal.mode === 'create' ? `${API_BASE}/admin/notices` : `${API_BASE}/admin/notices/${modal.data?.id}`;
       const method = modal.mode === 'create' ? 'POST' : 'PATCH';
       const res = await fetch(url, { method, headers: buildAuthHeader(), body: JSON.stringify(form) });
-      if (res.ok) { setModal({ open: false, mode: 'create' }); load(); }
-    } catch { /* ignore */ }
+      if (res.ok) {
+        toast.success(modal.mode === 'create' ? '공지가 등록되었습니다.' : '공지가 수정되었습니다.');
+        setModal({ open: false, mode: 'create' });
+        load();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message ?? '저장에 실패했습니다.');
+      }
+    } catch { toast.error('저장 중 오류가 발생했습니다.'); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('삭제하시겠습니까?')) return;
-    await fetch(`${API}/admin/notices/${id}`, { method: 'DELETE', headers: buildAuthHeader(false) });
-    setNotices((p) => p.filter((n) => n.id !== id));
+    try {
+      const res = await fetch(`${API_BASE}/admin/notices/${id}`, { method: 'DELETE', headers: buildAuthHeader(false) });
+      if (res.ok) {
+        toast.success('삭제되었습니다.');
+        setNotices((p) => p.filter((n) => n.id !== id));
+      } else {
+        toast.error('삭제에 실패했습니다.');
+      }
+    } catch { toast.error('삭제 중 오류가 발생했습니다.'); }
   };
 
   if (loading) return <div className="flex justify-center h-64 items-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>;
