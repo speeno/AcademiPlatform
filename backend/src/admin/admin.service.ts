@@ -357,7 +357,7 @@ export class AdminService {
   /* 권유자별 접수 통계 */
   async getReferrerStats() {
     const grouped = await this.prisma.examApplication.groupBy({
-      by: ['referrerCode', 'status'],
+      by: ['referrerCode', 'status', 'examSessionId'],
       where: { referrerCode: { not: null } },
       _count: { id: true },
     });
@@ -373,13 +373,22 @@ export class AdminService {
       }
     }
 
-    const codeMap = new Map<string, {
-      code: string;
-      memberName: string;
-      groupName: string;
-      total: number;
-      byStatus: Record<string, number>;
-    }>();
+    const sessionIds = [...new Set(grouped.map((r) => r.examSessionId))];
+    const sessions = sessionIds.length > 0
+      ? await this.prisma.examSession.findMany({
+          where: { id: { in: sessionIds } },
+          select: { id: true, qualificationName: true, roundName: true },
+        })
+      : [];
+    const sessionMap = new Map(sessions.map((s) => [s.id, `${s.qualificationName} ${s.roundName}`]));
+
+    type ExamSub = { examName: string; examSessionId: string; total: number; byStatus: Record<string, number> };
+    type CodeEntry = {
+      code: string; memberName: string; groupName: string;
+      total: number; byStatus: Record<string, number>; byExam: ExamSub[];
+    };
+
+    const codeMap = new Map<string, CodeEntry>();
 
     for (const row of grouped) {
       const code = row.referrerCode!;
@@ -391,15 +400,32 @@ export class AdminService {
           groupName: info?.groupName ?? '-',
           total: 0,
           byStatus: {},
+          byExam: [],
         });
       }
       const entry = codeMap.get(code)!;
       entry.total += row._count.id;
       entry.byStatus[row.status] = (entry.byStatus[row.status] ?? 0) + row._count.id;
+
+      let examSub = entry.byExam.find((e) => e.examSessionId === row.examSessionId);
+      if (!examSub) {
+        examSub = {
+          examName: sessionMap.get(row.examSessionId) ?? row.examSessionId,
+          examSessionId: row.examSessionId,
+          total: 0,
+          byStatus: {},
+        };
+        entry.byExam.push(examSub);
+      }
+      examSub.total += row._count.id;
+      examSub.byStatus[row.status] = (examSub.byStatus[row.status] ?? 0) + row._count.id;
     }
 
     const stats = Array.from(codeMap.values());
     stats.sort((a, b) => b.total - a.total);
+    for (const s of stats) {
+      s.byExam.sort((a, b) => b.total - a.total);
+    }
 
     const totalByStatus: Record<string, number> = {};
     let totalCount = 0;

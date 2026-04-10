@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { Plus, Save, Trash2, UserPlus, X, BarChart3, Settings2, Loader2 } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Plus, Save, Trash2, UserPlus, X, BarChart3, Settings2, Loader2, ChevronRight, ChevronDown } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
@@ -19,12 +19,20 @@ interface ReferrerGroup {
   isActive: boolean;
 }
 
+interface ExamSubStat {
+  examName: string;
+  examSessionId: string;
+  total: number;
+  byStatus: Record<string, number>;
+}
+
 interface ReferrerStat {
   code: string;
   memberName: string;
   groupName: string;
   total: number;
   byStatus: Record<string, number>;
+  byExam?: ExamSubStat[];
 }
 
 const STATUS_COLS: { key: string; label: string; color: string }[] = [
@@ -48,6 +56,16 @@ export default function AdminReferrersPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalByStatus, setTotalByStatus] = useState<Record<string, number>>({});
   const [statsLoading, setStatsLoading] = useState(false);
+  const [expandedCodes, setExpandedCodes] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (code: string) => {
+    setExpandedCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
+  };
 
   const load = async () => {
     try {
@@ -302,7 +320,7 @@ export default function AdminReferrersPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    {['그룹명', '멤버명', '코드'].map((h) => (
+                    {['그룹명', '멤버명', '코드', '시험'].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
                     ))}
                     <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--brand-blue)' }}>전체</th>
@@ -312,21 +330,52 @@ export default function AdminReferrersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {stats.map((s) => (
-                    <tr key={s.code} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-600">{s.groupName}</td>
-                      <td className="px-4 py-3 font-medium text-gray-800">{s.memberName}</td>
-                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{s.code}</td>
-                      <td className="px-4 py-3 text-right font-semibold" style={{ color: 'var(--brand-blue)' }}>{s.total.toLocaleString()}</td>
-                      {STATUS_COLS.map((sc) => (
-                        <td key={sc.key} className="px-3 py-3 text-right tabular-nums" style={{ color: (s.byStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
-                          {(s.byStatus[sc.key] ?? 0).toLocaleString()}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {stats.map((s) => {
+                    const isExpanded = expandedCodes.has(s.code);
+                    const hasExams = (s.byExam?.length ?? 0) > 0;
+                    return (
+                      <React.Fragment key={s.code}>
+                        <tr
+                          className={`hover:bg-gray-50 ${hasExams ? 'cursor-pointer' : ''}`}
+                          onClick={() => hasExams && toggleExpand(s.code)}
+                        >
+                          <td className="px-4 py-3 text-gray-600">{s.groupName}</td>
+                          <td className="px-4 py-3 font-medium text-gray-800">{s.memberName}</td>
+                          <td className="px-4 py-3 text-gray-500 font-mono text-xs">{s.code}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {hasExams && (
+                              <span className="inline-flex items-center gap-1">
+                                {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                (전체)
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold" style={{ color: 'var(--brand-blue)' }}>{s.total.toLocaleString()}</td>
+                          {STATUS_COLS.map((sc) => (
+                            <td key={sc.key} className="px-3 py-3 text-right tabular-nums" style={{ color: (s.byStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
+                              {(s.byStatus[sc.key] ?? 0).toLocaleString()}
+                            </td>
+                          ))}
+                        </tr>
+                        {isExpanded && s.byExam?.map((ex) => (
+                          <tr key={`${s.code}-${ex.examSessionId}`} className="bg-blue-50/30">
+                            <td className="px-4 py-2" />
+                            <td className="px-4 py-2" />
+                            <td className="px-4 py-2" />
+                            <td className="px-4 py-2 text-xs text-gray-600 pl-8">{ex.examName}</td>
+                            <td className="px-4 py-2 text-right text-xs font-medium" style={{ color: 'var(--brand-blue)' }}>{ex.total.toLocaleString()}</td>
+                            {STATUS_COLS.map((sc) => (
+                              <td key={sc.key} className="px-3 py-2 text-right text-xs tabular-nums" style={{ color: (ex.byStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
+                                {(ex.byStatus[sc.key] ?? 0).toLocaleString()}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
                   <tr className="bg-gray-50 font-semibold border-t-2">
-                    <td className="px-4 py-3 text-gray-700" colSpan={3}>합계</td>
+                    <td className="px-4 py-3 text-gray-700" colSpan={4}>합계</td>
                     <td className="px-4 py-3 text-right" style={{ color: 'var(--brand-blue)' }}>{totalCount.toLocaleString()}</td>
                     {STATUS_COLS.map((sc) => (
                       <td key={sc.key} className="px-3 py-3 text-right" style={{ color: (totalByStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>

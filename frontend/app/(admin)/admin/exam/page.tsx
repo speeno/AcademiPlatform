@@ -62,7 +62,7 @@ export default function AdminExamPage() {
     reason: '',
   });
   const [saving, setSaving] = useState(false);
-  const basePriceNum = Number(form.basePrice) || Number(form.fee) || 0;
+  const basePriceNum = Number(form.basePrice) || 0;
   const salePriceNum = form.salePrice === '' ? basePriceNum : Number(form.salePrice || 0);
   const discountValueNum = Number(form.discountValue || 0);
   const discountAmount =
@@ -119,7 +119,7 @@ export default function AdminExamPage() {
       applyStartAt: s.applyStartAt?.slice(0, 16) ?? '',
       applyEndAt: s.applyEndAt?.slice(0, 16) ?? '',
       place: s.place ?? '',
-      fee: String(s.fee),
+      fee: '',
       capacity: String(s.capacity ?? ''),
       status: s.status,
       currency: s.currency ?? 'KRW',
@@ -144,7 +144,7 @@ export default function AdminExamPage() {
         applyStartAt: form.applyStartAt,
         applyEndAt: form.applyEndAt,
         place: form.place || null,
-        fee: Number(form.fee),
+        fee: finalPreviewFee,
         capacity: form.capacity ? Number(form.capacity) : undefined,
         status: form.status,
       };
@@ -157,7 +157,7 @@ export default function AdminExamPage() {
           headers: authHeader(),
           body: JSON.stringify({
             currency: form.currency,
-            basePrice: Number(form.basePrice) || Number(form.fee) || 0,
+            basePrice: Number(form.basePrice) || 0,
             salePrice: form.salePrice === '' ? null : Number(form.salePrice),
             discountType: form.discountType,
             discountValue: Number(form.discountValue || 0),
@@ -231,7 +231,6 @@ export default function AdminExamPage() {
                 { label: '접수 시작', key: 'applyStartAt', type: 'datetime-local', placeholder: '' },
                 { label: '접수 마감', key: 'applyEndAt', type: 'datetime-local', placeholder: '' },
                 { label: '시험 장소', key: 'place', type: 'text', placeholder: '서울 강남구...' },
-                { label: '응시료 (원)', key: 'fee', type: 'number', placeholder: '50000' },
                 { label: '수용 인원', key: 'capacity', type: 'number', placeholder: '100' },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key}>
@@ -246,18 +245,18 @@ export default function AdminExamPage() {
                 </select>
               </div>
               <div className="border-t pt-4 mt-1 space-y-4">
-                <p className="text-sm font-semibold">가격 정책</p>
+                <p className="text-sm font-semibold">응시료 설정</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium mb-1">통화</label>
                     <input value={form.currency} onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value.toUpperCase() }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">정가(basePrice)</label>
+                    <label className="block text-sm font-medium mb-1">응시료 정가</label>
                     <input type="number" value={form.basePrice} onChange={(e) => setForm((p) => ({ ...p, basePrice: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">판매가(salePrice)</label>
+                    <label className="block text-sm font-medium mb-1">판매가</label>
                     <input type="number" value={form.salePrice} onChange={(e) => setForm((p) => ({ ...p, salePrice: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                   </div>
                   <div>
@@ -283,7 +282,7 @@ export default function AdminExamPage() {
                     <input type="datetime-local" value={form.priceValidUntil} onChange={(e) => setForm((p) => ({ ...p, priceValidUntil: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                   </div>
                   <div className="col-span-2 rounded-lg border bg-gray-50 px-3 py-2 text-sm">
-                    최종 응시료 예상가: <span className="font-semibold">{finalPreviewFee.toLocaleString()}원</span>
+                    최종 응시료: <span className="font-semibold">{finalPreviewFee.toLocaleString()}원</span>
                     <span className="ml-2 text-xs text-gray-500">
                       (정가 {basePriceNum.toLocaleString()} / 판매가 {salePriceNum.toLocaleString()} / 할인 {discountAmount.toLocaleString()})
                     </span>
