@@ -357,7 +357,7 @@ export class AdminService {
   /* 권유자별 접수 통계 */
   async getReferrerStats() {
     const grouped = await this.prisma.examApplication.groupBy({
-      by: ['referrerCode'],
+      by: ['referrerCode', 'status'],
       where: { referrerCode: { not: null } },
       _count: { id: true },
     });
@@ -373,23 +373,44 @@ export class AdminService {
       }
     }
 
-    const stats = grouped.map((row) => {
+    const codeMap = new Map<string, {
+      code: string;
+      memberName: string;
+      groupName: string;
+      total: number;
+      byStatus: Record<string, number>;
+    }>();
+
+    for (const row of grouped) {
       const code = row.referrerCode!;
-      const info = codeToInfo.get(code);
-      return {
-        code,
-        memberName: info?.memberName ?? code,
-        groupName: info?.groupName ?? '-',
-        count: row._count.id,
-      };
-    });
+      if (!codeMap.has(code)) {
+        const info = codeToInfo.get(code);
+        codeMap.set(code, {
+          code,
+          memberName: info?.memberName ?? code,
+          groupName: info?.groupName ?? '-',
+          total: 0,
+          byStatus: {},
+        });
+      }
+      const entry = codeMap.get(code)!;
+      entry.total += row._count.id;
+      entry.byStatus[row.status] = (entry.byStatus[row.status] ?? 0) + row._count.id;
+    }
 
-    stats.sort((a, b) => b.count - a.count);
+    const stats = Array.from(codeMap.values());
+    stats.sort((a, b) => b.total - a.total);
 
-    return {
-      stats,
-      totalCount: stats.reduce((sum, s) => sum + s.count, 0),
-    };
+    const totalByStatus: Record<string, number> = {};
+    let totalCount = 0;
+    for (const s of stats) {
+      totalCount += s.total;
+      for (const [status, cnt] of Object.entries(s.byStatus)) {
+        totalByStatus[status] = (totalByStatus[status] ?? 0) + cnt;
+      }
+    }
+
+    return { stats, totalCount, totalByStatus };
   }
 
   /* 자격 소개 관리 */

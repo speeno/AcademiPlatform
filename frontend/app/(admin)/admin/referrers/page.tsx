@@ -23,8 +23,18 @@ interface ReferrerStat {
   code: string;
   memberName: string;
   groupName: string;
-  count: number;
+  total: number;
+  byStatus: Record<string, number>;
 }
+
+const STATUS_COLS: { key: string; label: string; color: string }[] = [
+  { key: 'APPLIED',          label: '접수완료', color: '#16a34a' },
+  { key: 'TEMP_SAVED',       label: '임시저장', color: '#6b7280' },
+  { key: 'PAYMENT_PENDING',  label: '결제대기', color: '#f59e0b' },
+  { key: 'CANCELLED',        label: '취소',     color: '#ef4444' },
+  { key: 'REFUND_REQUESTED', label: '환불요청', color: '#f97316' },
+  { key: 'REFUNDED',         label: '환불완료', color: '#9ca3af' },
+];
 
 type TabType = 'manage' | 'stats';
 
@@ -36,6 +46,7 @@ export default function AdminReferrersPage() {
 
   const [stats, setStats] = useState<ReferrerStat[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalByStatus, setTotalByStatus] = useState<Record<string, number>>({});
   const [statsLoading, setStatsLoading] = useState(false);
 
   const load = async () => {
@@ -60,6 +71,7 @@ export default function AdminReferrersPage() {
         const data = await res.json();
         setStats(data.stats ?? []);
         setTotalCount(data.totalCount ?? 0);
+        setTotalByStatus(data.totalByStatus ?? {});
       }
     } catch {
       toast.error('통계를 불러오지 못했습니다.');
@@ -286,29 +298,45 @@ export default function AdminReferrersPage() {
               권유자별 접수 데이터가 없습니다.
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  {['그룹명', '멤버명', '코드', '접수 건수'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {stats.map((s) => (
-                  <tr key={s.code} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-600">{s.groupName}</td>
-                    <td className="px-4 py-3 font-medium text-gray-800">{s.memberName}</td>
-                    <td className="px-4 py-3 text-gray-500 font-mono text-xs">{s.code}</td>
-                    <td className="px-4 py-3 font-semibold" style={{ color: 'var(--brand-blue)' }}>{s.count.toLocaleString()}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    {['그룹명', '멤버명', '코드'].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
+                    ))}
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--brand-blue)' }}>전체</th>
+                    {STATUS_COLS.map((sc) => (
+                      <th key={sc.key} className="px-3 py-3 text-right text-xs font-semibold" style={{ color: sc.color }}>{sc.label}</th>
+                    ))}
                   </tr>
-                ))}
-                <tr className="bg-gray-50 font-semibold">
-                  <td className="px-4 py-3 text-gray-700" colSpan={3}>합계</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--brand-blue)' }}>{totalCount.toLocaleString()}</td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y">
+                  {stats.map((s) => (
+                    <tr key={s.code} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-600">{s.groupName}</td>
+                      <td className="px-4 py-3 font-medium text-gray-800">{s.memberName}</td>
+                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{s.code}</td>
+                      <td className="px-4 py-3 text-right font-semibold" style={{ color: 'var(--brand-blue)' }}>{s.total.toLocaleString()}</td>
+                      {STATUS_COLS.map((sc) => (
+                        <td key={sc.key} className="px-3 py-3 text-right tabular-nums" style={{ color: (s.byStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
+                          {(s.byStatus[sc.key] ?? 0).toLocaleString()}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-50 font-semibold border-t-2">
+                    <td className="px-4 py-3 text-gray-700" colSpan={3}>합계</td>
+                    <td className="px-4 py-3 text-right" style={{ color: 'var(--brand-blue)' }}>{totalCount.toLocaleString()}</td>
+                    {STATUS_COLS.map((sc) => (
+                      <td key={sc.key} className="px-3 py-3 text-right" style={{ color: (totalByStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
+                        {(totalByStatus[sc.key] ?? 0).toLocaleString()}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
