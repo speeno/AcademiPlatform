@@ -25,6 +25,7 @@ import { CmsModule } from './cms/cms.module';
 import { QnaModule } from './qna/qna.module';
 import { NoticesModule } from './notices/notices.module';
 import { InstructorPostsModule } from './instructor-posts/instructor-posts.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   controllers: [AppController],
@@ -46,6 +47,7 @@ import { InstructorPostsModule } from './instructor-posts/instructor-posts.modul
     CmsModule,
     NoticesModule,
     InstructorPostsModule,
+    AnalyticsModule,
   ],
   providers: [
     AppService,

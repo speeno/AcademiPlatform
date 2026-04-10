@@ -47,11 +47,11 @@ export default async function CoursesPage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course: any) => (
-              <Link key={course.id} href={`/courses/${course.slug ?? course.id}`}>
-                <BrandCard hoverable accent="blue" padding="none" className="overflow-hidden h-full flex flex-col">
-                  {/* 썸네일 */}
-                  <div className="h-48 overflow-hidden bg-gray-100 flex-shrink-0">
+            {courses.map((course: any) => {
+              const isUpcoming = course.status === 'UPCOMING';
+              const card = (
+                <BrandCard hoverable={!isUpcoming} accent="blue" padding="none" className={`overflow-hidden h-full flex flex-col${isUpcoming ? ' opacity-75' : ''}`}>
+                  <div className="relative h-48 overflow-hidden bg-gray-100 flex-shrink-0">
                     {course.thumbnailUrl ? (
                       <Image
                         src={course.thumbnailUrl}
@@ -66,6 +66,11 @@ export default async function CoursesPage() {
                         style={{ background: 'var(--gradient-logo)' }}
                       >
                         <BookOpen className="w-10 h-10 text-white opacity-60" />
+                      </div>
+                    )}
+                    {isUpcoming && (
+                      <div className="absolute top-3 right-3">
+                        <BrandBadge variant="orange" className="text-xs font-bold shadow-sm">예정</BrandBadge>
                       </div>
                     )}
                   </div>
@@ -83,25 +88,37 @@ export default async function CoursesPage() {
                           <Clock className="w-3.5 h-3.5" /> {course.learningPeriodDays}일
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" /> {course._count?.enrollments ?? 0}명 수강 중
-                      </span>
+                      {!isUpcoming && (
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" /> {course._count?.enrollments ?? 0}명 수강 중
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-auto flex items-center justify-between">
-                      <PriceDisplay
-                        price={course.price ?? 0}
-                        className="text-lg font-extrabold"
-                        style={{ color: 'var(--brand-orange)' }}
-                      />
-                      <span className="text-xs font-medium" style={{ color: 'var(--brand-blue)' }}>
-                        상세 보기 →
+                      {isUpcoming ? (
+                        <span className="text-sm font-medium text-gray-400">가격 미정</span>
+                      ) : (
+                        <PriceDisplay
+                          price={course.price ?? 0}
+                          className="text-lg font-extrabold"
+                          style={{ color: 'var(--brand-orange)' }}
+                        />
+                      )}
+                      <span className="text-xs font-medium" style={{ color: isUpcoming ? '#9ca3af' : 'var(--brand-blue)' }}>
+                        {isUpcoming ? '준비 중' : '상세 보기 →'}
                       </span>
                     </div>
                   </div>
                 </BrandCard>
-              </Link>
-            ))}
+              );
+
+              return isUpcoming ? (
+                <div key={course.id} className="cursor-default">{card}</div>
+              ) : (
+                <Link key={course.id} href={`/courses/${course.slug ?? course.id}`}>{card}</Link>
+              );
+            })}
             </div>
           )}
         </div>

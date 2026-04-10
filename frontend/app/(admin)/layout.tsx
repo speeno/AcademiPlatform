@@ -2,14 +2,17 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
-  MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award,
+  MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award, BarChart3,
 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 
 const navGroups = [
   {
     label: '대시보드',
-    items: [{ href: '/admin/dashboard', icon: LayoutDashboard, label: '대시보드' }],
+    items: [
+      { href: '/admin/dashboard', icon: LayoutDashboard, label: '대시보드' },
+      { href: '/admin/analytics', icon: BarChart3, label: '접속 통계' },
+    ],
   },
   {
     label: '교육',

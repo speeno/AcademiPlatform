@@ -43,7 +43,7 @@ export class CoursesService {
     const { category, search, page = 1, limit = 12 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: any = { status: CourseStatus.ACTIVE };
+    const where: any = { status: { in: [CourseStatus.ACTIVE, CourseStatus.UPCOMING] } };
     if (category) where.category = category;
     if (search) where.OR = [
       { title: { contains: search, mode: 'insensitive' } },

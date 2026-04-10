@@ -970,3 +970,19 @@ model PriceHistory {
   @@index([targetType, targetId, createdAt])
   @@index([changedById, createdAt])
 }
+
+model PageView {
+  id         String   @id @default(cuid())
+  path       String
+  sessionId  String
+  userId     String?
+  userAgent  String?
+  browser    String?
+  deviceType String?
+  referrer   String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path, createdAt])
+  @@index([sessionId, createdAt])
+}
