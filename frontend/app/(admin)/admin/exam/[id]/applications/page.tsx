@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { API_BASE } from '@/lib/api-base';
+import { buildAuthHeader } from '@/lib/auth';
 
 const statusInfo: Record<string, { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
   TEMP_SAVED:       { label: '임시 저장', variant: 'default' },
@@ -21,8 +21,21 @@ interface Application {
   id: string;
   status: string;
   appliedAt: string;
-  user: { name: string; email: string; phone: string | null };
+  formJson?: Record<string, any>;
+  user: { name: string; email: string; phone: string | null } | null;
   payment: { amount: number; paymentStatus: string } | null;
+}
+
+function getApplicantName(a: Application): string {
+  return a.user?.name ?? (a.formJson?.applicantName as string) ?? '(비회원)';
+}
+
+function getApplicantEmail(a: Application): string {
+  return a.user?.email ?? (a.formJson?.email as string) ?? '-';
+}
+
+function getApplicantPhone(a: Application): string {
+  return a.user?.phone ?? (a.formJson?.phone as string) ?? '-';
 }
 
 export default function ExamApplicationsPage() {
@@ -32,15 +45,13 @@ export default function ExamApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const authHeader = (): Record<string, string> => {
-    const t = localStorage.getItem('accessToken');
-    const h: Record<string, string> = { 'Content-Type': 'application/json' }; if (t) h['Authorization'] = `Bearer ${t}`; return h;
-  };
-
   const load = async () => {
     try {
-      const res = await fetch(`${API}/exam/admin/sessions/${id}/applications`, { headers: authHeader() });
-      if (res.ok) setApps(await res.json());
+      const res = await fetch(`${API_BASE}/exam/admin/sessions/${id}/applications`, { headers: buildAuthHeader(false) });
+      if (res.ok) {
+        const d = await res.json();
+        setApps(d.applications ?? d);
+      }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
 
@@ -49,8 +60,8 @@ export default function ExamApplicationsPage() {
   const handleStatusChange = async (appId: string, status: string) => {
     setUpdatingId(appId);
     try {
-      const res = await fetch(`${API}/exam/admin/applications/${appId}/status`, {
-        method: 'PATCH', headers: authHeader(), body: JSON.stringify({ status }),
+      const res = await fetch(`${API_BASE}/exam/admin/applications/${appId}/status`, {
+        method: 'PATCH', headers: buildAuthHeader(), body: JSON.stringify({ status }),
       });
       if (res.ok) setApps((p) => p.map((a) => a.id === appId ? { ...a, status } : a));
     } catch { /* ignore */ } finally { setUpdatingId(null); }
@@ -82,9 +93,9 @@ export default function ExamApplicationsPage() {
               const si = statusInfo[a.status] ?? { label: a.status, variant: 'default' as const };
               return (
                 <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-800">{a.user.name}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{a.user.email}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{a.user.phone ?? '-'}</td>
+                  <td className="px-4 py-3 font-medium text-gray-800">{getApplicantName(a)}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{getApplicantEmail(a)}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{getApplicantPhone(a)}</td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{new Date(a.appliedAt).toLocaleDateString('ko-KR')}</td>
                   <td className="px-4 py-3"><BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge></td>
                   <td className="px-4 py-3 text-gray-600">{a.payment ? `${a.payment.amount.toLocaleString()}원` : '-'}</td>
