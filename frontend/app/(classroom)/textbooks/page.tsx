@@ -24,6 +24,19 @@ interface StoreTextbook extends Textbook {
   hasAccess: boolean;
 }
 
+const BASIC_PACKAGE_TOPICS = [
+  '생성형 AI 이해하기',
+  '프롬프트 작성의 기본',
+  '텍스트 생성 활용법',
+  '이미지 생성 체험하기',
+  '문서·보고서 자동화',
+  '데이터 요약과 분석',
+  'AI와 협업하는 사고법',
+  '윤리와 책임 있는 활용',
+  '무료·쉬운 AI 도구 소개',
+  '실습 중심 학습 프로젝트',
+];
+
 export default function TextbooksPage() {
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [storeBooks, setStoreBooks] = useState<StoreTextbook[]>([]);
@@ -105,6 +118,16 @@ export default function TextbooksPage() {
           에서 구매할 수 있습니다.
         </p>
       </div>
+
+      <section className="rounded-2xl border bg-white p-6 sm:p-7">
+        <h2 className="text-lg font-extrabold" style={{ color: 'var(--brand-blue)' }}>기본 교육 패키지</h2>
+        <p className="text-sm text-gray-500 mt-1">패키지 보기에 포함되는 기본 학습 항목입니다.</p>
+        <ol className="mt-4 space-y-2 text-sm text-gray-700 list-decimal list-inside">
+          {BASIC_PACKAGE_TOPICS.map((topic) => (
+            <li key={topic}>{topic}</li>
+          ))}
+        </ol>
+      </section>
 
       {textbooks.length === 0 ? (
         <div className="text-center py-20">

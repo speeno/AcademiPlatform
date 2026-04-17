@@ -7,7 +7,16 @@ import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
 
-const CATEGORIES = ['수강신청', '결제/환불', '시험접수', '교재', '기술 문의', '기타'];
+const CATEGORIES = [
+  'ISO/IEC 17024 AI국제자격증: 단체 교육수강 및 시험',
+  'AI 채봇: 24시간 고객 문의 응대, FAQ 자동화 채봇',
+  '외국어 번역: 해외 고객을 위한 자동 번역 및 상담',
+  '노코드 기반 자동화: 재고 관리, 회계 입력 자동화',
+  '제품개발: 신제품 콘셉트, 디자인 시안 생성',
+  '직원 교육 콘텐츠 제작: 맞춤형 학습 자료, 퀴즈, 시뮬레이션 제공',
+  'AI 활용 교육: 프롬프트 작성. 데이터분석 등 직원 역량 강화',
+  '기타 기술 도입 문의',
+];
 
 export default function ContactPage() {
   const [form, setForm] = useState({ category: '', title: '', content: '' });

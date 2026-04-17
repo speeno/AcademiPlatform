@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 export class CreateInquiryDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(50)
+  @MaxLength(120)
   category: string;
 
   @IsString()

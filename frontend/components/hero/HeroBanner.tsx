@@ -28,6 +28,24 @@ interface HeroBannerData {
   slides: HeroSlide[];
 }
 
+function sanitizeHeroSlide(slide: HeroSlide): HeroSlide {
+  const isCorporateConsultingSlide =
+    !!slide.primaryButton &&
+    slide.primaryButton.href === '/contact' &&
+    slide.primaryButton.text.includes('도입');
+  const isStarterPackageSlide =
+    !!slide.primaryButton &&
+    slide.primaryButton.href === '/textbooks' &&
+    slide.primaryButton.text.includes('패키지');
+
+  if (!isCorporateConsultingSlide && !isStarterPackageSlide) return slide;
+
+  return {
+    ...slide,
+    secondaryButton: null,
+  };
+}
+
 export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'default-1',
@@ -55,7 +73,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     title: '임직원 AI 역량,\n지금 **업그레이드**',
     subtitle: '직무별 커리큘럼 설계부터 교육 운영까지\n기업 전용 트랙으로 빠르게 도입하세요.',
     primaryButton: { text: '도입 상담하기', href: '/contact' },
-    secondaryButton: { text: '교육과정 확인', href: '/courses' },
+    secondaryButton: null,
     promoCard: {
       image: '/images/promos/hero-promo-corporate.webp',
       title: '기업교육 B2B 프로그램',
@@ -73,7 +91,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     title: 'AI 입문,\n가장 쉬운\n**첫 시작**',
     subtitle: '온라인 교재 + 영상 강의 + 학습 가이드로\n비전공자도 단계적으로 학습할 수 있습니다.',
     primaryButton: { text: '패키지 보기', href: '/textbooks' },
-    secondaryButton: { text: '수강 신청하기', href: '/courses' },
+    secondaryButton: null,
     promoCard: {
       image: '/covers/ai-intro-vol1.png',
       title: 'AI 입문 패키지 오픈',
@@ -86,7 +104,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
 ];
 
 function normalizeSlide(input: Partial<HeroSlide>, idx: number): HeroSlide {
-  return {
+  const normalized = {
     id: input.id ?? `normalized-${idx}`,
     backgroundImage: input.backgroundImage ?? '/images/hero-bg.webp',
     overlayOpacity: typeof input.overlayOpacity === 'number' ? input.overlayOpacity : 0.7,
@@ -98,6 +116,8 @@ function normalizeSlide(input: Partial<HeroSlide>, idx: number): HeroSlide {
     promoCard: input.promoCard ?? null,
     isActive: input.isActive ?? true,
   };
+
+  return sanitizeHeroSlide(normalized);
 }
 
 function renderTitle(raw: string) {
