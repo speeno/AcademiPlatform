@@ -5,6 +5,7 @@ import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { API_BASE } from '@/lib/api-base';
+import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 
 export const metadata: Metadata = {
   title: '주요 교재 구매',
@@ -23,7 +24,11 @@ interface BookOffer {
 
 async function getBookOffers(): Promise<BookOffer[]> {
   try {
-    const res = await fetch(`${API_BASE}/settings/public/book_offers`, { next: { revalidate: 30 } });
+    const res = await fetchWithTimeout(
+      `${API_BASE}/settings/public/book_offers`,
+      { next: { revalidate: 30 } },
+      8000,
+    );
     if (!res.ok) return [];
     const data = await res.json();
     const list = data?.value;

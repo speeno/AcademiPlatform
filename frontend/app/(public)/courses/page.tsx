@@ -7,6 +7,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { PriceDisplay } from '@/components/ui/price-display';
 import type { Metadata } from 'next';
 import { API_BASE } from '@/lib/api-base';
+import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 
 export const metadata: Metadata = {
   title: '교육과정',
@@ -15,7 +16,11 @@ export const metadata: Metadata = {
 
 async function getCourses() {
   try {
-    const res = await fetch(`${API_BASE}/courses?limit=12`, { next: { revalidate: 60 } });
+    const res = await fetchWithTimeout(
+      `${API_BASE}/courses?limit=12`,
+      { next: { revalidate: 60 } },
+      8000,
+    );
     if (!res.ok) return { courses: [], total: 0 };
     return res.json();
   } catch {

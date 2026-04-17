@@ -4,6 +4,7 @@ import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import type { Metadata } from 'next';
+import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 
 interface QualificationEntry {
   keywords: string[];
@@ -70,9 +71,10 @@ function getApiBase(): string {
 
 async function getExamSessions() {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${getApiBase()}/exam/sessions`,
       { next: { revalidate: 60 } },
+      8000,
     );
     if (!res.ok) return { sessions: [] };
     return res.json();
@@ -83,9 +85,10 @@ async function getExamSessions() {
 
 async function getQualificationIntros(): Promise<QualificationEntry[]> {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${getApiBase()}/settings/public/qualification_intros`,
       { next: { revalidate: 60 } },
+      8000,
     );
     if (!res.ok) return DEFAULT_QUALIFICATIONS;
     const data = await res.json();
