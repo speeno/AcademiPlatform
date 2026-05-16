@@ -52,7 +52,7 @@ async function main() {
       { id: crypto.randomUUID(), type: 'youtube', videoId: 'lk34c7qwplw', title: 'AI 교육 하이라이트', thumbnailUrl: '', linkUrl: '', isActive: true },
       { id: crypto.randomUUID(), type: 'youtube', videoId: 'dQw4w9WgXcQ', title: 'AI 시대의 학습법', thumbnailUrl: '', linkUrl: '', isActive: true },
       { id: crypto.randomUUID(), type: 'youtube', videoId: 'jNQXAC9IVRw', title: 'AI 프롬프트 팁', thumbnailUrl: '', linkUrl: '', isActive: true },
-      { id: crypto.randomUUID(), type: 'youtube', videoId: '9bZkp7q19f0', title: 'ISO 17024 국제자격', thumbnailUrl: '', linkUrl: '', isActive: true },
+      { id: crypto.randomUUID(), type: 'youtube', videoId: '9bZkp7q19f0', title: 'ISO/IEC 17024 국제자격', thumbnailUrl: '', linkUrl: '', isActive: true },
       { id: crypto.randomUUID(), type: 'youtube', videoId: 'kJQP7kiw5Fk', title: 'AI 창작 실습', thumbnailUrl: '', linkUrl: '', isActive: true },
       { id: crypto.randomUUID(), type: 'youtube', videoId: 'RgKAFK5djSk', title: '딥러닝 핵심 개념', thumbnailUrl: '', linkUrl: '', isActive: true },
       { id: crypto.randomUUID(), type: 'youtube', videoId: 'JGwWNGJdvx8', title: 'GAN 아키텍처 입문', thumbnailUrl: '', linkUrl: '', isActive: true },

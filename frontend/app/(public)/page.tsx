@@ -9,7 +9,7 @@ import { MainShortsSection } from '@/components/shorts/MainShortsSection';
 
 export const metadata: Metadata = {
   title: 'AcademiQ — Learn. Certify. Succeed.',
-  description: 'ISO 17024 기반 AI 자격 교육과 시험 접수를 한 곳에서. 지금 시작하세요.',
+  description: 'ISO/IEC 17024 기반 AI 자격 교육과 시험 접수를 한 곳에서. 지금 시작하세요.',
 };
 
 const features = [
@@ -20,7 +20,7 @@ const features = [
   },
   {
     iconSrc: '/icons/icon-cert.svg',
-    title: 'ISO 17024 국제자격',
+    title: 'ISO/IEC 17024 국제자격',
     desc: '국제 표준 ISO/IEC 17024 기반의 공신력 있는 AI 분야 개인 자격증을 취득하세요.',
   },
   {

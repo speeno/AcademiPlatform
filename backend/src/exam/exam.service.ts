@@ -6,8 +6,16 @@ import {
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ExamApplicationStatus, ExamSessionStatus, PaymentStatus } from '@prisma/client';
 
+const DEFAULT_DEPOSIT_ACCOUNT = {
+  bank: '농협은행',
+  account: '302-0608-9280-11',
+  holder: '이현길',
+};
+
 @Injectable()
 export class ExamService {
+  private readonly referrerGroupsKey = 'referrer_groups';
+
   constructor(private prisma: PrismaService) {}
 
   async findSessions(filter: { status?: ExamSessionStatus; page?: number; limit?: number }) {
@@ -92,15 +100,112 @@ export class ExamService {
   }
 
   async getMyApplications(userId: string) {
-    return this.prisma.examApplication.findMany({
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    if (!user) return [];
+
+    const sessionSelect = {
+      id: true,
+      qualificationName: true,
+      roundName: true,
+      examAt: true,
+      place: true,
+      fee: true,
+    } as const;
+
+    const linked = await this.prisma.examApplication.findMany({
       where: { userId },
-      include: {
-        examSession: {
-          select: { id: true, qualificationName: true, roundName: true, examAt: true, place: true, fee: true },
-        },
-      },
+      include: { examSession: { select: sessionSelect } },
       orderBy: { appliedAt: 'desc' },
     });
+
+    const orphans = await this.prisma.examApplication.findMany({
+      where: {
+        userId: null,
+        formJson: {
+          path: ['email'],
+          equals: user.email,
+        },
+      },
+      include: { examSession: { select: sessionSelect } },
+      orderBy: { appliedAt: 'desc' },
+    });
+
+    if (orphans.length > 0) {
+      await this.prisma.examApplication.updateMany({
+        where: { id: { in: orphans.map((app) => app.id) } },
+        data: { userId },
+      });
+    }
+
+    const seen = new Set<string>();
+    const applications = [...linked, ...orphans]
+      .sort((a, b) => b.appliedAt.getTime() - a.appliedAt.getTime())
+      .filter((app) => {
+        if (seen.has(app.id)) return false;
+        seen.add(app.id);
+        return true;
+      });
+
+    const groups = await this.loadReferrerGroups();
+    return applications.map((app) => ({
+      ...app,
+      depositAccount: this.resolveDepositAccount(app.formJson, app.referrerCode, groups),
+    }));
+  }
+
+  private async loadReferrerGroups(): Promise<any[]> {
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: this.referrerGroupsKey },
+    });
+    if (!setting?.value) return [];
+    try {
+      const parsed = JSON.parse(setting.value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private resolveDepositAccount(
+    formJson: unknown,
+    referrerCode: string | null,
+    groups: Array<{ members?: Array<{ code: string; label: string; depositBank?: string; depositAccount?: string; depositHolder?: string }> }>,
+  ) {
+    const form = formJson as Record<string, unknown> | null;
+    const snapshot = form?.depositAccount as Record<string, string> | undefined;
+    const snapshotBank = snapshot?.bank?.trim();
+    const snapshotAccount = snapshot?.account?.trim();
+
+    if (snapshotBank && snapshotAccount) {
+      return {
+        bank: snapshotBank,
+        account: snapshotAccount,
+        holder: snapshot?.holder?.trim() || DEFAULT_DEPOSIT_ACCOUNT.holder,
+        sourceLabel: snapshot?.sourceLabel?.trim() || undefined,
+      };
+    }
+
+    if (referrerCode) {
+      for (const group of groups) {
+        const member = group.members?.find((m) => m.code === referrerCode);
+        if (!member) continue;
+        const bank = member.depositBank?.trim();
+        const account = member.depositAccount?.trim();
+        if (bank && account) {
+          return {
+            bank,
+            account,
+            holder: member.depositHolder?.trim() || member.label || DEFAULT_DEPOSIT_ACCOUNT.holder,
+            sourceLabel: member.label,
+          };
+        }
+      }
+    }
+
+    return { ...DEFAULT_DEPOSIT_ACCOUNT };
   }
 
   async cancelApplication(applicationId: string, userId: string) {

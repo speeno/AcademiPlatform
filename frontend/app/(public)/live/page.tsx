@@ -34,7 +34,7 @@ const sessions: LiveSession[] = [
     type: 'info',
     title: 'AI ISO 국제자격증 과정 온라인 설명회',
     description:
-      'ISO 17024 기반 AI 국제자격증의 가치와 취득 방법, 교육 과정 커리큘럼을 상세히 안내합니다. 자격증 취득에 관심 있으신 분 누구나 참여 가능합니다.',
+      'ISO/IEC 17024 기반 AI 국제자격증의 가치와 취득 방법, 교육 과정 커리큘럼을 상세히 안내합니다. 자격증 취득에 관심 있으신 분 누구나 참여 가능합니다.',
     date: '2026-03-25',
     time: '19:00',
     duration: '60분',
@@ -77,7 +77,7 @@ const pastSessions = [
   {
     id: 'p1',
     title: 'AI ISO 자격증 1기 설명회 다시보기',
-    description: 'ISO 17024 AI 국제자격증 1기 설명회 녹화 영상입니다.',
+    description: 'ISO/IEC 17024 AI 국제자격증 1기 설명회 녹화 영상입니다.',
     youtubeId: 'dQw4w9WgXcQ',
     date: '2026-02-15',
     views: 1240,

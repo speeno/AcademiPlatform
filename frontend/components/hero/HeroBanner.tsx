@@ -53,7 +53,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     overlayOpacity: 0.62,
     badge: 'ISO/IEC 17024 국제인증 자격 교육',
     title: 'AI 시대,\n**자격**으로\n증명하세요',
-    subtitle: '교육 신청부터 시험 접수까지 하나의 플랫폼에서.\nISO 17024 기반 AI 자격증으로 경쟁력을 키우세요.',
+    subtitle: '교육 신청부터 시험 접수까지 하나의 플랫폼에서.\nISO/IEC 17024 기반 AI 자격증으로 경쟁력을 키우세요.',
     primaryButton: { text: '교육과정 보기', href: '/courses' },
     secondaryButton: { text: '시험 접수 바로가기', href: '/exam' },
     promoCard: {

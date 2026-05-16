@@ -117,6 +117,12 @@ export default function ExamApplyPage() {
       const body = {
         ...formData,
         ...(selectedMemberCode ? { referrerCode: selectedMemberCode } : {}),
+        depositAccount: {
+          bank: depositAccount.bank,
+          account: depositAccount.account,
+          holder: depositAccount.holder,
+          ...(depositAccount.sourceLabel ? { sourceLabel: depositAccount.sourceLabel } : {}),
+        },
       };
       const res = await fetch(`${API_BASE}/exam/sessions/${sessionId}/apply`, {
         method: 'POST',

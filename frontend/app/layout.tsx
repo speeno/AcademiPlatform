@@ -9,19 +9,19 @@ export const metadata: Metadata = {
     default: 'AcademiQ — Learn. Certify. Succeed.',
   },
   description:
-    'ISO 17024 기반 AI 자격 교육 플랫폼. 교육 신청부터 시험 접수까지 한 곳에서.',
+    'ISO/IEC 17024 기반 AI 자격 교육 플랫폼. 교육 신청부터 시험 접수까지 한 곳에서.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://academiq.co.kr'),
   openGraph: {
     type: 'website',
     siteName: 'AcademiQ',
     title: 'AcademiQ — Learn. Certify. Succeed.',
-    description: 'ISO 17024 기반 AI 자격 교육 + 시험접수 통합 플랫폼',
+    description: 'ISO/IEC 17024 기반 AI 자격 교육 + 시험접수 통합 플랫폼',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'AcademiQ' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AcademiQ',
-    description: 'ISO 17024 기반 AI 자격 교육 + 시험접수 통합 플랫폼',
+    description: 'ISO/IEC 17024 기반 AI 자격 교육 + 시험접수 통합 플랫폼',
     images: ['/og-image.png'],
   },
   icons: {
