@@ -33,3 +33,14 @@ export function redirectToLogin(router: AppRouterInstance, nextPath: string) {
   router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
 }
 
+/** 로그인 후 이동 경로. `next`가 안전한 내부 경로면 우선, 없으면 역할별 기본 경로 */
+export function getPostLoginRedirect(next: string | null | undefined, role?: string): string {
+  if (next && next.startsWith('/') && !next.startsWith('//') && !next.includes('://')) {
+    return next;
+  }
+  if (role === 'SUPER_ADMIN' || role === 'OPERATOR') {
+    return '/admin/dashboard';
+  }
+  return '/classroom';
+}
+

@@ -3,6 +3,7 @@ import { Calendar, MapPin, Users, ArrowRight, ClipboardList, Briefcase, CheckCir
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PriceDisplay } from '@/components/ui/price-display';
 import type { Metadata } from 'next';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 
@@ -174,9 +175,11 @@ export default async function ExamPage() {
                       </div>
 
                       <div className="flex flex-col items-end gap-2">
-                        <span className="text-lg font-extrabold" style={{ color: 'var(--brand-orange)' }}>
-                          {session.fee === 0 ? '무료' : `${session.fee.toLocaleString()}원`}
-                        </span>
+                        <PriceDisplay
+                          price={Number(session.fee) || 0}
+                          className="text-lg font-extrabold"
+                          style={{ color: 'var(--brand-orange)' }}
+                        />
                         <Link href={`/exam/${session.id}/apply`}>
                           <BrandButton
                             variant={isOpen ? 'primary' : 'outline'}

@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 
@@ -8,8 +9,37 @@ dotenv.config();
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter } as any);
 
+const DEFAULT_ADMIN_EMAIL = 'admin@academiq.kr';
+const DEFAULT_ADMIN_PASSWORD = 'admin123';
+
+async function seedAdminUser() {
+  const email = (process.env.SEED_ADMIN_EMAIL ?? DEFAULT_ADMIN_EMAIL).trim().toLowerCase();
+  const password = process.env.SEED_ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD;
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  const user = await prisma.user.upsert({
+    where: { email },
+    create: {
+      email,
+      passwordHash,
+      name: 'AcademiQ 관리자',
+      role: UserRole.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
+    },
+    update: {
+      passwordHash,
+      role: UserRole.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  console.log(`Admin user ready: ${user.email} (role=${user.role})`);
+}
+
 async function main() {
   console.log('Seeding database...');
+
+  await seedAdminUser();
 
   // 홍보영상 갤러리 시드
   const shortsGalleryKey = 'shorts_gallery';

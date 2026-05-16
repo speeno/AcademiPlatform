@@ -7,6 +7,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { PriceDisplay } from '@/components/ui/price-display';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 
@@ -192,7 +193,7 @@ export default function ExamApplyPage() {
               {referrerGroups.length > 0 && (
                 <div className="rounded-lg border bg-gray-50 p-4 space-y-3">
                   <label className="text-sm font-medium text-gray-700 block">
-                    권유자 <span className="text-gray-400 font-normal">(선택사항)</span>
+                    신청 계기 <span className="text-gray-400 font-normal">(선택사항)</span>
                   </label>
                   <select
                     className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
@@ -253,14 +254,16 @@ export default function ExamApplyPage() {
                   <span className="font-medium">{formData.email}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">응시료</span>
-                  <span className="font-bold text-base" style={{ color: 'var(--brand-orange)' }}>
-                    {fee.toLocaleString()}원
-                  </span>
+                  <span className="text-gray-500">접수비</span>
+                  <PriceDisplay
+                    price={fee}
+                    className="font-bold text-base"
+                    style={{ color: 'var(--brand-orange)' }}
+                  />
                 </div>
                 {selectedMember && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">권유자</span>
+                    <span className="text-gray-500">신청 계기</span>
                     <span className="font-medium">{selectedMember.label}</span>
                   </div>
                 )}
