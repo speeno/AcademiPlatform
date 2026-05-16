@@ -7,8 +7,16 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { PriceDisplay } from '@/components/ui/price-display';
-import { buildAuthHeader } from '@/lib/auth';
+import { buildAuthHeader, getAccessToken, redirectToLogin } from '@/lib/auth';
+import {
+  getMemberDepositAccount,
+  type ReferrerGroup,
+} from '@/lib/referrer';
+import {
+  ExamApplySessionSummary,
+  type ExamSessionSummaryData,
+} from './ExamApplySessionSummary';
+import { ExamDepositAccountInfo } from './ExamDepositAccountInfo';
 import { API_BASE } from '@/lib/api-base';
 
 const FORM_FIELDS = [
@@ -22,18 +30,6 @@ const FORM_FIELDS = [
   { key: 'experience', label: 'AI 관련 경력 (년)', required: false, type: 'number', placeholder: '0' },
 ];
 
-interface ReferrerMember {
-  code: string;
-  label: string;
-}
-
-interface ReferrerGroup {
-  id: string;
-  groupName: string;
-  members: ReferrerMember[];
-  isActive: boolean;
-}
-
 export default function ExamApplyPage() {
   const router = useRouter();
   const params = useParams();
@@ -43,22 +39,45 @@ export default function ExamApplyPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(false);
-  const [fee, setFee] = useState(0);
-  const [sessionName, setSessionName] = useState('시험 접수');
+  const [sessionInfo, setSessionInfo] = useState<ExamSessionSummaryData | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   const [referrerGroups, setReferrerGroups] = useState<ReferrerGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [selectedMemberCode, setSelectedMemberCode] = useState('');
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    const applyPath = `/exam/${sessionId}/apply`;
+    if (!getAccessToken()) {
+      redirectToLogin(router, applyPath);
+      return;
+    }
+    setAuthReady(true);
+  }, [router, sessionId]);
+
+  useEffect(() => {
+    if (!authReady) return;
+
     const fetchSession = async () => {
+      setSessionLoading(true);
       try {
         const res = await fetch(`${API_BASE}/exam/sessions/${sessionId}`);
         if (!res.ok) return;
         const data = await res.json();
-        setFee(Number(data.fee) || 0);
-        setSessionName(`${data.qualificationName ?? '시험'} ${data.roundName ?? ''}`.trim());
-      } catch {}
+        setSessionInfo({
+          qualificationName: data.qualificationName ?? '시험',
+          roundName: data.roundName ?? '',
+          examAt: data.examAt,
+          place: data.place,
+          applyStartAt: data.applyStartAt,
+          applyEndAt: data.applyEndAt,
+          fee: Number(data.fee) || 0,
+        });
+      } catch {
+      } finally {
+        setSessionLoading(false);
+      }
     };
 
     const fetchReferrerGroups = async () => {
@@ -73,10 +92,11 @@ export default function ExamApplyPage() {
 
     fetchSession();
     fetchReferrerGroups();
-  }, [sessionId]);
+  }, [sessionId, authReady]);
 
   const selectedGroup = referrerGroups.find((g) => g.id === selectedGroupId);
   const selectedMember = selectedGroup?.members.find((m) => m.code === selectedMemberCode);
+  const depositAccount = getMemberDepositAccount(selectedMember);
 
   const handleFormChange = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -107,12 +127,20 @@ export default function ExamApplyPage() {
       if (!res.ok) throw new Error(data.message ?? '접수에 실패했습니다.');
       toast.success('시험 접수가 완료되었습니다.');
       setStep('complete');
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '접수에 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-hero-gradient flex items-center justify-center p-4">
+        <p className="text-sm text-gray-500">로그인 확인 중...</p>
+      </div>
+    );
+  }
 
   if (step === 'complete') {
     return (
@@ -129,10 +157,12 @@ export default function ExamApplyPage() {
           </h2>
           <p className="text-gray-600 mb-5">시험 접수가 완료되었습니다.</p>
 
-          <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 mb-6 text-left space-y-2">
-            <p className="text-sm text-blue-800">
-              📧 접수비 입금 계좌 안내 및 학습 교재는 등록하신 이메일로 전달될 예정입니다.
-            </p>
+          <div className="text-left mb-4">
+            <ExamApplySessionSummary session={sessionInfo} />
+          </div>
+
+          <div className="text-left mb-6">
+            <ExamDepositAccountInfo account={depositAccount} />
           </div>
 
           <BrandButton variant="primary" onClick={() => router.push('/mypage')} fullWidth>
@@ -169,15 +199,18 @@ export default function ExamApplyPage() {
         </div>
 
         <BrandCard padding="lg">
-          <h1 className="text-2xl font-extrabold mb-6" style={{ color: 'var(--brand-blue)' }}>
+          <h1 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--brand-blue)' }}>
             {step === 'form' ? '시험 접수 신청' : '접수 확인'}
           </h1>
+          <p className="text-sm text-gray-500 mb-4">아래 시험에 대한 접수를 진행합니다.</p>
+
+          <ExamApplySessionSummary session={sessionInfo} loading={sessionLoading} />
 
           {step === 'form' && (
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-5">
               {FORM_FIELDS.map((field) => (
                 <div key={field.key}>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  <label className="text-sm font-medium text-gray-700 mb-2.5 block">
                     {field.label} {field.required && <span className="text-red-500">*</span>}
                   </label>
                   <Input
@@ -223,6 +256,8 @@ export default function ExamApplyPage() {
                 </div>
               )}
 
+              <ExamDepositAccountInfo account={depositAccount} />
+
               <div className="flex items-start gap-3 pt-3 border-t border-border">
                 <input
                   type="checkbox"
@@ -244,6 +279,8 @@ export default function ExamApplyPage() {
 
           {step === 'payment' && (
             <div className="space-y-6">
+              <ExamDepositAccountInfo account={depositAccount} />
+
               <div className="rounded-xl bg-gray-50 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">신청자</span>
@@ -253,26 +290,12 @@ export default function ExamApplyPage() {
                   <span className="text-gray-500">이메일</span>
                   <span className="font-medium">{formData.email}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">접수비</span>
-                  <PriceDisplay
-                    price={fee}
-                    className="font-bold text-base"
-                    style={{ color: 'var(--brand-orange)' }}
-                  />
-                </div>
                 {selectedMember && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">신청 계기</span>
                     <span className="font-medium">{selectedMember.label}</span>
                   </div>
                 )}
-              </div>
-
-              <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
-                <p className="text-sm text-blue-800">
-                  📧 접수비 입금 계좌 안내 및 학습 교재는 등록하신 이메일로 전달될 예정입니다.
-                </p>
               </div>
 
               <div className="flex gap-3">

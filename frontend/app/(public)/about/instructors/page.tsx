@@ -10,17 +10,13 @@ const instructors = [
   {
     name: '이현길',
     summary: [
-      '이현길은 네이버 블로그 「통마정(통합마케팅정보)」의 운영자로, 누적 방문자 1,200만 이상을 기록한 파워블로거이다.',
-      '연세대학교 생물학과에서 수학했으며, 온라인과 오프라인을 아우르는 마케팅 및 국내외 유통 분야에서 풍부한 경험을 쌓아왔다.',
-      '그는 특히 네이버 블로그 최적화, 검색엔진 로직 변화 대응 전략, AI 도구 활용을 중심으로 한 온라인 마케팅 콘텐츠를 제작해왔다.',
-      '마케팅 실무 관점의 도서 집필과 강의 활동을 병행하며, “네이버 블로그 세팅을 AI로 활용하는 방법”과 같은 실용적인 주제를 다룬 글과 영상을 통해 변화하는 디지털 환경 속에서 독자들이 효과적으로 대응할 수 있도록 돕고 있다.',
+      '이현길은 다년간의 국제 무역, 온·오프라인 유통, 마케팅 컨설팅 경험을 바탕으로 AI 활용 분야에 진출하여, ISO/IEC 17024 AI 부문 개인 국제자격증 평가 위원으로서 AI 활용 글로벌 인재 양성에 앞장서고 있다.',
+      '개척과 창작 활동을 이어가며, 실무 현장과 교육·자격 평가를 연결하는 강의·저술·컨설팅을 수행하고 있다.',
     ],
     careers: [
-      '네이버 블로그 「통마정(통합마케팅정보)」 운영 파워블로거',
-      '서울시소상공인연합회 온라인교육 및 정보지원 컨설턴트 역임',
-      'ISO/IEC, SCC, IQCS 국제 AI부문 자격증 Evaluator & Invigilator',
-      'AI ISO17024 교육 및 자격증 발급 심사 전담 기업 GTC 대표',
-      '마케팅 실무 도서 『네이버 블로그 마스터』 대표 저자',
+      '전 서울시 소상공인 마케팅 컨설턴트',
+      'ISO/IEC 17024 AI 부문 국제자격증 Evaluator & Invigilator',
+      'AI 국제자격증 교육 GTC Team 대표',
     ],
   },
   {
@@ -55,9 +51,12 @@ interface BookOffer {
 
 const INSTRUCTOR_BOOKS: Record<string, BookOffer[]> = {
   이현길: [
-    { id: 'book-blog-master', title: '네이버 블로그 마스터 (마케팅 실무 도서)' },
-    { id: 'book-prompt-engineer', title: 'IQCS AI PROMPT ENGINEER - ISO 자격증 과정' },
-    { id: 'book-creator', title: 'IQCS AI Creator - ISO 국제표준 자격증 과정' },
+    { id: 'book-ai-intro-1', title: 'AI 전문가 국제자격증 과정 AI 실습 인문서 1 『AI, 낯설지만 필요한 이야기』 (공저)' },
+    { id: 'book-ai-intro-2', title: 'AI 전문가 국제자격증 과정 AI 실습 인문서 2 『AI, 무엇을 알고 활용해야 하는가』 (공저)' },
+    { id: 'book-creator', title: 'AI ISO/IEC 17024 국제자격증 『크리에이터 과정』' },
+    { id: 'book-prompt-engineer', title: 'AI ISO/IEC 17024 국제자격증 『프롬프트 엔지니어 과정』' },
+    { id: 'book-blog-master', title: '마케팅 실무 도서 『네이버 블로그 마스터』' },
+    { id: 'book-ai-package-12', title: 'AI 패키지 1. AI와 짧은 동행 12' },
   ],
   남동선: [
     { id: 'book-intro-2', title: 'IQCS 국제 AI 실습 입문 2 - AI, 낯설지만 필요한 이야기' },

@@ -5,19 +5,10 @@ import { Plus, Save, Trash2, UserPlus, X, BarChart3, Settings2, Loader2, Chevron
 import { BrandButton } from '@/components/ui/brand-button';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
+import type { ReferrerGroup, ReferrerMember } from '@/lib/referrer';
 import { toast } from 'sonner';
 
-interface Member {
-  code: string;
-  label: string;
-}
-
-interface ReferrerGroup {
-  id: string;
-  groupName: string;
-  members: Member[];
-  isActive: boolean;
-}
+type Member = ReferrerMember;
 
 interface ExamSubStat {
   examName: string;
@@ -151,7 +142,7 @@ export default function AdminReferrersPage() {
     }
   };
 
-  const updateGroup = (idx: number, field: string, value: any) => {
+  const updateGroup = <K extends keyof ReferrerGroup>(idx: number, field: K, value: ReferrerGroup[K]) => {
     const next = [...groups];
     next[idx] = { ...next[idx], [field]: value };
     setGroups(next);
@@ -161,7 +152,16 @@ export default function AdminReferrersPage() {
     const next = [...groups];
     const group = next[groupIdx];
     const num = group.members.length + 1;
-    group.members = [...group.members, { code: `${group.groupName}-${String(num).padStart(3, '0')}`, label: `${group.groupName} ${num}` }];
+    group.members = [
+      ...group.members,
+      {
+        code: `${group.groupName}-${String(num).padStart(3, '0')}`,
+        label: `${group.groupName} ${num}`,
+        depositBank: '',
+        depositAccount: '',
+        depositHolder: '',
+      },
+    ];
     setGroups(next);
   };
 
@@ -258,28 +258,56 @@ export default function AdminReferrersPage() {
                 {group.members.length === 0 ? (
                   <p className="text-xs text-gray-400 py-2">멤버가 없습니다. &quot;멤버 추가&quot;를 클릭하세요.</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {group.members.map((member, mIdx) => (
-                      <div key={mIdx} className="flex items-center gap-2">
-                        <input
-                          className="flex-1 border rounded-lg px-3 py-1.5 text-sm"
-                          placeholder="코드 (예: GTC-001)"
-                          value={member.code}
-                          onChange={(e) => updateMember(gIdx, mIdx, 'code', e.target.value)}
-                        />
-                        <input
-                          className="flex-1 border rounded-lg px-3 py-1.5 text-sm"
-                          placeholder="표시명 (예: GTC Team 1)"
-                          value={member.label}
-                          onChange={(e) => updateMember(gIdx, mIdx, 'label', e.target.value)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeMember(gIdx, mIdx)}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                      <div key={mIdx} className="rounded-lg border bg-gray-50 p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            className="flex-1 border rounded-lg px-3 py-1.5 text-sm bg-white"
+                            placeholder="코드 (예: GTC-001)"
+                            value={member.code}
+                            onChange={(e) => updateMember(gIdx, mIdx, 'code', e.target.value)}
+                          />
+                          <input
+                            className="flex-1 border rounded-lg px-3 py-1.5 text-sm bg-white"
+                            placeholder="표시명 (예: GTC Team 1)"
+                            value={member.label}
+                            onChange={(e) => updateMember(gIdx, mIdx, 'label', e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeMember(gIdx, mIdx)}
+                            className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div>
+                          <p className="text-[11px] font-medium text-gray-500 mb-1.5">
+                            멤버별 입금 계좌 정보 <span className="font-normal">(선택사항)</span>
+                          </p>
+                          <div className="grid md:grid-cols-3 gap-2">
+                            <input
+                              className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+                              placeholder="입금은행 (예: 농협은행)"
+                              value={member.depositBank ?? ''}
+                              onChange={(e) => updateMember(gIdx, mIdx, 'depositBank', e.target.value)}
+                            />
+                            <input
+                              className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+                              placeholder="입금계좌"
+                              value={member.depositAccount ?? ''}
+                              onChange={(e) => updateMember(gIdx, mIdx, 'depositAccount', e.target.value)}
+                            />
+                            <input
+                              className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+                              placeholder="예금주"
+                              value={member.depositHolder ?? ''}
+                              onChange={(e) => updateMember(gIdx, mIdx, 'depositHolder', e.target.value)}
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useAuthState } from '@/lib/use-auth-state';
 
 interface PriceDisplayProps {
   price: number;
@@ -15,11 +15,7 @@ export function PriceDisplay({
   style,
   loginMessage = '로그인 후 확인',
 }: PriceDisplayProps) {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem('accessToken'));
-  }, []);
+  const isLoggedIn = useAuthState();
 
   if (isLoggedIn === null) {
     return (

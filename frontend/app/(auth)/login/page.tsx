@@ -7,7 +7,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
-import { setAccessToken } from '@/lib/auth';
+import { getPostLoginRedirect, setAccessToken } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
 
@@ -32,12 +32,11 @@ export default function LoginPage() {
       setAccessToken(data.accessToken);
       toast.success('로그인 되었습니다.');
 
-      const role = data.user?.role;
-      if (role === 'SUPER_ADMIN' || role === 'OPERATOR') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/classroom');
-      }
+      const nextPath =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('next')
+          : null;
+      router.push(getPostLoginRedirect(nextPath, data.user?.role));
     } catch (err: any) {
       toast.error(err.message);
     } finally {

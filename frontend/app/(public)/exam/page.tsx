@@ -1,9 +1,9 @@
-import Link from 'next/link';
-import { Calendar, MapPin, Users, ArrowRight, ClipboardList, Briefcase, CheckCircle2 } from 'lucide-react';
+import { Calendar, MapPin, Users, ClipboardList, Briefcase, CheckCircle2 } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { BrandButton } from '@/components/ui/brand-button';
 import { PriceDisplay } from '@/components/ui/price-display';
+import { ExamApplyButton } from './ExamApplyButton';
+import { ExamPageAuthRefresh } from './ExamPageAuthRefresh';
 import type { Metadata } from 'next';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 
@@ -121,7 +121,8 @@ export default async function ExamPage() {
     .filter((m): m is { name: string; info: QualificationEntry } => !!m.info);
 
   return (
-    <div>
+    <>
+      <ExamPageAuthRefresh />
       <section className="bg-hero-gradient py-14 border-b">
         <div className="max-w-5xl mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>
@@ -180,16 +181,11 @@ export default async function ExamPage() {
                           className="text-lg font-extrabold"
                           style={{ color: 'var(--brand-orange)' }}
                         />
-                        <Link href={`/exam/${session.id}/apply`}>
-                          <BrandButton
-                            variant={isOpen ? 'primary' : 'outline'}
-                            size="sm"
-                            disabled={!isOpen}
-                          >
-                            {isOpen ? '접수하기' : statusInfo.text}
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </BrandButton>
-                        </Link>
+                        <ExamApplyButton
+                          sessionId={session.id}
+                          isOpen={isOpen}
+                          statusLabel={statusInfo.text}
+                        />
                       </div>
                     </div>
                   </BrandCard>
@@ -234,6 +230,6 @@ export default async function ExamPage() {
           </div>
         </section>
       )}
-    </div>
+    </>
   );
 }
