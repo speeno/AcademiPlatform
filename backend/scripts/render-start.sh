@@ -10,6 +10,15 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
   exit 1
 fi
 
+if [[ "${DATABASE_URL}" != *"sslmode="* ]]; then
+  if [[ "${DATABASE_URL}" == *"?"* ]]; then
+    export DATABASE_URL="${DATABASE_URL}&sslmode=require"
+  else
+    export DATABASE_URL="${DATABASE_URL}?sslmode=require"
+  fi
+  echo "==> [render-start] Appended sslmode=require to DATABASE_URL"
+fi
+
 echo "==> [render-start] Running prisma migrate deploy..."
 npx prisma migrate deploy
 
