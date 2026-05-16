@@ -72,7 +72,7 @@ git push -u origin main
 3. 설정:
    - **Root Directory**: `backend`
    - **Build Command**: `npm ci && npm run db:generate && npm run build`
-   - **Start Command**: `npm run db:migrate:deploy && npm run start:prod`
+   - **Start Command**: `npm run start:render`
    - **Health Check Path**: `/api/health`
 
 ### 2-4. 환경변수 설정
@@ -82,8 +82,7 @@ Render 대시보드 → Web Service → `Environment` 탭에서 입력:
 | 키 | 값 |
 |---|---|
 | `NODE_ENV` | `production` |
-| `PORT` | `4400` |
-| `DATABASE_URL` | PostgreSQL Internal Connection String |
+| `DATABASE_URL` | PostgreSQL **Internal** Connection String (`?sslmode=require` 포함 권장) |
 | `JWT_SECRET` | 랜덤 32자 이상 문자열 |
 | `JWT_REFRESH_SECRET` | 랜덤 32자 이상 문자열 |
 | `VIEWER_TOKEN_SECRET` | 랜덤 문자열 |

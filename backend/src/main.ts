@@ -39,4 +39,8 @@ async function bootstrap() {
   console.log(`🚀 AcademiQ API 서버 실행 중: http://${host}:${port}/api`);
 }
 
-bootstrap();
+bootstrap().catch((error: unknown) => {
+  const message = error instanceof Error ? error.stack ?? error.message : String(error);
+  console.error('❌ AcademiQ API bootstrap failed:', message);
+  process.exit(1);
+});

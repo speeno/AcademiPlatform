@@ -11,10 +11,9 @@ export class StoragePreflightService implements OnModuleInit {
   onModuleInit() {
     const nodeEnv = (this.config.get<string>('NODE_ENV') ?? 'development').toLowerCase();
     if (nodeEnv === 'test') return;
-    const strictByEnv = nodeEnv === 'production';
-    const strictByFlag =
+    // 배포 초기에는 S3/R2 미설정으로도 API가 기동되도록, 명시적 플래그일 때만 차단
+    const isStrict =
       (this.config.get<string>('STORAGE_PREFLIGHT_STRICT') ?? 'false').toLowerCase() === 'true';
-    const isStrict = strictByEnv || strictByFlag;
 
     const storage = resolveStorageConfig(this.config);
     const missing = getStorageMissingFields(storage);
