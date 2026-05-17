@@ -74,12 +74,18 @@ services:
       - key: TEXTBOOK_STORAGE_PATH
         value: /data/textbooks
 
-      # 결제 (PortOne)
+      # 결제 — PortOne 연동 전까지 false (키 불필요, API 503)
+      - key: PAYMENT_MODULE_ENABLED
+        value: "false"
+
+      # 결제 (PortOne) — PAYMENT_MODULE_ENABLED=true 전환 후 설정
       - key: PORTONE_API_KEY
         sync: false
       - key: PORTONE_API_SECRET
         sync: false
       - key: PORTONE_IMP_CODE
+        sync: false
+      - key: PORTONE_WEBHOOK_SECRET
         sync: false
 
       # 알림 (선택)

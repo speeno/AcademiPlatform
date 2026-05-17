@@ -2,16 +2,24 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { timingSafeEqual } from 'crypto';
+import { isPaymentModuleEnabled } from '../../config/payment-env';
 
 @Injectable()
 export class PortoneWebhookGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
+    if (!isPaymentModuleEnabled()) {
+      throw new ServiceUnavailableException(
+        '결제 기능이 아직 활성화되지 않았습니다.',
+      );
+    }
+
     const secret = this.config.get<string>('PORTONE_WEBHOOK_SECRET', '')?.trim();
     if (!secret) {
       if (process.env.NODE_ENV === 'production') {

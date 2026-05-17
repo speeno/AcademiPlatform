@@ -1,3 +1,5 @@
+import { isPaymentModuleEnabled } from './payment-env';
+
 /**
  * 부팅 전 필수 환경변수 검증. 누락 시 프로세스를 즉시 종료합니다.
  *
@@ -5,10 +7,9 @@
  * - 전 환경 공통: JWT_SECRET, JWT_REFRESH_SECRET (Auth 부팅 자체가 불가)
  * - 프로덕션(NODE_ENV=production):
  *   - DATABASE_URL: 부팅 시 DB 미연결을 빠르게 노출
- *   - PORTONE_API_KEY / PORTONE_API_SECRET: 결제 검증 불가 → 우회 위험
- *   - PORTONE_WEBHOOK_SECRET: 웹훅 가드가 무인증 통과를 거부하므로 미설정 시 결제 후처리 자체가 막힘
- *   - VIEWER_TOKEN_SECRET 또는 JWT_SECRET: 교재 뷰어 토큰 서명. 'changeme' 등 약한 fallback 금지.
- * - 스테이징 등 비프로덕션은 경고로 완화.
+ *   - PAYMENT_MODULE_ENABLED=true(기본)일 때만 PORTONE_* 필수
+ *   - VIEWER_TOKEN_SECRET 또는 JWT_SECRET: 교재 뷰어 토큰 서명
+ * - PAYMENT_MODULE_ENABLED=false: PortOne 미설정 허용, 결제 API는 런타임 503
  */
 export function validateRequiredEnv(): void {
   const baseRequired = ['JWT_SECRET', 'JWT_REFRESH_SECRET'] as const;
@@ -25,29 +26,39 @@ export function validateRequiredEnv(): void {
   }
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const paymentEnabled = isPaymentModuleEnabled();
 
-  // 프로덕션 필수: 결제·DB·뷰어 시크릿
   if (isProduction) {
-    const prodRequired = [
-      'DATABASE_URL',
-      'PORTONE_API_KEY',
-      'PORTONE_API_SECRET',
-      'PORTONE_WEBHOOK_SECRET',
-    ] as const;
-    const prodMissing = prodRequired.filter(
-      (key) => !process.env[key]?.trim(),
-    );
+    const prodRequired: string[] = ['DATABASE_URL'];
+    if (paymentEnabled) {
+      prodRequired.push(
+        'PORTONE_API_KEY',
+        'PORTONE_API_SECRET',
+        'PORTONE_WEBHOOK_SECRET',
+      );
+    }
+
+    const prodMissing = prodRequired.filter((key) => !process.env[key]?.trim());
     if (prodMissing.length > 0) {
       console.error(
         `❌ 프로덕션 필수 환경변수가 누락되었습니다: ${prodMissing.join(', ')}`,
       );
-      console.error(
-        '   결제 검증·웹훅 인증·DB 연결이 보장되지 않아 부팅을 중단합니다.',
-      );
+      if (paymentEnabled) {
+        console.error(
+          '   결제 연동 전이라면 PAYMENT_MODULE_ENABLED=false 로 부팅할 수 있습니다.',
+        );
+      } else {
+        console.error('   DATABASE_URL 등 필수 항목을 확인하세요.');
+      }
       process.exit(1);
     }
 
-    // 뷰어 토큰 시크릿: VIEWER_TOKEN_SECRET 권장, 미설정 시 JWT_SECRET fallback 가능.
+    if (!paymentEnabled) {
+      console.warn(
+        '⚠️  PAYMENT_MODULE_ENABLED=false — PortOne 환경변수 없이 부팅합니다. 결제 API는 비활성입니다.',
+      );
+    }
+
     const hasViewerSecret =
       !!process.env.VIEWER_TOKEN_SECRET?.trim() ||
       !!process.env.JWT_SECRET?.trim();
@@ -63,8 +74,8 @@ export function validateRequiredEnv(): void {
       );
     }
 
-    // PAYMENT_DEV_BYPASS 가 프로덕션에서 켜져 있으면 거부.
     if (
+      paymentEnabled &&
       (process.env.PAYMENT_DEV_BYPASS ?? '').toLowerCase() === 'true'
     ) {
       console.error(
@@ -73,7 +84,6 @@ export function validateRequiredEnv(): void {
       process.exit(1);
     }
   } else {
-    // 비프로덕션: 결제 키 누락은 경고만(개발 편의).
     const devPaymentKeys = [
       'PORTONE_API_KEY',
       'PORTONE_API_SECRET',
@@ -81,9 +91,14 @@ export function validateRequiredEnv(): void {
     const missingPayment = devPaymentKeys.filter(
       (key) => !process.env[key]?.trim(),
     );
-    if (missingPayment.length > 0) {
+    if (paymentEnabled && missingPayment.length > 0) {
       console.warn(
         `⚠️  결제 키 미설정(${missingPayment.join(', ')}) — PAYMENT_DEV_BYPASS=true 가 아니면 결제 검증이 실패합니다.`,
+      );
+    }
+    if (!paymentEnabled) {
+      console.warn(
+        '⚠️  PAYMENT_MODULE_ENABLED=false — 개발 환경에서 결제 API가 비활성입니다.',
       );
     }
   }

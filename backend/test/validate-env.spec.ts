@@ -32,6 +32,7 @@ describe('validateRequiredEnv (P0)', () => {
 
   it('프로덕션에서 PORTONE_WEBHOOK_SECRET 누락 시 종료', () => {
     process.env.NODE_ENV = 'production';
+    process.env.PAYMENT_MODULE_ENABLED = 'true';
     process.env.JWT_SECRET = 'a-secret';
     process.env.JWT_REFRESH_SECRET = 'b-secret';
     process.env.DATABASE_URL = 'postgres://x';
@@ -43,6 +44,7 @@ describe('validateRequiredEnv (P0)', () => {
 
   it('프로덕션에서 PORTONE_API_KEY 누락 시 종료', () => {
     process.env.NODE_ENV = 'production';
+    process.env.PAYMENT_MODULE_ENABLED = 'true';
     process.env.JWT_SECRET = 'a-secret';
     process.env.JWT_REFRESH_SECRET = 'b-secret';
     process.env.DATABASE_URL = 'postgres://x';
@@ -54,6 +56,7 @@ describe('validateRequiredEnv (P0)', () => {
 
   it('프로덕션에서 DATABASE_URL 누락 시 종료', () => {
     process.env.NODE_ENV = 'production';
+    process.env.PAYMENT_MODULE_ENABLED = 'true';
     process.env.JWT_SECRET = 'a-secret';
     process.env.JWT_REFRESH_SECRET = 'b-secret';
     delete process.env.DATABASE_URL;
@@ -65,6 +68,7 @@ describe('validateRequiredEnv (P0)', () => {
 
   it('프로덕션에서 PAYMENT_DEV_BYPASS=true 면 종료', () => {
     process.env.NODE_ENV = 'production';
+    process.env.PAYMENT_MODULE_ENABLED = 'true';
     process.env.JWT_SECRET = 'a-secret';
     process.env.JWT_REFRESH_SECRET = 'b-secret';
     process.env.DATABASE_URL = 'postgres://x';
@@ -77,6 +81,7 @@ describe('validateRequiredEnv (P0)', () => {
 
   it('프로덕션 필수 변수 모두 갖춰진 경우 정상 통과', () => {
     process.env.NODE_ENV = 'production';
+    process.env.PAYMENT_MODULE_ENABLED = 'true';
     process.env.JWT_SECRET = 'a-secret';
     process.env.JWT_REFRESH_SECRET = 'b-secret';
     process.env.DATABASE_URL = 'postgres://x';
@@ -85,6 +90,18 @@ describe('validateRequiredEnv (P0)', () => {
     process.env.PORTONE_WEBHOOK_SECRET = 'w';
     process.env.PAYMENT_DEV_BYPASS = 'false';
     process.env.VIEWER_TOKEN_SECRET = 'v';
+    expect(() => validateRequiredEnv()).not.toThrow();
+  });
+
+  it('프로덕션 PAYMENT_MODULE_ENABLED=false 이면 PortOne 없이 통과', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.PAYMENT_MODULE_ENABLED = 'false';
+    process.env.JWT_SECRET = 'a-secret';
+    process.env.JWT_REFRESH_SECRET = 'b-secret';
+    process.env.DATABASE_URL = 'postgres://x';
+    delete process.env.PORTONE_API_KEY;
+    delete process.env.PORTONE_API_SECRET;
+    delete process.env.PORTONE_WEBHOOK_SECRET;
     expect(() => validateRequiredEnv()).not.toThrow();
   });
 

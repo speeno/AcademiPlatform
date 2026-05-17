@@ -4,6 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -17,6 +18,7 @@ import {
 import { PaymentPricingService } from './services/payment-pricing.service';
 import { PortOneClient } from './services/portone.client';
 import { PaymentPostProcessor } from './services/payment-post-processor.service';
+import { isPaymentModuleEnabled } from '../config/payment-env';
 
 /**
  * 결제 흐름의 오케스트레이터.
@@ -57,6 +59,14 @@ export class PaymentService {
       postProcessor ?? new PaymentPostProcessor(coursesService);
   }
 
+  private assertPaymentModuleEnabled(): void {
+    if (!isPaymentModuleEnabled()) {
+      throw new ServiceUnavailableException(
+        '결제 기능이 아직 활성화되지 않았습니다. 관리자에게 문의해 주세요.',
+      );
+    }
+  }
+
   // 결제 주문 생성 (프론트 -> 포트원 SDK 호출 전)
   async createOrder(
     userId: string,
@@ -64,6 +74,7 @@ export class PaymentService {
     targetId: string,
     clientAmount?: number,
   ) {
+    this.assertPaymentModuleEnabled();
     const pricing = await this.pricing.resolveTargetPricing(
       userId,
       targetType,
@@ -111,6 +122,7 @@ export class PaymentService {
 
   // 포트원 결제 완료 검증 및 처리
   async verifyAndComplete(userId: string, impUid: string, orderNo: string) {
+    this.assertPaymentModuleEnabled();
     const payment = await this.prisma.payment.findUnique({ where: { orderNo } });
     if (!payment) throw new NotFoundException('결제 주문을 찾을 수 없습니다.');
     if (payment.userId !== userId)
@@ -181,6 +193,7 @@ export class PaymentService {
 
   // 포트원 웹훅 처리
   async handleWebhook(body: { imp_uid: string; merchant_uid: string; status: string }) {
+    this.assertPaymentModuleEnabled();
     const { imp_uid, merchant_uid, status } = body;
     const payment = await this.prisma.payment.findUnique({
       where: { orderNo: merchant_uid },
@@ -259,6 +272,7 @@ export class PaymentService {
   }
 
   async requestRefund(paymentId: string, userId: string, reason: string) {
+    this.assertPaymentModuleEnabled();
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
     });
