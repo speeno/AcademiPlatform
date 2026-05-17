@@ -7,8 +7,10 @@ import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PriceDisplay } from '@/components/ui/price-display';
 import type { Metadata } from 'next';
-import { API_BASE } from '@/lib/api-base';
+import { getServerApiBase } from '@/lib/api-base';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
+import { getServerAuthHeaders } from '@/lib/server-api-fetch';
+import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +22,8 @@ export const metadata: Metadata = {
 async function getCourses() {
   try {
     const res = await fetchWithTimeout(
-      `${API_BASE}/courses?limit=12`,
-      { next: { revalidate: 60 } },
+      `${getServerApiBase()}/courses?limit=12`,
+      { next: { revalidate: 60 }, headers: await getServerAuthHeaders() },
       8000,
     );
     if (!res.ok) return { courses: [], total: 0 };
@@ -35,6 +37,8 @@ export default async function CoursesPage() {
   const { courses } = await getCourses();
 
   return (
+    <>
+    <PublicAuthRefresh />
     <div>
       {/* 헤더 */}
       <section className="bg-hero-gradient py-14 border-b">
@@ -132,5 +136,6 @@ export default async function CoursesPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

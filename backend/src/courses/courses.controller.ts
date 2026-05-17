@@ -16,8 +16,8 @@ export class CoursesController {
   /* 공개 API */
   @Public()
   @Get()
-  findAll(@Query() filter: CourseFilterDto) {
-    return this.coursesService.findAll(filter);
+  findAll(@Query() filter: CourseFilterDto, @CurrentUser() user?: { id: string }) {
+    return this.coursesService.findAll(filter, user?.id);
   }
 
   @Public()
@@ -79,8 +79,8 @@ export class CoursesController {
 
   @Public()
   @Get(':slug')
-  findBySlug(@Param('slug') slug: string) {
-    return this.coursesService.findBySlug(slug);
+  findBySlug(@Param('slug') slug: string, @CurrentUser() user?: { id: string }) {
+    return this.coursesService.findBySlug(slug, user?.id);
   }
 
   @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)

@@ -18,14 +18,15 @@ export class ExamController {
     @Query('status') status?: ExamSessionStatus,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @CurrentUser() user?: { id: string },
   ) {
-    return this.examService.findSessions({ status, page, limit });
+    return this.examService.findSessions({ status, page, limit }, user?.id);
   }
 
   @Public()
   @Get('sessions/:id')
-  findSessionById(@Param('id') id: string) {
-    return this.examService.findSessionById(id);
+  findSessionById(@Param('id') id: string, @CurrentUser() user?: { id: string }) {
+    return this.examService.findSessionById(id, user?.id);
   }
 
   @Public()

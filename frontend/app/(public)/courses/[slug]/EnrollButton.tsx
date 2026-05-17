@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BrandButton } from '@/components/ui/brand-button';
 import { runPortOneCheckout } from '@/lib/payment';
-import { buildAuthHeader } from '@/lib/auth';
+import { buildAuthHeader, getAccessToken } from '@/lib/auth';
+import { useAuthState } from '@/lib/use-auth-state';
 import { toast } from 'sonner';
 
 interface Props {
@@ -14,15 +15,11 @@ interface Props {
 
 export default function EnrollButton({ courseId, price }: Props) {
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const isLoggedIn = useAuthState() === true;
   const router = useRouter();
 
-  useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem('accessToken'));
-  }, []);
-
   const handleEnroll = async () => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (!token) {
       router.push('/login');
       return;

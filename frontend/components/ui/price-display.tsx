@@ -3,7 +3,7 @@
 import { useAuthState } from '@/lib/use-auth-state';
 
 interface PriceDisplayProps {
-  price: number;
+  price: number | null | undefined;
   className?: string;
   style?: React.CSSProperties;
   loginMessage?: string;
@@ -29,6 +29,14 @@ export function PriceDisplay({
     return (
       <span className={className} style={{ ...style, fontSize: style?.fontSize ?? 'inherit' }}>
         {loginMessage}
+      </span>
+    );
+  }
+
+  if (price == null) {
+    return (
+      <span className={className} style={style}>
+        —
       </span>
     );
   }

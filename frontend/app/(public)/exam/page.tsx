@@ -3,11 +3,12 @@ import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { ExamApplyButton } from './ExamApplyButton';
-import { ExamPageAuthRefresh } from './ExamPageAuthRefresh';
+import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
+import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,7 @@ async function getExamSessions() {
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/exam/sessions`,
-      { next: { revalidate: 60 } },
+      { next: { revalidate: 60 }, headers: await getServerAuthHeaders() },
       8000,
     );
     if (!res.ok) return { sessions: [] };
@@ -118,7 +119,7 @@ export default async function ExamPage() {
 
   return (
     <>
-      <ExamPageAuthRefresh />
+      <PublicAuthRefresh />
       <section className="bg-hero-gradient py-14 border-b">
         <PageShell flush>
           <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-brand-blue">

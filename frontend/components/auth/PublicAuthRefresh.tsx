@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { subscribeAuthState } from '@/lib/auth';
 
-/** 시험 접수 목록: 로그인/로그아웃 시 서버 데이터·클라이언트 UI 동기화 */
-export function ExamPageAuthRefresh() {
+/** 로그인/로그아웃 시 SSR 가격 데이터를 다시 불러오기 위해 router.refresh() */
+export function PublicAuthRefresh() {
   const router = useRouter();
 
   useEffect(() => {

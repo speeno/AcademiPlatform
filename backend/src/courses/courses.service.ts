@@ -12,6 +12,7 @@ import {
 import { CreateCourseDto, CourseFilterDto } from './dto/course.dto';
 import { AddLessonDto } from './dto/lesson.dto';
 import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
+import { maskCourseForPublic } from '../common/pricing/public-price-policy';
 
 @Injectable()
 export class CoursesService {
@@ -48,7 +49,7 @@ export class CoursesService {
     return { courses, total, page, limit };
   }
 
-  async findAll(filter: CourseFilterDto) {
+  async findAll(filter: CourseFilterDto, viewerId?: string) {
     const { category, search, page = 1, limit = 12 } = filter;
     const skip = (page - 1) * limit;
 
@@ -73,10 +74,16 @@ export class CoursesService {
       this.prisma.course.count({ where }),
     ]);
 
-    return { courses, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      courses: courses.map((c) => maskCourseForPublic(c, viewerId)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string, viewerId?: string) {
     const course = await this.prisma.course.findFirst({
       where: { slug, status: CourseStatus.ACTIVE },
       include: {
@@ -103,7 +110,7 @@ export class CoursesService {
       },
     });
     if (!course) throw new NotFoundException('교육과정을 찾을 수 없습니다.');
-    return course;
+    return maskCourseForPublic(course, viewerId);
   }
 
   async findById(id: string) {

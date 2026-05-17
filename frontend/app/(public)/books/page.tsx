@@ -4,8 +4,10 @@ import { ExternalLink, BookOpen } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PriceDisplay } from '@/components/ui/price-display';
-import { API_BASE } from '@/lib/api-base';
+import { getServerApiBase } from '@/lib/api-base';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
+import { getServerAuthHeaders } from '@/lib/server-api-fetch';
+import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,8 +29,8 @@ interface BookOffer {
 async function getBookOffers(): Promise<BookOffer[]> {
   try {
     const res = await fetchWithTimeout(
-      `${API_BASE}/settings/public/book_offers`,
-      { next: { revalidate: 30 } },
+      `${getServerApiBase()}/settings/public/book_offers`,
+      { next: { revalidate: 30 }, headers: await getServerAuthHeaders() },
       8000,
     );
     if (!res.ok) return [];
@@ -44,6 +46,8 @@ async function getBookOffers(): Promise<BookOffer[]> {
 export default async function BooksPage() {
   const standaloneBooks = await getBookOffers();
   return (
+    <>
+    <PublicAuthRefresh />
     <div>
       <section className="bg-hero-gradient py-14 border-b border-border">
         <div className="max-w-5xl mx-auto px-4">
@@ -101,5 +105,6 @@ export default async function BooksPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

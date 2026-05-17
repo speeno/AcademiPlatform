@@ -6,14 +6,17 @@ import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { PageShell } from '@/components/layout/PageShell';
 import EnrollButton from './EnrollButton';
-import { API_BASE } from '@/lib/api-base';
+import { API_BASE, getServerApiBase } from '@/lib/api-base';
+import { getServerAuthHeaders } from '@/lib/server-api-fetch';
+import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
 
 async function getCourse(slug: string) {
   try {
-    const res = await fetch(`${API}/courses/${slug}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${getServerApiBase()}/courses/${slug}`, {
+      next: { revalidate: 60 },
+      headers: await getServerAuthHeaders(),
+    });
     if (res.status === 404) return null;
     if (!res.ok) return null;
     return res.json();
@@ -84,6 +87,8 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
   );
 
   return (
+    <>
+    <PublicAuthRefresh />
     <div className="min-h-screen bg-muted/30">
       {/* 히어로 */}
       <section className="bg-white border-b">
@@ -280,5 +285,6 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
         )}
       </PageShell>
     </div>
+    </>
   );
 }

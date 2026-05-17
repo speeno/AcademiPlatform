@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ExamApplicationStatus, ExamSessionStatus, PaymentStatus } from '@prisma/client';
+import { maskPriceFields } from '../common/pricing/public-price-policy';
 
 const DEFAULT_DEPOSIT_ACCOUNT = {
   bank: '농협은행',
@@ -18,7 +19,10 @@ export class ExamService {
 
   constructor(private prisma: PrismaService) {}
 
-  async findSessions(filter: { status?: ExamSessionStatus; page?: number; limit?: number }) {
+  async findSessions(
+    filter: { status?: ExamSessionStatus; page?: number; limit?: number },
+    viewerId?: string,
+  ) {
     const { status, page = 1, limit = 10 } = filter;
     const skip = (page - 1) * limit;
 
@@ -37,20 +41,25 @@ export class ExamService {
       this.prisma.examSession.count({ where }),
     ]);
 
-    return { sessions, total, page, limit };
+    return {
+      sessions: sessions.map((s) => maskPriceFields(s, viewerId)),
+      total,
+      page,
+      limit,
+    };
   }
 
-  async findSessionById(id: string) {
+  async findSessionById(id: string, viewerId?: string) {
     const session = await this.prisma.examSession.findUnique({
       where: { id },
       include: { _count: { select: { applications: true } } },
     });
     if (!session) throw new NotFoundException('시험 회차를 찾을 수 없습니다.');
-    return session;
+    return maskPriceFields(session, viewerId);
   }
 
   async createApplication(sessionId: string, userId: string | null, formJson: object) {
-    const session = await this.findSessionById(sessionId);
+    const session = await this.findSessionById(sessionId, userId ?? undefined);
 
     if (session.status !== ExamSessionStatus.OPEN) {
       throw new BadRequestException('현재 접수 기간이 아닙니다.');
