@@ -1,18 +1,19 @@
 import type { Metadata } from 'next';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
+import { getServerApiBase } from '@/lib/api-base';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '자주 묻는 질문 (FAQ)',
   description: 'AcademiQ 자주 묻는 질문과 답변을 확인하세요.',
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
-
 async function getFaqs() {
   try {
     const res = await fetchWithTimeout(
-      `${API}/admin/faq`,
+      `${getServerApiBase()}/admin/faq`,
       { next: { revalidate: 600 } },
       8000,
     );

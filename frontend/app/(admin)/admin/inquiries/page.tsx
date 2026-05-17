@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, Loader2, Send } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth } from '@/lib/api-client';
 
 const statusVariant: Record<string, 'default' | 'orange' | 'green'> = {
   OPEN: 'orange', IN_PROGRESS: 'orange', CLOSED: 'green',
@@ -26,15 +25,10 @@ export default function AdminInquiriesPage() {
   const [responding, setResponding] = useState(false);
   const [filter, setFilter] = useState('ALL');
 
-  const authHeader = (): Record<string, string> => {
-    const t = localStorage.getItem('accessToken');
-    const h: Record<string, string> = { 'Content-Type': 'application/json' }; if (t) h['Authorization'] = `Bearer ${t}`; return h;
-  };
-
   const load = async () => {
     try {
       const params = filter !== 'ALL' ? `?status=${filter}` : '';
-      const res = await fetch(`${API}/admin/inquiries${params}`, { headers: authHeader() });
+      const res = await apiFetchWithAuth(`/admin/inquiries${params}`);
       if (res.ok) { const d = await res.json(); setInquiries(d.inquiries ?? d); }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
@@ -45,9 +39,9 @@ export default function AdminInquiriesPage() {
     if (!selected) return;
     setResponding(true);
     try {
-      const res = await fetch(`${API}/admin/inquiries/${selected.id}/respond`, {
+      const res = await apiFetchWithAuth(`/admin/inquiries/${selected.id}/respond`, {
         method: 'POST',
-        headers: authHeader(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ response }),
       });
       if (res.ok) {

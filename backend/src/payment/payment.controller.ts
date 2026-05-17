@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { PortoneWebhookGuard } from './guards/portone-webhook.guard';
 import { PaymentStatus, UserRole } from '@prisma/client';
 import { PaymentService } from './payment.service';
 import { Public } from '../common/decorators/public.decorator';
@@ -32,6 +33,7 @@ export class PaymentController {
   }
 
   @Public()
+  @UseGuards(PortoneWebhookGuard)
   @Post('webhook')
   webhook(@Body() body: PaymentWebhookDto) {
     return this.paymentService.handleWebhook(body);

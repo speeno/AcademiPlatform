@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Save, Loader2 } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth } from '@/lib/api-client';
 
 const SETTING_META: Record<string, { label: string; type: string; placeholder: string }> = {
   site_name:          { label: '사이트 이름', type: 'text', placeholder: 'AcademiQ' },
@@ -22,17 +21,12 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [priceHistories, setPriceHistories] = useState<any[]>([]);
 
-  const authHeader = (): Record<string, string> => {
-    const t = localStorage.getItem('accessToken');
-    const h: Record<string, string> = { 'Content-Type': 'application/json' }; if (t) h['Authorization'] = `Bearer ${t}`; return h;
-  };
-
   useEffect(() => {
     const load = async () => {
       try {
         const [res, historyRes] = await Promise.all([
-          fetch(`${API}/admin/settings`, { headers: authHeader() }),
-          fetch(`${API}/admin/pricing/history?limit=20`, { headers: authHeader() }),
+          apiFetchWithAuth('/admin/settings'),
+          apiFetchWithAuth('/admin/pricing/history?limit=20'),
         ]);
         if (res.ok) setSettings(await res.json());
         if (historyRes.ok) {
@@ -47,9 +41,9 @@ export default function AdminSettingsPage() {
   const handleSave = async (key: string) => {
     setSaving(key);
     try {
-      const res = await fetch(`${API}/admin/settings/${key}`, {
+      const res = await apiFetchWithAuth(`/admin/settings/${key}`, {
         method: 'PATCH',
-        headers: authHeader(),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: settings[key] }),
       });
       if (res.ok) { setSaved((p) => ({ ...p, [key]: true })); setTimeout(() => setSaved((p) => ({ ...p, [key]: false })), 2000); }

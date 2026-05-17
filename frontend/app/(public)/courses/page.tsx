@@ -9,6 +9,8 @@ import type { Metadata } from 'next';
 import { API_BASE } from '@/lib/api-base';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: '교육과정',
   description: 'AI 자격 취득을 위한 교육과정 목록입니다.',

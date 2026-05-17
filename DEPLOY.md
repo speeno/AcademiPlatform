@@ -49,10 +49,36 @@ git push -u origin main
 ### 2-1. PostgreSQL 데이터베이스 생성
 
 1. Render 대시보드 → `New` → `PostgreSQL`
-2. Name: `academiq-db`, Region: `Singapore (ap-southeast-1)` 권장
-3. 생성 후 **Internal Connection String** 복사 (나중에 환경변수에 입력)
+2. Name: 예) `academiq-db`, Region: **백엔드 Web Service와 동일 리전** (Singapore 등)
+3. 생성 후 **Connections** 탭에서 URL 확인
 
-> 기존 `mudotapidb`와 **공유 가능**하지만, 프로덕션 데이터 분리를 권장합니다.
+**현재 프로덕션 DB (2026-05 신규):**
+
+| 항목 | 값 |
+|------|-----|
+| Database | `academiqdb_09uu` |
+| Username | `academiqdb_09uu_user` |
+| Internal host | `dpg-d841p0eq1p3s738igfd0-a` |
+| Port | `5432` |
+
+> 구 DB(`dpg-d6sjnavdiees73ce3gpg-a` / `academiqdb`)는 만료·삭제될 수 있습니다. Web Service의 `DATABASE_URL`이 **반드시 신규 Internal URL**을 가리켜야 합니다.
+
+**Web Service에 연결 (권장):**
+
+1. PostgreSQL 인스턴스 → **Connect** → `academiq-backend` 선택  
+2. 환경변수 `DATABASE_URL`이 Internal URL로 자동 설정됨  
+3. 수동 입력 시 끝에 `?sslmode=require` 추가 (또는 `npm run start:render`가 자동 보정)
+
+로컬에서 스키마·시드만 먼저 넣을 때:
+
+```bash
+cd backend
+# External Database URL (비밀번호 포함) export
+export DATABASE_URL='postgresql://academiqdb_09uu_user:...@dpg-....render.com:5432/academiqdb_09uu?sslmode=require'
+./scripts/render-db-provision.sh
+```
+
+템플릿: `backend/.env.render.example`
 
 ### 2-2. Render Disk (PDF 교재 영구 저장)
 
@@ -75,6 +101,11 @@ git push -u origin main
    - **Start Command**: `npm run start:render`
    - **Health Check Path**: `/api/health`
 
+### 2-3b. Web Service 일시중지 해제
+
+`https://academiq-backend.onrender.com` 이 **Service Suspended** 이면 배포·DB 연결과 무관하게 API가 응답하지 않습니다.  
+Render 대시보드 → `academiq-backend` → **Resume** (또는 Suspend 해제).
+
 ### 2-4. 환경변수 설정
 
 Render 대시보드 → Web Service → `Environment` 탭에서 입력:
@@ -82,7 +113,8 @@ Render 대시보드 → Web Service → `Environment` 탭에서 입력:
 | 키 | 값 |
 |---|---|
 | `NODE_ENV` | `production` |
-| `DATABASE_URL` | PostgreSQL **Internal** Connection String (`?sslmode=require` 포함 권장) |
+| `DATABASE_URL` | 신규 PostgreSQL **Internal Database URL** (`?sslmode=require` 권장) |
+| `RUN_DB_SEED` | 신규 DB **최초 1회만** `true`, 이후 삭제 |
 | `JWT_SECRET` | 랜덤 32자 이상 문자열 |
 | `JWT_REFRESH_SECRET` | 랜덤 32자 이상 문자열 |
 | `VIEWER_TOKEN_SECRET` | 랜덤 문자열 |
@@ -137,14 +169,26 @@ git push
 
 ### 2-6. DB 마이그레이션 및 시드 (최초 1회)
 
-Render Shell에서:
-```bash
-# 마이그레이션 (Start Command에 포함되어 있어 자동 실행)
-npx prisma migrate deploy
+**방법 A — 배포 시 자동 (권장)**  
+Web Service Environment에 `RUN_DB_SEED=true` 설정 후 **Manual Deploy** 1회 → 성공 후 `RUN_DB_SEED` 제거 또는 `false`.  
+(`startCommand: npm run start:render` 가 migrate + seed 실행)
 
-# 초기 데이터 시드 (관리자 계정 + 교재/강좌 생성)
+**방법 B — 로컬에서 External URL로 실행**
+
+```bash
+cd backend
+export DATABASE_URL='<External Database URL>?sslmode=require'
+./scripts/render-db-provision.sh
+```
+
+**방법 C — Render Shell**
+
+```bash
+npx prisma migrate deploy
 npx prisma db seed
 ```
+
+시드 후 관리자: `admin@academiq.kr` / `admin123` (`backend/prisma/seed.ts`)
 
 ---
 

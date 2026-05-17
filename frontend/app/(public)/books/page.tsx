@@ -7,6 +7,8 @@ import { PriceDisplay } from '@/components/ui/price-display';
 import { API_BASE } from '@/lib/api-base';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: '주요 교재 구매',
   description: '주요 교재를 별도로 구매할 수 있는 링크를 안내합니다.',

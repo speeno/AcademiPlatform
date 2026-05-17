@@ -21,9 +21,14 @@ services:
 
       # PORT는 Render가 자동 주입합니다. 4400으로 고정하면 포트 스캔 실패가 날 수 있습니다.
 
-      # Render PostgreSQL 연결 — 대시보드에서 Internal Connection String 복사
+      # Render PostgreSQL (신규 DB 예: academiqdb_09uu @ dpg-d841p0eq1p3s738igfd0-a)
+      # DB 화면 > Connect > academiq-backend 선택 시 Internal URL 자동 주입 가능
       - key: DATABASE_URL
-        sync: false       # 대시보드에서 직접 입력
+        sync: false       # Internal Database URL + ?sslmode=require
+
+      # 신규 DB 최초 1회만 true → 시드 후 false 또는 삭제
+      - key: RUN_DB_SEED
+        sync: false
 
       # Redis/Valkey — 기존 mudot-redis 또는 신규 생성
       - key: REDIS_URL

@@ -9,7 +9,7 @@ import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Captcha } from '@/components/ui/captcha';
-import { setAccessToken } from '@/lib/auth';
+import { setAccessToken, setRefreshToken } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
 
@@ -54,6 +54,7 @@ export default function RegisterPage() {
       if (!res.ok) throw new Error(data.message ?? '회원가입에 실패했습니다.');
 
       setAccessToken(data.accessToken);
+      if (data.refreshToken) setRefreshToken(data.refreshToken);
       toast.success('회원가입이 완료되었습니다.');
       router.push('/classroom');
     } catch (err: any) {

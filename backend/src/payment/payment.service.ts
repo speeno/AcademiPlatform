@@ -1,31 +1,61 @@
 import {
   Injectable,
+  Optional,
   BadRequestException,
   NotFoundException,
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
-import {
-  DiscountType,
-  EnrollmentStatus,
-  ExamApplicationStatus,
-  PaymentStatus,
-  PaymentTarget,
-  TextbookGrantedBy,
-} from '@prisma/client';
+import { PaymentStatus, PaymentTarget } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { CoursesService } from '../courses/courses.service';
+import {
+  PricingSnapshotInput,
+  PricingSnapshotResult,
+} from '../common/pricing/pricing-snapshot';
+import { PaymentPricingService } from './services/payment-pricing.service';
+import { PortOneClient } from './services/portone.client';
+import { PaymentPostProcessor } from './services/payment-post-processor.service';
 
+/**
+ * 결제 흐름의 오케스트레이터.
+ *
+ * 책임 분리(P2-service-split):
+ * - 가격 스냅샷 해석 → {@link PaymentPricingService}
+ * - 포트원 PG 통신     → {@link PortOneClient}
+ * - 결제 후처리/환불 회수 → {@link PaymentPostProcessor}
+ *
+ * 본 클래스는 위 협력자 호출 + Prisma 트랜잭션 + 멱등/상태 검증/로깅/운영 알림만 담당한다.
+ *
+ * 테스트 호환:
+ * - `payment.service.spec.ts`, `payment.refund.spec.ts`, `payment.pricing.spec.ts`,
+ *   `payment-pricing.e2e-spec.ts` 가 `new PaymentService(prisma, config, coursesService)` 로
+ *   직접 인스턴스화하므로, 추가 협력자 의존성은 `@Optional()` 로 받고 미주입 시 기본 인스턴스를
+ *   생성하여 주입 호환성을 유지한다.
+ * - 테스트가 `(service as any).verifyWithPortOne(...)`, `(service as any).calculatePricingSnapshot(...)` 로
+ *   인스턴스 메서드 시그니처에 의존하므로, 본 클래스에 위임 wrapper 를 유지한다.
+ */
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
+  private readonly pricing: PaymentPricingService;
+  private readonly portone: PortOneClient;
+  private readonly postProcessor: PaymentPostProcessor;
 
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
     private coursesService: CoursesService,
-  ) {}
+    @Optional() pricing?: PaymentPricingService,
+    @Optional() portone?: PortOneClient,
+    @Optional() postProcessor?: PaymentPostProcessor,
+  ) {
+    this.pricing = pricing ?? new PaymentPricingService(prisma);
+    this.portone = portone ?? new PortOneClient(config);
+    this.postProcessor =
+      postProcessor ?? new PaymentPostProcessor(coursesService);
+  }
 
   // 결제 주문 생성 (프론트 -> 포트원 SDK 호출 전)
   async createOrder(
@@ -34,7 +64,11 @@ export class PaymentService {
     targetId: string,
     clientAmount?: number,
   ) {
-    const pricing = await this.resolveTargetPricing(userId, targetType, targetId);
+    const pricing = await this.pricing.resolveTargetPricing(
+      userId,
+      targetType,
+      targetId,
+    );
     if (typeof clientAmount === 'number' && clientAmount !== pricing.finalAmount) {
       throw new BadRequestException('결제 금액이 올바르지 않습니다.');
     }
@@ -57,7 +91,13 @@ export class PaymentService {
       },
     });
 
-    this.logEvent('create_order', { userId, targetType, targetId, orderNo, amount: pricing.finalAmount });
+    this.logEvent('create_order', {
+      userId,
+      targetType,
+      targetId,
+      orderNo,
+      amount: pricing.finalAmount,
+    });
 
     return {
       orderNo,
@@ -73,12 +113,20 @@ export class PaymentService {
   async verifyAndComplete(userId: string, impUid: string, orderNo: string) {
     const payment = await this.prisma.payment.findUnique({ where: { orderNo } });
     if (!payment) throw new NotFoundException('결제 주문을 찾을 수 없습니다.');
-    if (payment.userId !== userId) throw new BadRequestException('결제 주문 정보가 일치하지 않습니다.');
-    if (payment.paymentStatus === PaymentStatus.PAID) throw new BadRequestException('이미 완료된 결제입니다.');
-    if (payment.paymentStatus !== PaymentStatus.PENDING) throw new BadRequestException('처리 가능한 결제 상태가 아닙니다.');
+    if (payment.userId !== userId)
+      throw new BadRequestException('결제 주문 정보가 일치하지 않습니다.');
+    if (payment.paymentStatus === PaymentStatus.PAID) {
+      return payment;
+    }
+    if (payment.paymentStatus !== PaymentStatus.PENDING) {
+      throw new BadRequestException('처리 가능한 결제 상태가 아닙니다.');
+    }
 
-    // 포트원 API 검증 (실제 운영 시 활성화)
-    const verified = await this.verifyWithPortOne(impUid, payment.finalAmount || payment.amount);
+    const verified = await this.verifyWithPortOne(
+      impUid,
+      payment.finalAmount || payment.amount,
+      orderNo,
+    );
     if (!verified) {
       await this.prisma.payment.update({
         where: { orderNo },
@@ -88,42 +136,114 @@ export class PaymentService {
       throw new BadRequestException('결제 검증에 실패했습니다.');
     }
 
-    const updated = await this.prisma.payment.update({
-      where: { orderNo },
-      data: {
-        paymentStatus: PaymentStatus.PAID,
-        pgTxId: impUid,
-        pgProvider: 'portone',
-        paidAt: new Date(),
-      },
-    });
+    try {
+      const updated = await this.prisma.$transaction(async (tx) => {
+        const current = await tx.payment.findUnique({ where: { orderNo } });
+        if (!current) throw new NotFoundException('결제 주문을 찾을 수 없습니다.');
+        if (current.paymentStatus === PaymentStatus.PAID) return current;
+        if (current.paymentStatus !== PaymentStatus.PENDING) {
+          throw new BadRequestException('처리 가능한 결제 상태가 아닙니다.');
+        }
 
-    // 결제 대상별 후처리
-    await this.handlePostPayment(payment.targetType, payment.targetId, userId, updated.id, updated.orderNo);
-    this.logEvent('payment_verified', { orderNo, paymentId: updated.id, targetType: payment.targetType });
+        const paid = await tx.payment.update({
+          where: { orderNo },
+          data: {
+            paymentStatus: PaymentStatus.PAID,
+            pgTxId: impUid,
+            pgProvider: 'portone',
+            paidAt: new Date(),
+          },
+        });
 
-    return updated;
+        await this.postProcessor.applyInTx(
+          tx,
+          current.targetType,
+          current.targetId,
+          userId,
+          paid.id,
+          paid.orderNo,
+        );
+        return paid;
+      });
+
+      this.logEvent('payment_verified', {
+        orderNo,
+        paymentId: updated.id,
+        targetType: payment.targetType,
+      });
+      return updated;
+    } catch (err) {
+      this.logger.error(`결제 후처리 트랜잭션 실패 orderNo=${orderNo}`, err);
+      await this.notifyOps('payment_postprocess_failed', { orderNo, userId, impUid });
+      throw err;
+    }
   }
 
   // 포트원 웹훅 처리
   async handleWebhook(body: { imp_uid: string; merchant_uid: string; status: string }) {
     const { imp_uid, merchant_uid, status } = body;
-    const payment = await this.prisma.payment.findUnique({ where: { orderNo: merchant_uid } });
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderNo: merchant_uid },
+    });
     if (!payment) return;
 
-    if (status === 'paid' && payment.paymentStatus === PaymentStatus.PENDING) {
-      const verified = await this.verifyWithPortOne(imp_uid, payment.finalAmount || payment.amount, merchant_uid);
-      if (!verified) {
-        this.logger.warn(`웹훅 결제 검증 실패 - orderNo=${merchant_uid}`);
-        await this.notifyOps('payment_webhook_verify_failed', { merchant_uid, imp_uid });
+    if (status === 'paid') {
+      if (payment.paymentStatus === PaymentStatus.PAID) {
+        this.logger.log(`웹훅 멱등 스킵(이미 PAID) orderNo=${merchant_uid}`);
         return;
       }
-      await this.prisma.payment.update({
-        where: { orderNo: merchant_uid },
-        data: { paymentStatus: PaymentStatus.PAID, pgTxId: imp_uid, paidAt: new Date() },
-      });
-      await this.handlePostPayment(payment.targetType, payment.targetId, payment.userId, payment.id, merchant_uid);
-    } else if (status === 'cancelled') {
+      if (payment.paymentStatus !== PaymentStatus.PENDING) return;
+
+      const verified = await this.verifyWithPortOne(
+        imp_uid,
+        payment.finalAmount || payment.amount,
+        merchant_uid,
+      );
+      if (!verified) {
+        this.logger.warn(`웹훅 결제 검증 실패 - orderNo=${merchant_uid}`);
+        await this.notifyOps('payment_webhook_verify_failed', {
+          merchant_uid,
+          imp_uid,
+        });
+        return;
+      }
+
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          const current = await tx.payment.findUnique({
+            where: { orderNo: merchant_uid },
+          });
+          if (!current || current.paymentStatus === PaymentStatus.PAID) return;
+          if (current.paymentStatus !== PaymentStatus.PENDING) return;
+
+          const paid = await tx.payment.update({
+            where: { orderNo: merchant_uid },
+            data: {
+              paymentStatus: PaymentStatus.PAID,
+              pgTxId: imp_uid,
+              pgProvider: 'portone',
+              paidAt: new Date(),
+            },
+          });
+
+          await this.postProcessor.applyInTx(
+            tx,
+            current.targetType,
+            current.targetId,
+            current.userId,
+            paid.id,
+            merchant_uid,
+          );
+        });
+      } catch (err) {
+        this.logger.error(`웹훅 후처리 트랜잭션 실패 orderNo=${merchant_uid}`, err);
+        await this.notifyOps('payment_webhook_postprocess_failed', {
+          merchant_uid,
+          imp_uid,
+        });
+        throw err;
+      }
+    } else if (status === 'cancelled' && payment.paymentStatus === PaymentStatus.PENDING) {
       await this.prisma.payment.update({
         where: { orderNo: merchant_uid },
         data: { paymentStatus: PaymentStatus.CANCELLED, cancelledAt: new Date() },
@@ -139,18 +259,71 @@ export class PaymentService {
   }
 
   async requestRefund(paymentId: string, userId: string, reason: string) {
-    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
-    if (!payment || payment.userId !== userId) throw new NotFoundException('결제 내역을 찾을 수 없습니다.');
-    if (payment.paymentStatus !== PaymentStatus.PAID) throw new BadRequestException('환불 가능한 결제가 아닙니다.');
-
-    await this.cancelWithPortOne(payment.pgTxId ?? '', payment.finalAmount || payment.amount, reason || '사용자 환불 요청');
-    const refunded = await this.prisma.payment.update({
+    const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
-      data: { paymentStatus: PaymentStatus.REFUNDED, refundedAt: new Date(), cancelledAt: new Date() },
     });
-    await this.rollbackPostPayment(payment.targetType, payment.targetId, userId, paymentId);
-    this.logEvent('payment_refunded', { paymentId, userId, targetType: payment.targetType, targetId: payment.targetId });
-    return refunded;
+    if (!payment || payment.userId !== userId)
+      throw new NotFoundException('결제 내역을 찾을 수 없습니다.');
+    if (payment.paymentStatus !== PaymentStatus.PAID)
+      throw new BadRequestException('환불 가능한 결제가 아닙니다.');
+
+    // 1) PG 취소를 가장 먼저 수행. 실패 시 DB 상태는 PAID 유지 + 운영 알림으로 종료.
+    await this.cancelWithPortOne(
+      payment.pgTxId ?? '',
+      payment.finalAmount || payment.amount,
+      reason || '사용자 환불 요청',
+    );
+
+    // 2) PG 취소 성공 후 DB 상태·권한 회수를 단일 트랜잭션으로 묶어 원자성 보장.
+    try {
+      const refunded = await this.prisma.$transaction(async (tx) => {
+        const current = await tx.payment.findUnique({ where: { id: paymentId } });
+        if (!current) throw new NotFoundException('결제 내역을 찾을 수 없습니다.');
+        if (current.paymentStatus === PaymentStatus.REFUNDED) {
+          // 멱등: 이미 환불 처리됨.
+          return current;
+        }
+        if (current.paymentStatus !== PaymentStatus.PAID) {
+          throw new BadRequestException('환불 가능한 결제 상태가 아닙니다.');
+        }
+        const refundedPayment = await tx.payment.update({
+          where: { id: paymentId },
+          data: {
+            paymentStatus: PaymentStatus.REFUNDED,
+            refundedAt: new Date(),
+            cancelledAt: new Date(),
+          },
+        });
+        await this.postProcessor.rollbackInTx(
+          tx,
+          payment.targetType,
+          payment.targetId,
+          userId,
+          paymentId,
+        );
+        return refundedPayment;
+      });
+      this.logEvent('payment_refunded', {
+        paymentId,
+        userId,
+        targetType: payment.targetType,
+        targetId: payment.targetId,
+      });
+      return refunded;
+    } catch (err) {
+      this.logger.error(
+        `환불 후처리 트랜잭션 실패 paymentId=${paymentId}`,
+        err,
+      );
+      // PG는 이미 취소된 상태이므로 운영자 수동 정합 필요.
+      await this.notifyOps('payment_refund_postprocess_failed', {
+        paymentId,
+        userId,
+        targetType: payment.targetType,
+        targetId: payment.targetId,
+      });
+      throw err;
+    }
   }
 
   /* 관리자 */
@@ -173,289 +346,34 @@ export class PaymentService {
     return { payments, total, page, limit };
   }
 
-  private async handlePostPayment(
-    targetType: PaymentTarget,
-    targetId: string,
-    userId: string,
-    paymentId: string,
-    orderNo: string,
-  ) {
-    switch (targetType) {
-      case PaymentTarget.ENROLLMENT: {
-        await this.coursesService.enroll(targetId, userId, paymentId);
-        break;
-      }
-      case PaymentTarget.EXAM_APPLICATION: {
-        await this.prisma.examApplication.updateMany({
-          where: { id: targetId, userId },
-          data: {
-            status: ExamApplicationStatus.APPLIED,
-            paymentId,
-            paymentStatus: PaymentStatus.PAID,
-          },
-        });
-        break;
-      }
-      case PaymentTarget.TEXTBOOK: {
-        await this.prisma.textbookAccess.upsert({
-          where: { userId_textbookId: { userId, textbookId: targetId } },
-          create: {
-            userId,
-            textbookId: targetId,
-            grantedBy: TextbookGrantedBy.PURCHASE,
-            sourceId: paymentId,
-          },
-          update: { revokedAt: null, sourceId: paymentId },
-        });
-        break;
-      }
-    }
-    this.logger.log(`결제 후처리 완료 - orderNo=${orderNo}, target=${targetType}:${targetId}`);
+  /* ---------- 테스트 호환 wrapper (기존 시그니처 유지) ---------- */
+
+  /** 단위 테스트(`payment.pricing.spec.ts`, `payment-pricing.e2e-spec.ts`)가 인스턴스 메서드로 접근. */
+  private calculatePricingSnapshot(
+    input: PricingSnapshotInput,
+  ): PricingSnapshotResult {
+    return this.pricing.calculatePricingSnapshot(input);
   }
 
-  private async verifyWithPortOne(impUid: string, expectedAmount: number, expectedOrderNo?: string): Promise<boolean> {
-    const apiKey = this.config.get('PORTONE_API_KEY', '');
-    const apiSecret = this.config.get('PORTONE_API_SECRET', '');
-    if (!apiKey || !apiSecret) {
-      this.logger.warn('포트원 API 키가 설정되지 않았습니다. 개발 환경에서는 검증을 건너뜁니다.');
-      return true;
-    }
-    const paymentInfo = await this.fetchPortOnePayment(impUid);
-    if (!paymentInfo) return false;
-    const amountMatches = Number(paymentInfo.amount) === expectedAmount;
-    const orderMatches = expectedOrderNo ? paymentInfo.merchant_uid === expectedOrderNo : true;
-    return paymentInfo.status === 'paid' && amountMatches && orderMatches;
+  /** 단위 테스트(`payment.service.spec.ts`)가 인스턴스 메서드로 접근. */
+  private verifyWithPortOne(
+    impUid: string,
+    expectedAmount: number,
+    expectedOrderNo?: string,
+  ): Promise<boolean> {
+    return this.portone.verify(impUid, expectedAmount, expectedOrderNo);
   }
 
-  private async fetchPortOnePayment(impUid: string): Promise<any | null> {
-    const apiKey = this.config.get('PORTONE_API_KEY', '');
-    const apiSecret = this.config.get('PORTONE_API_SECRET', '');
-    if (!apiKey || !apiSecret) return null;
-
-    try {
-      // 포트원 토큰 발급
-      const tokenRes = await fetch('https://api.iamport.kr/users/getToken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imp_key: apiKey, imp_secret: apiSecret }),
-      });
-      const tokenData = await tokenRes.json();
-      const accessToken = tokenData.response?.access_token;
-      if (!accessToken) return false;
-
-      // 결제 정보 조회
-      const paymentRes = await fetch(`https://api.iamport.kr/payments/${impUid}`, {
-        headers: { Authorization: accessToken },
-      });
-      const paymentData = await paymentRes.json();
-      return paymentData.response ?? null;
-    } catch (err) {
-      this.logger.error('포트원 검증 오류', err);
-      return null;
-    }
+  /** PaymentService.requestRefund 흐름의 PG 취소 단계. 테스트가 PG 호출/우회를 검증한다. */
+  private cancelWithPortOne(
+    impUid: string,
+    amount: number,
+    reason: string,
+  ): Promise<void> {
+    return this.portone.cancel(impUid, amount, reason);
   }
 
-  private async cancelWithPortOne(impUid: string, amount: number, reason: string) {
-    const apiKey = this.config.get('PORTONE_API_KEY', '');
-    const apiSecret = this.config.get('PORTONE_API_SECRET', '');
-    if (!apiKey || !apiSecret || !impUid) {
-      this.logger.warn('포트원 환불 키/트랜잭션이 없어 환불 검증을 건너뜁니다.');
-      return;
-    }
-
-    const tokenRes = await fetch('https://api.iamport.kr/users/getToken', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imp_key: apiKey, imp_secret: apiSecret }),
-    });
-    const tokenData = await tokenRes.json();
-    const accessToken = tokenData.response?.access_token;
-    if (!accessToken) throw new BadRequestException('포트원 환불 토큰 발급에 실패했습니다.');
-
-    const cancelRes = await fetch('https://api.iamport.kr/payments/cancel', {
-      method: 'POST',
-      headers: { Authorization: accessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imp_uid: impUid, amount, reason }),
-    });
-    const cancelData = await cancelRes.json();
-    if (!cancelRes.ok || cancelData.code) {
-      await this.notifyOps('payment_refund_failed', { impUid, amount, reason, message: cancelData.message });
-      throw new BadRequestException(cancelData.message ?? '포트원 환불 처리에 실패했습니다.');
-    }
-  }
-
-  private async rollbackPostPayment(
-    targetType: PaymentTarget,
-    targetId: string,
-    userId: string,
-    paymentId: string,
-  ) {
-    switch (targetType) {
-      case PaymentTarget.ENROLLMENT: {
-        const enrollment = await this.prisma.enrollment.findFirst({
-          where: { userId, courseId: targetId, paymentId },
-        });
-        if (enrollment) {
-          await this.prisma.enrollment.update({
-            where: { id: enrollment.id },
-            data: { status: EnrollmentStatus.REFUNDED },
-          });
-          await this.prisma.textbookAccess.updateMany({
-            where: {
-              userId,
-              grantedBy: TextbookGrantedBy.ENROLLMENT,
-              sourceId: enrollment.id,
-              revokedAt: null,
-            },
-            data: { revokedAt: new Date() },
-          });
-        }
-        break;
-      }
-      case PaymentTarget.EXAM_APPLICATION: {
-        await this.prisma.examApplication.updateMany({
-          where: { id: targetId, userId, paymentId },
-          data: {
-            status: ExamApplicationStatus.REFUNDED,
-            paymentStatus: PaymentStatus.REFUNDED,
-          },
-        });
-        break;
-      }
-      case PaymentTarget.TEXTBOOK: {
-        await this.prisma.textbookAccess.updateMany({
-          where: {
-            userId,
-            textbookId: targetId,
-            grantedBy: TextbookGrantedBy.PURCHASE,
-            sourceId: paymentId,
-            revokedAt: null,
-          },
-          data: { revokedAt: new Date() },
-        });
-        break;
-      }
-    }
-  }
-
-  private async resolveTargetPricing(userId: string, targetType: PaymentTarget, targetId: string) {
-    if (targetType === PaymentTarget.ENROLLMENT) {
-      const course = await this.prisma.course.findUnique({ where: { id: targetId } });
-      if (!course) throw new NotFoundException('강의를 찾을 수 없습니다.');
-      const existing = await this.prisma.enrollment.findUnique({
-        where: { userId_courseId: { userId, courseId: targetId } },
-      });
-      if (existing && existing.status === EnrollmentStatus.ACTIVE) {
-        throw new BadRequestException('이미 수강 중인 강의입니다.');
-      }
-      const pricing = this.calculatePricingSnapshot({
-        legacyPrice: course.price,
-        basePrice: course.basePrice,
-        salePrice: course.salePrice,
-        discountType: course.discountType,
-        discountValue: course.discountValue,
-        validFrom: course.priceValidFrom,
-        validUntil: course.priceValidUntil,
-        currency: course.currency,
-        policyVersion: course.pricePolicyVersion,
-      });
-      if (pricing.finalAmount === 0) {
-        throw new BadRequestException('무료 강의는 결제가 필요하지 않습니다.');
-      }
-      return { ...pricing, targetName: course.title };
-    }
-
-    if (targetType === PaymentTarget.EXAM_APPLICATION) {
-      const app = await this.prisma.examApplication.findUnique({
-        where: { id: targetId },
-        include: { examSession: true },
-      });
-      if (!app || app.userId !== userId) throw new NotFoundException('시험 접수 정보를 찾을 수 없습니다.');
-      if (app.status !== ExamApplicationStatus.PAYMENT_PENDING) {
-        throw new BadRequestException('결제를 진행할 수 없는 접수 상태입니다.');
-      }
-      const pricing = this.calculatePricingSnapshot({
-        legacyPrice: app.examSession.fee,
-        basePrice: app.examSession.basePrice,
-        salePrice: app.examSession.salePrice,
-        discountType: app.examSession.discountType,
-        discountValue: app.examSession.discountValue,
-        validFrom: app.examSession.priceValidFrom,
-        validUntil: app.examSession.priceValidUntil,
-        currency: app.examSession.currency,
-        policyVersion: app.examSession.pricePolicyVersion,
-      });
-      if (pricing.finalAmount === 0) {
-        throw new BadRequestException('무료 응시 회차는 결제가 필요하지 않습니다.');
-      }
-      return {
-        ...pricing,
-        targetName: `${app.examSession.qualificationName} ${app.examSession.roundName}`,
-      };
-    }
-
-    const textbook = await this.prisma.textbook.findUnique({ where: { id: targetId } });
-    if (!textbook) throw new NotFoundException('교재를 찾을 수 없습니다.');
-    if (!textbook.isStandalone) throw new BadRequestException('단독 구매가 가능한 교재가 아닙니다.');
-
-    const existing = await this.prisma.textbookAccess.findUnique({
-      where: { userId_textbookId: { userId, textbookId: targetId } },
-    });
-    if (existing && !existing.revokedAt) throw new BadRequestException('이미 구매한 교재입니다.');
-
-    const pricing = this.calculatePricingSnapshot({
-      legacyPrice: textbook.price,
-      basePrice: textbook.basePrice,
-      salePrice: textbook.salePrice,
-      discountType: textbook.discountType,
-      discountValue: textbook.discountValue,
-      validFrom: textbook.priceValidFrom,
-      validUntil: textbook.priceValidUntil,
-      currency: textbook.currency,
-      policyVersion: textbook.pricePolicyVersion,
-    });
-    if (pricing.finalAmount === 0) {
-      throw new BadRequestException('무료 교재는 결제가 필요하지 않습니다.');
-    }
-    return { ...pricing, targetName: textbook.title };
-  }
-
-  private calculatePricingSnapshot(input: {
-    legacyPrice: number;
-    basePrice: number;
-    salePrice: number | null;
-    discountType: DiscountType;
-    discountValue: number;
-    validFrom: Date | null;
-    validUntil: Date | null;
-    currency: string;
-    policyVersion: number;
-  }) {
-    const now = Date.now();
-    const isInValidWindow =
-      (!input.validFrom || now >= input.validFrom.getTime()) &&
-      (!input.validUntil || now <= input.validUntil.getTime());
-
-    const baseAmount = input.basePrice > 0 ? input.basePrice : input.legacyPrice;
-    const saleCandidate = input.salePrice ?? baseAmount;
-    const preDiscount = isInValidWindow ? saleCandidate : baseAmount;
-
-    let discountAmount = 0;
-    if (isInValidWindow && input.discountType === DiscountType.PERCENT) {
-      discountAmount = Math.floor((preDiscount * Math.max(0, input.discountValue)) / 100);
-    } else if (isInValidWindow && input.discountType === DiscountType.FIXED) {
-      discountAmount = Math.max(0, input.discountValue);
-    }
-    const finalAmount = Math.max(0, preDiscount - discountAmount);
-
-    return {
-      currency: input.currency || 'KRW',
-      baseAmount,
-      discountAmount,
-      finalAmount,
-      pricePolicyVersion: input.policyVersion ?? 1,
-    };
-  }
+  /* ---------- 내부 운영 유틸 ---------- */
 
   private logEvent(event: string, payload: Record<string, unknown>) {
     this.logger.log(JSON.stringify({ event, at: new Date().toISOString(), ...payload }));

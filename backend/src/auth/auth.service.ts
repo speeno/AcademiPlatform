@@ -85,14 +85,24 @@ export class AuthService {
     return this.generateTokens(user.id, user.email, user.role);
   }
 
+  private getJwtSecrets() {
+    const accessSecret = this.config.get<string>('JWT_SECRET');
+    const refreshSecret = this.config.get<string>('JWT_REFRESH_SECRET');
+    if (!accessSecret || !refreshSecret) {
+      throw new Error('JWT_SECRET and JWT_REFRESH_SECRET are required');
+    }
+    return { accessSecret, refreshSecret };
+  }
+
   private async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
+    const { accessSecret, refreshSecret } = this.getJwtSecrets();
     const accessToken = this.jwt.sign(payload, {
-      secret: this.config.get('JWT_SECRET', 'changeme'),
+      secret: accessSecret,
       expiresIn: '1h',
     });
     const refreshToken = this.jwt.sign(payload, {
-      secret: this.config.get('JWT_REFRESH_SECRET', 'refresh-secret'),
+      secret: refreshSecret,
       expiresIn: '7d',
     });
     return { accessToken, refreshToken };

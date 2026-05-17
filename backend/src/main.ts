@@ -3,8 +3,10 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { validateRequiredEnv } from './config/validate-env';
 
 async function bootstrap() {
+  validateRequiredEnv();
   const app = await NestFactory.create(AppModule);
 
   app.use(json({ limit: '10mb' }));

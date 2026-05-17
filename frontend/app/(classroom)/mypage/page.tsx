@@ -7,8 +7,7 @@ import { User, Mail, Phone, Shield, Loader2, Save, ExternalLink, Pencil } from '
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { buildAuthHeader } from '@/lib/auth';
-import { API_BASE } from '@/lib/api-base';
+import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 const roleLabel: Record<string, string> = {
@@ -50,8 +49,8 @@ export default function MyPagePage() {
   const loadMe = useCallback(async () => {
     try {
       const [meRes, voucherRes] = await Promise.all([
-        fetch(`${API_BASE}/auth/me`, { credentials: 'include', headers: buildAuthHeader(false) }),
-        fetch(`${API_BASE}/lms/vouchers/my`, { headers: buildAuthHeader(false), credentials: 'include' }),
+        apiFetchWithAuth('/auth/me', { credentials: 'include' }),
+        apiFetchWithAuth('/lms/vouchers/my', { credentials: 'include' }),
       ]);
       if (meRes.ok) {
         const data = await meRes.json();
@@ -65,7 +64,7 @@ export default function MyPagePage() {
   }, [router]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (!token) { router.push('/login'); return; }
     loadMe().finally(() => setLoading(false));
   }, [loadMe, router]);
@@ -74,9 +73,9 @@ export default function MyPagePage() {
     e.preventDefault();
     setProfileSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/me`, {
+      const res = await apiFetchWithAuth('/auth/me', {
         method: 'PATCH',
-        headers: buildAuthHeader(),
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ name: profileForm.name.trim(), phone: profileForm.phone.trim() || null }),
       });

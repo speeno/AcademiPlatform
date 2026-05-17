@@ -163,7 +163,7 @@ export class TextbookService {
   async getViewerToken(textbookId: string, userId: string) {
     await this.verifyAccess(textbookId, userId);
 
-    const secret = this.config.get<string>('JWT_SECRET', 'changeme');
+    const secret = this.resolveViewerTokenSecret();
     const token = jwt.sign(
       { sub: userId, textbookId, type: 'textbook-viewer' },
       secret,
@@ -180,7 +180,7 @@ export class TextbookService {
     userId: string,
   ): Promise<Buffer> {
     // 토큰 검증
-    const secret = this.config.get<string>('JWT_SECRET', 'changeme');
+    const secret = this.resolveViewerTokenSecret();
     let payload: ViewerTokenPayload;
     try {
       const verified = jwt.verify(viewerToken, secret);
@@ -574,6 +574,22 @@ export class TextbookService {
       title: textbook.title,
       warnings,
     };
+  }
+
+  /**
+   * 뷰어 토큰용 시크릿을 결정한다.
+   * - 1순위: `VIEWER_TOKEN_SECRET` (뷰어 전용 분리 키, 권장)
+   * - 2순위: `JWT_SECRET` (단일 키 운영 호환)
+   * - 두 값 모두 없으면 즉시 예외 — 'changeme' 등의 약한 기본값을 절대 사용하지 않는다.
+   */
+  private resolveViewerTokenSecret(): string {
+    const viewerSecret = this.config.get<string>('VIEWER_TOKEN_SECRET')?.trim();
+    if (viewerSecret) return viewerSecret;
+    const jwtSecret = this.config.get<string>('JWT_SECRET')?.trim();
+    if (jwtSecret) return jwtSecret;
+    throw new Error(
+      'VIEWER_TOKEN_SECRET 또는 JWT_SECRET 환경변수가 설정되지 않았습니다.',
+    );
   }
 
   private async verifyAccess(textbookId: string, userId: string) {

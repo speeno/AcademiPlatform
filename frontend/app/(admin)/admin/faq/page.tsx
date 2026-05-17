@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { buildAuthHeader } from '@/lib/auth';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth } from '@/lib/api-client';
 const CATEGORIES = ['수강신청', '결제/환불', '시험접수', '교재', '기술 문의', '기타'];
 
 interface Faq { id: string; category: string; question: string; answer: string; isPublished: boolean; sortOrder: number; }
@@ -21,7 +19,7 @@ export default function AdminFaqPage() {
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/admin/faq`, { headers: buildAuthHeader(false) });
+      const res = await apiFetchWithAuth('/admin/faq');
       if (res.ok) setFaqs(await res.json());
     } catch { /* ignore */ } finally { setLoading(false); }
   };
@@ -34,16 +32,20 @@ export default function AdminFaqPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const url = editing ? `${API}/admin/faq/${editing.id}` : `${API}/admin/faq`;
+      const url = editing ? `/admin/faq/${editing.id}` : '/admin/faq';
       const method = editing ? 'PATCH' : 'POST';
-      const res = await fetch(url, { method, headers: buildAuthHeader(), body: JSON.stringify(form) });
+      const res = await apiFetchWithAuth(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
       if (res.ok) { setModal(false); load(); }
     } catch { /* ignore */ } finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('삭제하시겠습니까?')) return;
-    await fetch(`${API}/admin/faq/${id}`, { method: 'DELETE', headers: buildAuthHeader(false) });
+    await apiFetchWithAuth(`/admin/faq/${id}`, { method: 'DELETE' });
     setFaqs((p) => p.filter((f) => f.id !== id));
   };
 

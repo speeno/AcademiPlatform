@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { buildAuthHeader } from '@/lib/auth';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth } from '@/lib/api-client';
 
 const roleLabel: Record<string, string> = { USER: '일반', INSTRUCTOR: '강사', OPERATOR: '운영자', SUPER_ADMIN: '최고관리자' };
 const statusVariant: Record<string, 'green' | 'orange' | 'red'> = { ACTIVE: 'green', DORMANT: 'orange', SUSPENDED: 'red' };
@@ -29,7 +27,7 @@ export default function AdminUsersPage() {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (q) params.set('search', q);
       if (roleFilter) params.set('role', roleFilter);
-      const res = await fetch(`${API}/admin/users?${params}`, { headers: buildAuthHeader() });
+      const res = await apiFetchWithAuth(`/admin/users?${params}`);
       if (res.ok) { const d = await res.json(); setUsers(d.users ?? []); setTotal(d.total ?? 0); }
     } catch { /* ignore */ } finally { setLoading(false); }
   };
@@ -39,8 +37,10 @@ export default function AdminUsersPage() {
   const handleStatusChange = async (id: string, status: string) => {
     setUpdating(id);
     try {
-      const res = await fetch(`${API}/admin/users/${id}/status`, {
-        method: 'PATCH', headers: buildAuthHeader(), body: JSON.stringify({ status }),
+      const res = await apiFetchWithAuth(`/admin/users/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
       });
       if (res.ok) setUsers((p) => p.map((u) => u.id === id ? { ...u, status } : u));
     } catch { /* ignore */ } finally { setUpdating(null); }

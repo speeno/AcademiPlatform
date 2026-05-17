@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { API_BASE } from '@/lib/api-base';
+import { getAccessToken } from '@/lib/auth';
 
 function getSessionId(): string {
   const KEY = 'pv_session_id';
@@ -32,11 +33,12 @@ function parseDevice(ua: string): string {
 
 function getUserId(): string | null {
   try {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) return null;
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.sub ?? payload.id ?? null;
-  } catch {
+  } catch (err) {
+    console.warn('[PageViewTracker] JWT decode failed', err);
     return null;
   }
 }

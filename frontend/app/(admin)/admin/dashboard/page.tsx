@@ -7,9 +7,7 @@ import {
 } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { buildAuthHeader } from '@/lib/auth';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth } from '@/lib/api-client';
 
 interface DashboardStats {
   newUsers: number;
@@ -34,7 +32,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const res = await fetch(`${API}/admin/stats`, { headers: buildAuthHeader(false) });
+        const res = await apiFetchWithAuth('/admin/stats');
         if (res.ok) {
           const data = await res.json();
           setStats(data);

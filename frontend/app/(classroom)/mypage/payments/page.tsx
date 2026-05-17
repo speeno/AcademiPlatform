@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreditCard, Loader2 } from 'lucide-react';
 import { BrandBadge } from '@/components/ui/brand-badge';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
 
 const targetTypeLabel: Record<string, string> = {
   ENROLLMENT:       '수강 신청',
@@ -38,12 +37,10 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     const fetch_ = async () => {
-      const token = localStorage.getItem('accessToken');
+      const token = getAccessToken();
       if (!token) { router.push('/login'); return; }
       try {
-        const res = await fetch(`${API}/payments/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiFetchWithAuth('/payments/my');
         if (res.ok) setPayments(await res.json());
       } catch { /* ignore */ }
       finally { setLoading(false); }

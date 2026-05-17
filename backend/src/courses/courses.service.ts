@@ -1,8 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { BookVoucherCodeStatus, CourseStatus, EnrollmentStatus } from '@prisma/client';
+import {
+  BookVoucherCodeStatus,
+  Course,
+  CourseStatus,
+  EnrollmentStatus,
+  PaymentStatus,
+  PaymentTarget,
+  Prisma,
+} from '@prisma/client';
 import { CreateCourseDto, CourseFilterDto } from './dto/course.dto';
 import { AddLessonDto } from './dto/lesson.dto';
+import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
 
 @Injectable()
 export class CoursesService {
@@ -123,13 +132,26 @@ export class CoursesService {
     });
   }
 
-  async enroll(courseId: string, userId: string, paymentId?: string) {
-    const course = await this.findById(courseId);
-    if (course.price > 0 && !paymentId) {
-      throw new BadRequestException('유료 강의는 결제 완료 후 수강 신청이 가능합니다.');
+  async enroll(
+    courseId: string,
+    userId: string,
+    paymentId?: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx ?? this.prisma;
+    const course = await db.course.findUnique({
+      where: { id: courseId },
+      include: { instructor: { select: { id: true, name: true } } },
+    });
+    if (!course) throw new NotFoundException('교육과정을 찾을 수 없습니다.');
+
+    // tx 가 전달된 경로(PaymentService.handlePostPaymentInTx)는 결제·금액 검증이 이미 완료된
+    // 신뢰 호출이다. 외부 컨트롤러 진입(tx 미전달)은 paymentId 위조 차단을 위해 추가 검증을 수행한다.
+    if (!tx) {
+      await this.assertPaidEnrollmentPayment(course, userId, paymentId);
     }
 
-    const existing = await this.prisma.enrollment.findUnique({
+    const existing = await db.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     });
     if (existing && existing.status === EnrollmentStatus.ACTIVE) {
@@ -140,20 +162,19 @@ export class CoursesService {
       ? new Date(Date.now() + course.learningPeriodDays * 86400000)
       : undefined;
 
-    const enrollment = await this.prisma.enrollment.upsert({
+    const enrollment = await db.enrollment.upsert({
       where: { userId_courseId: { userId, courseId } },
       create: { userId, courseId, paymentId, expiresAt, status: EnrollmentStatus.ACTIVE },
       update: { status: EnrollmentStatus.ACTIVE, paymentId, expiresAt },
     });
 
-    // 수강 등록 시 연결 교재 자동 권한 부여
-    const courseTextbooks = await this.prisma.courseTextbook.findMany({
+    const courseTextbooks = await db.courseTextbook.findMany({
       where: { courseId, autoGrantOnEnroll: true },
     });
     if (courseTextbooks.length > 0) {
       await Promise.all(
         courseTextbooks.map((ct) =>
-          this.prisma.textbookAccess.upsert({
+          db.textbookAccess.upsert({
             where: { userId_textbookId: { userId, textbookId: ct.textbookId } },
             create: {
               userId,
@@ -168,8 +189,7 @@ export class CoursesService {
       );
     }
 
-    // 수강 등록 시 북이오 무료 이용권 자동 지급(캠페인 활성화 기준)
-    await this.grantVoucherOnEnrollment(courseId, userId, enrollment.id);
+    await this.grantVoucherOnEnrollment(courseId, userId, enrollment.id, db);
 
     return enrollment;
   }
@@ -329,8 +349,79 @@ export class CoursesService {
     return { deleted: true };
   }
 
-  private async grantVoucherOnEnrollment(courseId: string, userId: string, enrollmentId: string) {
-    const campaigns = await this.prisma.bookVoucherCampaign.findMany({
+  /**
+   * 외부 수강 등록 요청에서 결제 정보(paymentId)가 위조되지 않았는지 검증한다.
+   * - 유료 판별은 `calculatePricingSnapshot.finalAmount > 0` 기준(legacy `price` 단독 사용 금지).
+   * - 결제 레코드는 동일 사용자·ENROLLMENT 타입·동일 courseId·PAID 상태여야 한다.
+   * - 결제 후처리 경로(PaymentService.handlePostPaymentInTx, tx 전달)는 이 검증을 건너뛴다.
+   */
+  private async assertPaidEnrollmentPayment(
+    course: Course,
+    userId: string,
+    paymentId?: string,
+  ): Promise<void> {
+    const pricing = calculatePricingSnapshot({
+      legacyPrice: course.price,
+      basePrice: course.basePrice,
+      salePrice: course.salePrice,
+      discountType: course.discountType,
+      discountValue: course.discountValue,
+      validFrom: course.priceValidFrom,
+      validUntil: course.priceValidUntil,
+      currency: course.currency,
+      policyVersion: course.pricePolicyVersion,
+    });
+
+    if (pricing.finalAmount === 0) {
+      // 무료 강의는 paymentId 가 와도 무시(과거 호환).
+      return;
+    }
+
+    if (!paymentId) {
+      throw new BadRequestException('유료 강의는 결제 완료 후 수강 신청이 가능합니다.');
+    }
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        userId: true,
+        targetType: true,
+        targetId: true,
+        paymentStatus: true,
+        finalAmount: true,
+        amount: true,
+      },
+    });
+
+    if (!payment) {
+      throw new BadRequestException('결제 정보를 찾을 수 없습니다.');
+    }
+    if (payment.userId !== userId) {
+      throw new BadRequestException('결제자와 수강 신청자가 일치하지 않습니다.');
+    }
+    if (payment.targetType !== PaymentTarget.ENROLLMENT) {
+      throw new BadRequestException('수강 결제가 아닌 결제로는 등록할 수 없습니다.');
+    }
+    if (payment.targetId !== course.id) {
+      throw new BadRequestException('결제 대상 강의가 일치하지 않습니다.');
+    }
+    if (payment.paymentStatus !== PaymentStatus.PAID) {
+      throw new BadRequestException('결제 완료 상태가 아닙니다.');
+    }
+    const paidAmount = payment.finalAmount || payment.amount;
+    if (paidAmount <= 0) {
+      throw new BadRequestException('결제 금액이 올바르지 않습니다.');
+    }
+  }
+
+  private async grantVoucherOnEnrollment(
+    courseId: string,
+    userId: string,
+    enrollmentId: string,
+    db: Prisma.TransactionClient = this.prisma,
+  ) {
+    const campaigns = await db.bookVoucherCampaign.findMany({
       where: {
         isActive: true,
         OR: [{ courseId }, { courseId: null }],
@@ -341,24 +432,24 @@ export class CoursesService {
     if (campaigns.length === 0) return;
 
     for (const campaign of campaigns) {
-      const existingGrant = await this.prisma.bookVoucherGrant.findUnique({
+      const existingGrant = await db.bookVoucherGrant.findUnique({
         where: { userId_campaignId: { userId, campaignId: campaign.id } },
       });
       if (existingGrant) continue;
 
-      const code = await this.prisma.bookVoucherCode.findFirst({
+      const code = await db.bookVoucherCode.findFirst({
         where: { campaignId: campaign.id, status: BookVoucherCodeStatus.AVAILABLE },
         orderBy: { createdAt: 'asc' },
       });
       if (!code) continue;
 
-      const locked = await this.prisma.bookVoucherCode.updateMany({
+      const locked = await db.bookVoucherCode.updateMany({
         where: { id: code.id, status: BookVoucherCodeStatus.AVAILABLE },
         data: { status: BookVoucherCodeStatus.ASSIGNED },
       });
       if (locked.count === 0) continue;
 
-      await this.prisma.bookVoucherGrant.create({
+      await db.bookVoucherGrant.create({
         data: {
           campaignId: campaign.id,
           codeId: code.id,

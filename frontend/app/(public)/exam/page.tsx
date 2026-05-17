@@ -6,6 +6,9 @@ import { ExamApplyButton } from './ExamApplyButton';
 import { ExamPageAuthRefresh } from './ExamPageAuthRefresh';
 import type { Metadata } from 'next';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
+import { getServerApiBase } from '@/lib/api-base';
+
+export const dynamic = 'force-dynamic';
 
 interface QualificationEntry {
   keywords: string[];
@@ -62,18 +65,10 @@ const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'blue' |
   CANCELLED: { text: '취소',     variant: 'red' },
 };
 
-function getApiBase(): string {
-  const explicit = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, '');
-  const render = process.env.RENDER_EXTERNAL_URL?.trim();
-  if (render) return `${render.replace(/\/+$/, '')}/api`;
-  return 'http://localhost:4400/api';
-}
-
 async function getExamSessions() {
   try {
     const res = await fetchWithTimeout(
-      `${getApiBase()}/exam/sessions`,
+      `${getServerApiBase()}/exam/sessions`,
       { next: { revalidate: 60 } },
       8000,
     );
@@ -87,7 +82,7 @@ async function getExamSessions() {
 async function getQualificationIntros(): Promise<QualificationEntry[]> {
   try {
     const res = await fetchWithTimeout(
-      `${getApiBase()}/settings/public/qualification_intros`,
+      `${getServerApiBase()}/settings/public/qualification_intros`,
       { next: { revalidate: 60 } },
       8000,
     );

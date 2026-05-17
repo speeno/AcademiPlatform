@@ -10,6 +10,14 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
   exit 1
 fi
 
+for key in JWT_SECRET JWT_REFRESH_SECRET; do
+  if [[ -z "${!key:-}" ]]; then
+    echo "ERROR: ${key} is not set."
+    echo "Render Web Service > Environment 에 JWT 시크릿을 설정하세요."
+    exit 1
+  fi
+done
+
 if [[ "${DATABASE_URL}" != *"sslmode="* ]]; then
   if [[ "${DATABASE_URL}" == *"?"* ]]; then
     export DATABASE_URL="${DATABASE_URL}&sslmode=require"

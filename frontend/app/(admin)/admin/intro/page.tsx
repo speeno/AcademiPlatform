@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Loader2, Save, ChevronDown, ChevronRight } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { buildAuthHeader } from '@/lib/auth';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth } from '@/lib/api-client';
 
 const SECTION_TYPES = ['HERO', 'TEXT', 'IMAGE', 'VIDEO', 'CARDS', 'STATS', 'CTA', 'CUSTOM'];
 const SECTION_TYPE_LABELS: Record<string, string> = {
@@ -35,7 +33,7 @@ export default function AdminIntroPage() {
 
   const loadPages = async () => {
     try {
-      const res = await fetch(`${API}/intro/admin/pages`, { headers: buildAuthHeader(false) });
+      const res = await apiFetchWithAuth('/intro/admin/pages');
       if (res.ok) {
         const data = await res.json();
         const list = (data.pages ?? data) as IntroPage[];
@@ -54,16 +52,19 @@ export default function AdminIntroPage() {
   const handleSavePage = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API}/intro/admin/pages`, {
-        method: 'POST', headers: buildAuthHeader(), body: JSON.stringify(pageForm),
+      const res = await apiFetchWithAuth('/intro/admin/pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pageForm),
       });
       if (res.ok) { setPageModal(false); loadPages(); }
     } catch { /* ignore */ } finally { setSaving(false); }
   };
 
   const handlePublishToggle = async (page: IntroPage) => {
-    const res = await fetch(`${API}/intro/admin/pages/${page.id}`, {
-      method: 'PATCH', headers: buildAuthHeader(),
+    const res = await apiFetchWithAuth(`/intro/admin/pages/${page.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: page.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED' }),
     });
     if (res.ok) loadPages();
@@ -78,10 +79,14 @@ export default function AdminIntroPage() {
       const body = { ...sectionForm, contentJson };
       const { editing } = sectionModal;
       const url = editing
-        ? `${API}/intro/admin/sections/${editing.id}`
-        : `${API}/intro/admin/pages/${selectedPage.id}/sections`;
+        ? `/intro/admin/sections/${editing.id}`
+        : `/intro/admin/pages/${selectedPage.id}/sections`;
       const method = editing ? 'PATCH' : 'POST';
-      const res = await fetch(url, { method, headers: buildAuthHeader(), body: JSON.stringify(body) });
+      const res = await apiFetchWithAuth(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
       if (res.ok) {
         setSectionModal({ open: false, editing: null });
         loadPages();
@@ -91,8 +96,8 @@ export default function AdminIntroPage() {
 
   const handleDeleteSection = async (sectionId: string) => {
     if (!selectedPage || !confirm('섹션을 삭제하시겠습니까?')) return;
-    const res = await fetch(`${API}/intro/admin/sections/${sectionId}`, {
-      method: 'DELETE', headers: buildAuthHeader(false),
+    const res = await apiFetchWithAuth(`/intro/admin/sections/${sectionId}`, {
+      method: 'DELETE',
     });
     if (res.ok) {
       setSelectedPage((p) => (p ? { ...p, sections: p.sections.filter((s) => s.id !== sectionId) } : p));

@@ -29,5 +29,19 @@ function getRuntimeApiBase(): string {
   return 'http://localhost:4400/api';
 }
 
+/** SSR·서버 컴포넌트용 API base (NEXT_PUBLIC_API_URL / RENDER_EXTERNAL_URL 우선) */
+export function getServerApiBase(): string {
+  const explicit = process.env.NEXT_PUBLIC_API_URL;
+  if (explicit?.trim()) return normalizeApiBase(explicit);
+
+  const renderExternal = process.env.RENDER_EXTERNAL_URL?.trim();
+  if (renderExternal) return `${renderExternal.replace(/\/+$/, '')}/api`;
+
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[api-base] NEXT_PUBLIC_API_URL is not set on server; API calls may fail.');
+  }
+  return 'http://localhost:4400/api';
+}
+
 export const API_BASE = getRuntimeApiBase();
 

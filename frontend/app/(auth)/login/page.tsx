@@ -7,7 +7,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
-import { getPostLoginRedirect, setAccessToken } from '@/lib/auth';
+import { getPostLoginRedirect, setAccessToken, setRefreshToken } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
 
@@ -30,6 +30,7 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.message ?? '로그인에 실패했습니다.');
 
       setAccessToken(data.accessToken);
+      if (data.refreshToken) setRefreshToken(data.refreshToken);
       toast.success('로그인 되었습니다.');
 
       const nextPath =

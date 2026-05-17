@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Search } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+import { apiFetchWithAuth } from '@/lib/api-client';
 
 const targetTypeLabel: Record<string, string> = { ENROLLMENT: '수강 신청', EXAM_APPLICATION: '시험 접수', TEXTBOOK: '교재 구매' };
 const paymentStatusInfo: Record<string, { label: string; variant: 'default' | 'orange' | 'green' | 'red' }> = {
@@ -30,20 +29,13 @@ export default function AdminPaymentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
-  const authHeader = (): Record<string, string> => {
-    const t = localStorage.getItem('accessToken');
-    const h: Record<string, string> = {};
-    if (t) h['Authorization'] = `Bearer ${t}`;
-    return h;
-  };
-
   const load = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (q) params.set('search', q);
       if (statusFilter) params.set('status', statusFilter);
-      const res = await fetch(`${API}/payments/admin?${params}`, { headers: authHeader() });
+      const res = await apiFetchWithAuth(`/payments/admin?${params}`);
       if (res.ok) { const d = await res.json(); setPayments(d.payments ?? []); setTotal(d.total ?? 0); }
     } catch { /* ignore */ } finally { setLoading(false); }
   };

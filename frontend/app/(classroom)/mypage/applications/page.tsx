@@ -6,8 +6,7 @@ import { ClipboardList, Loader2, XCircle } from 'lucide-react';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import { ApplicationDepositSummary } from '@/components/exam/ApplicationDepositSummary';
-import { buildAuthHeader } from '@/lib/auth';
-import { API_BASE } from '@/lib/api-base';
+import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
 import type { DepositAccountInfo } from '@/lib/referrer';
 
 const statusLabel: Record<string, { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
@@ -42,14 +41,12 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     const fetch_ = async () => {
-      if (!localStorage.getItem('accessToken')) {
+      if (!getAccessToken()) {
         router.push('/login');
         return;
       }
       try {
-        const res = await fetch(`${API_BASE}/exam/my/applications`, {
-          headers: buildAuthHeader(false),
-        });
+        const res = await apiFetchWithAuth('/exam/my/applications');
         if (res.status === 401) {
           router.push('/login');
           return;
@@ -73,9 +70,8 @@ export default function ApplicationsPage() {
     if (!confirm('시험 접수를 취소하시겠습니까?')) return;
     setCancellingId(id);
     try {
-      const res = await fetch(`${API_BASE}/exam/my/applications/${id}/cancel`, {
+      const res = await apiFetchWithAuth(`/exam/my/applications/${id}/cancel`, {
         method: 'POST',
-        headers: buildAuthHeader(false),
       });
       if (res.ok) setApps((prev) => prev.map((a) => a.id === id ? { ...a, status: 'CANCELLED' } : a));
       else alert('취소에 실패했습니다.');

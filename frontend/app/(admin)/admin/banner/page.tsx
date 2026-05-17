@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
 import { Input } from '@/components/ui/input';
-import { buildAuthHeader } from '@/lib/auth';
+import { apiFetchWithAuth } from '@/lib/api-client';
 import { toast } from 'sonner';
 import {
   Plus, Trash2, Save, Eye, EyeOff, GripVertical,
@@ -55,9 +55,7 @@ export default function AdminBannerPage() {
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/settings`, {
-      headers: buildAuthHeader(false),
-    })
+    apiFetchWithAuth('/admin/settings')
       .then((r) => r.json())
       .then((data) => {
         if (!data.hero_banner) {
@@ -84,14 +82,11 @@ export default function AdminBannerPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/settings/hero_banner`,
-        {
-          method: 'PATCH',
-          headers: buildAuthHeader(true),
-          body: JSON.stringify({ value: JSON.stringify({ slides }) }),
-        },
-      );
+      const res = await apiFetchWithAuth('/admin/settings/hero_banner', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: JSON.stringify({ slides }) }),
+      });
       if (!res.ok) throw new Error('저장 실패');
       toast.success('히어로 배너가 저장되었습니다.');
     } catch (err: any) {
