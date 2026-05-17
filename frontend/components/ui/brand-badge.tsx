@@ -18,14 +18,14 @@ interface BrandBadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, { bg: string; text: string; dot: string }> = {
-  blue:    { bg: 'bg-[var(--brand-blue-subtle)]',   text: 'text-[var(--brand-blue)]',        dot: 'bg-[var(--brand-blue)]' },
-  orange:  { bg: 'bg-[var(--brand-orange-subtle)]', text: 'text-[var(--brand-orange-dark)]', dot: 'bg-[var(--brand-orange)]' },
-  green:   { bg: 'bg-emerald-50',                   text: 'text-emerald-700',                dot: 'bg-emerald-500' },
-  sky:     { bg: 'bg-[var(--brand-sky-subtle)]',    text: 'text-[var(--brand-sky-dark)]',    dot: 'bg-[var(--brand-sky)]' },
-  gray:    { bg: 'bg-gray-100',                     text: 'text-gray-600',                   dot: 'bg-gray-400' },
-  red:     { bg: 'bg-red-50',                        text: 'text-red-700',                    dot: 'bg-red-500' },
-  yellow:  { bg: 'bg-yellow-50',                     text: 'text-yellow-700',                 dot: 'bg-yellow-500' },
-  default: { bg: 'bg-gray-100',                     text: 'text-gray-600',                   dot: 'bg-gray-400' },
+  blue:    { bg: 'bg-brand-blue-subtle',   text: 'text-brand-blue',        dot: 'bg-brand-blue' },
+  orange:  { bg: 'bg-brand-orange-subtle', text: 'text-brand-orange-dark', dot: 'bg-brand-orange' },
+  green:   { bg: 'bg-emerald-50',          text: 'text-emerald-700',       dot: 'bg-emerald-500' },
+  sky:     { bg: 'bg-brand-sky-subtle',    text: 'text-brand-sky-dark',    dot: 'bg-brand-sky' },
+  gray:    { bg: 'bg-muted',               text: 'text-muted-foreground',  dot: 'bg-muted-foreground' },
+  red:     { bg: 'bg-red-50',              text: 'text-red-700',           dot: 'bg-red-500' },
+  yellow:  { bg: 'bg-yellow-50',           text: 'text-yellow-700',        dot: 'bg-yellow-500' },
+  default: { bg: 'bg-muted',               text: 'text-muted-foreground',  dot: 'bg-muted-foreground' },
 };
 
 const statusMap: Record<string, BadgeVariant> = {

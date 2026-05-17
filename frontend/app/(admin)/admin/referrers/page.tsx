@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Plus, Save, Trash2, UserPlus, X, BarChart3, Settings2, Loader2, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, Save, Trash2, UserPlus, X, BarChart3, Settings2, ChevronRight, ChevronDown } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageLoader } from '@/components/ui/page-loader';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import type { ReferrerGroup, ReferrerMember } from '@/lib/referrer';
@@ -179,14 +181,11 @@ export default function AdminReferrersPage() {
     setGroups(next);
   };
 
-  if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>권유자 관리</h1>
-        <p className="text-sm text-gray-500 mt-1">시험 접수 시 선택 가능한 권유자 그룹 및 멤버를 관리합니다.</p>
-      </div>
+      <PageHeader title="권유자 관리" description="시험 접수 시 선택 가능한 권유자 그룹 및 멤버를 관리합니다." />
 
       <div className="flex gap-1 border-b">
         <button
@@ -194,7 +193,7 @@ export default function AdminReferrersPage() {
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             tab === 'manage'
               ? 'border-[var(--brand-blue)] text-[var(--brand-blue)]'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           <Settings2 className="w-4 h-4" /> 관리
@@ -204,7 +203,7 @@ export default function AdminReferrersPage() {
           className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             tab === 'stats'
               ? 'border-[var(--brand-blue)] text-[var(--brand-blue)]'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           <BarChart3 className="w-4 h-4" /> 통계
@@ -224,7 +223,7 @@ export default function AdminReferrersPage() {
             <div key={group.id} className="bg-white rounded-xl border p-5 space-y-4">
               <div className="grid md:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 mb-1 block">그룹 이름</label>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">그룹 이름</label>
                   <input
                     className="w-full border rounded-lg px-3 py-2 text-sm"
                     value={group.groupName}
@@ -232,7 +231,7 @@ export default function AdminReferrersPage() {
                   />
                 </div>
                 <div className="flex items-end gap-3">
-                  <label className="text-sm text-gray-700 flex items-center gap-2">
+                  <label className="text-sm text-foreground flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={group.isActive !== false}
@@ -245,22 +244,22 @@ export default function AdminReferrersPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-medium text-gray-500">멤버 목록</label>
+                  <label className="text-xs font-medium text-muted-foreground">멤버 목록</label>
                   <button
                     type="button"
                     onClick={() => addMember(gIdx)}
-                    className="text-xs flex items-center gap-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
-                    style={{ color: 'var(--brand-blue)' }}
+                    className="text-xs flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted transition-colors text-brand-blue"
+                    
                   >
                     <UserPlus className="w-3.5 h-3.5" /> 멤버 추가
                   </button>
                 </div>
                 {group.members.length === 0 ? (
-                  <p className="text-xs text-gray-400 py-2">멤버가 없습니다. &quot;멤버 추가&quot;를 클릭하세요.</p>
+                  <p className="text-xs text-muted-foreground py-2">멤버가 없습니다. &quot;멤버 추가&quot;를 클릭하세요.</p>
                 ) : (
                   <div className="space-y-3">
                     {group.members.map((member, mIdx) => (
-                      <div key={mIdx} className="rounded-lg border bg-gray-50 p-3 space-y-3">
+                      <div key={mIdx} className="rounded-lg border bg-muted/30 p-3 space-y-3">
                         <div className="flex items-center gap-2">
                           <input
                             className="flex-1 border rounded-lg px-3 py-1.5 text-sm bg-white"
@@ -277,14 +276,14 @@ export default function AdminReferrersPage() {
                           <button
                             type="button"
                             onClick={() => removeMember(gIdx, mIdx)}
-                            className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                           >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
 
                         <div>
-                          <p className="text-[11px] font-medium text-gray-500 mb-1.5">
+                          <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
                             멤버별 입금 계좌 정보 <span className="font-normal">(선택사항)</span>
                           </p>
                           <div className="grid md:grid-cols-3 gap-2">
@@ -326,7 +325,7 @@ export default function AdminReferrersPage() {
           ))}
 
           {groups.length === 0 && (
-            <div className="text-center text-gray-400 py-10 bg-white rounded-xl border">
+            <div className="text-center text-muted-foreground py-10 bg-white rounded-xl border">
               등록된 권유자 그룹이 없습니다. 위 &quot;그룹 추가&quot; 버튼을 눌러 추가하세요.
             </div>
           )}
@@ -336,22 +335,20 @@ export default function AdminReferrersPage() {
       {tab === 'stats' && (
         <div className="bg-white rounded-xl border overflow-hidden">
           {statsLoading ? (
-            <div className="flex justify-center items-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-            </div>
+            <PageLoader height="h-40" />
           ) : stats.length === 0 ? (
-            <div className="text-center text-gray-400 py-16">
+            <div className="text-center text-muted-foreground py-16">
               권유자별 접수 데이터가 없습니다.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-muted/30 border-b">
                   <tr>
                     {['그룹명', '멤버명', '코드', '시험'].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
                     ))}
-                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--brand-blue)' }}>전체</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-brand-blue" >전체</th>
                     {STATUS_COLS.map((sc) => (
                       <th key={sc.key} className="px-3 py-3 text-right text-xs font-semibold" style={{ color: sc.color }}>{sc.label}</th>
                     ))}
@@ -364,13 +361,13 @@ export default function AdminReferrersPage() {
                     return (
                       <React.Fragment key={s.code}>
                         <tr
-                          className={`hover:bg-gray-50 ${hasExams ? 'cursor-pointer' : ''}`}
+                          className={`hover:bg-muted/30 ${hasExams ? 'cursor-pointer' : ''}`}
                           onClick={() => hasExams && toggleExpand(s.code)}
                         >
-                          <td className="px-4 py-3 text-gray-600">{s.groupName}</td>
-                          <td className="px-4 py-3 font-medium text-gray-800">{s.memberName}</td>
-                          <td className="px-4 py-3 text-gray-500 font-mono text-xs">{s.code}</td>
-                          <td className="px-4 py-3 text-gray-500 text-xs">
+                          <td className="px-4 py-3 text-muted-foreground">{s.groupName}</td>
+                          <td className="px-4 py-3 font-medium text-foreground">{s.memberName}</td>
+                          <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{s.code}</td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs">
                             {hasExams && (
                               <span className="inline-flex items-center gap-1">
                                 {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
@@ -378,7 +375,7 @@ export default function AdminReferrersPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right font-semibold" style={{ color: 'var(--brand-blue)' }}>{s.total.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-brand-blue" >{s.total.toLocaleString()}</td>
                           {STATUS_COLS.map((sc) => (
                             <td key={sc.key} className="px-3 py-3 text-right tabular-nums" style={{ color: (s.byStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
                               {(s.byStatus[sc.key] ?? 0).toLocaleString()}
@@ -390,8 +387,8 @@ export default function AdminReferrersPage() {
                             <td className="px-4 py-2" />
                             <td className="px-4 py-2" />
                             <td className="px-4 py-2" />
-                            <td className="px-4 py-2 text-xs text-gray-600 pl-8">{ex.examName}</td>
-                            <td className="px-4 py-2 text-right text-xs font-medium" style={{ color: 'var(--brand-blue)' }}>{ex.total.toLocaleString()}</td>
+                            <td className="px-4 py-2 text-xs text-muted-foreground pl-8">{ex.examName}</td>
+                            <td className="px-4 py-2 text-right text-xs font-medium text-brand-blue" >{ex.total.toLocaleString()}</td>
                             {STATUS_COLS.map((sc) => (
                               <td key={sc.key} className="px-3 py-2 text-right text-xs tabular-nums" style={{ color: (ex.byStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
                                 {(ex.byStatus[sc.key] ?? 0).toLocaleString()}
@@ -402,9 +399,9 @@ export default function AdminReferrersPage() {
                       </React.Fragment>
                     );
                   })}
-                  <tr className="bg-gray-50 font-semibold border-t-2">
-                    <td className="px-4 py-3 text-gray-700" colSpan={4}>합계</td>
-                    <td className="px-4 py-3 text-right" style={{ color: 'var(--brand-blue)' }}>{totalCount.toLocaleString()}</td>
+                  <tr className="bg-muted/30 font-semibold border-t-2">
+                    <td className="px-4 py-3 text-foreground" colSpan={4}>합계</td>
+                    <td className="px-4 py-3 text-right text-brand-blue" >{totalCount.toLocaleString()}</td>
                     {STATUS_COLS.map((sc) => (
                       <td key={sc.key} className="px-3 py-3 text-right" style={{ color: (totalByStatus[sc.key] ?? 0) > 0 ? sc.color : '#d1d5db' }}>
                         {(totalByStatus[sc.key] ?? 0).toLocaleString()}

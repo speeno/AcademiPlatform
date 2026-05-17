@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
 import { BrandButton } from '@/components/ui/brand-button';
@@ -80,8 +81,8 @@ export default function TextbookViewerPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>{title}</h1>
-          <p className="text-xs text-gray-500 mt-1">워터마크 적용 + 복사/다운로드 차단 모드로 제공됩니다.</p>
+          <h1 className="text-xl font-extrabold text-brand-blue" >{title}</h1>
+          <p className="text-xs text-muted-foreground mt-1">워터마크 적용 + 복사/다운로드 차단 모드로 제공됩니다.</p>
         </div>
         <div className="flex gap-2">
           <BrandButton variant="outline" size="sm" onClick={() => router.back()}>
@@ -96,13 +97,11 @@ export default function TextbookViewerPage() {
 
       <div className="min-h-[70vh]">
         {loading ? (
-          <div className="h-[70vh] flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-          </div>
+          <PageLoader height="h-[70vh]" />
         ) : pdfUrl ? (
           <SecurePdfViewer src={pdfUrl} heightClassName="h-[70vh]" />
         ) : (
-          <div className="h-[70vh] flex items-center justify-center text-sm text-gray-500">
+          <div className="h-[70vh] flex items-center justify-center text-sm text-muted-foreground">
             PDF를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
           </div>
         )}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Pin, Bell } from 'lucide-react';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = {
   title: '공지사항',
@@ -33,24 +34,24 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-3xl font-extrabold mb-2" style={{ color: 'var(--brand-blue)' }}>공지사항</h1>
-          <p className="text-gray-600">AcademiQ의 중요 공지 및 소식을 확인하세요.</p>
-        </div>
+        <PageShell size="content" flush>
+          <h1 className="text-heading mb-2 text-brand-blue">공지사항</h1>
+          <p className="text-muted-foreground">AcademiQ의 중요 공지 및 소식을 확인하세요.</p>
+        </PageShell>
       </section>
 
       <section className="py-10">
-        <div className="max-w-4xl mx-auto px-4">
+        <PageShell size="content" flush>
           {pinned.length > 0 && (
             <div className="mb-6 space-y-2">
               {pinned.map((n: any) => (
                 <Link key={n.id} href={`/notices/${n.id}`} className="block">
-                  <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 hover:bg-blue-100/60 transition-colors">
-                    <Pin className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand-blue)' }} />
+                  <div className="flex items-start gap-3 bg-brand-blue-subtle border border-brand-blue/20 rounded-xl px-5 py-4 hover:bg-brand-blue-subtle/80 transition-colors">
+                    <Pin className="w-4 h-4 mt-0.5 flex-shrink-0 text-brand-blue" />
                     <div className="flex-1">
-                      <span className="font-semibold text-gray-900">{n.title}</span>
+                      <span className="font-semibold text-foreground">{n.title}</span>
                     </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
                       {n.publishedAt ? new Date(n.publishedAt).toLocaleDateString('ko-KR') : new Date(n.createdAt).toLocaleDateString('ko-KR')}
                     </span>
                   </div>
@@ -61,7 +62,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
 
           <div className="bg-white rounded-xl border overflow-hidden">
             {normal.length === 0 && pinned.length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
+              <div className="text-center py-16 text-muted-foreground">
                 <Bell className="w-10 h-10 mx-auto mb-3" />
                 <p>공지사항이 없습니다.</p>
               </div>
@@ -69,12 +70,12 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
               <ul className="divide-y">
                 {normal.map((n: any, idx: number) => (
                   <li key={n.id}>
-                    <Link href={`/notices/${n.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
-                      <span className="text-sm text-gray-300 w-8 text-right flex-shrink-0">{idx + 1}</span>
-                      <span className="flex-1 text-sm text-gray-800 font-medium">{n.title}</span>
+                    <Link href={`/notices/${n.id}`} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors">
+                      <span className="text-sm text-muted-foreground w-8 text-right flex-shrink-0">{idx + 1}</span>
+                      <span className="flex-1 text-sm text-foreground font-medium">{n.title}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <BrandBadge variant="default" className="text-xs">공지</BrandBadge>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-muted-foreground">
                           {n.publishedAt ? new Date(n.publishedAt).toLocaleDateString('ko-KR') : new Date(n.createdAt).toLocaleDateString('ko-KR')}
                         </span>
                       </div>
@@ -84,7 +85,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
               </ul>
             )}
           </div>
-        </div>
+        </PageShell>
       </section>
     </div>
   );

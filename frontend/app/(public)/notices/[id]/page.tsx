@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
@@ -40,23 +41,23 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-4xl mx-auto px-4">
+        <PageShell size="content" flush>
           <Link href="/notices">
             <BrandButton variant="ghost" size="sm" className="mb-4">
               <ArrowLeft className="w-4 h-4 mr-1" />
               목록으로
             </BrandButton>
           </Link>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">{notice.title}</h1>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-foreground mb-3">{notice.title}</h1>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
             {dateStr}
           </div>
-        </div>
+        </PageShell>
       </section>
 
       <section className="py-10">
-        <div className="max-w-4xl mx-auto px-4">
+        <PageShell size="content" flush>
           <div className="bg-white rounded-xl border p-6 md:p-8">
             <div
               className="prose prose-sm max-w-none"
@@ -72,7 +73,7 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
               </BrandButton>
             </Link>
           </div>
-        </div>
+        </PageShell>
       </section>
     </div>
   );

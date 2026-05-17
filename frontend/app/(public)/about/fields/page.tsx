@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Building2, GraduationCap, Hospital, Factory, ShoppingBag, Landmark, Cpu, Film } from 'lucide-react';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = { title: 'AI 활용 분야', description: 'AI 자격 취득 후 활동 가능한 분야를 안내합니다.' };
 
@@ -17,28 +18,28 @@ const fields = [
 export default function FieldsPage() {
   return (
     <div>
-      <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-5xl mx-auto px-4">
-          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--brand-orange)' }}>활동 분야</p>
-          <h1 className="text-3xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>AI 자격으로 활동할 수 있는 분야</h1>
-          <p className="text-gray-600">AcademiQ AI 자격은 다양한 산업 분야에서 폭넓게 활용됩니다.</p>
-        </div>
+      <section className="bg-hero-gradient py-14 border-b border-border">
+        <PageShell flush>
+          <p className="text-sm font-semibold mb-2 text-brand-orange">활동 분야</p>
+          <h1 className="text-heading mb-3 text-brand-blue">AI 자격으로 활동할 수 있는 분야</h1>
+          <p className="text-muted-foreground">AcademiQ AI 자격은 다양한 산업 분야에서 폭넓게 활용됩니다.</p>
+        </PageShell>
       </section>
 
       <section className="py-14">
-        <div className="max-w-5xl mx-auto px-4">
+        <PageShell flush>
           <div className="grid md:grid-cols-2 gap-6">
             {fields.map(({ icon: Icon, title, desc, examples }) => (
-              <div key={title} className="bg-white rounded-2xl border p-6 flex gap-5 hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--gradient-logo)' }}>
+              <div key={title} className="bg-card rounded-2xl border border-border p-6 flex gap-5 hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 bg-logo-gradient">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-1.5">{title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed mb-3">{desc}</p>
+                  <h3 className="font-bold text-foreground mb-1.5">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">{desc}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {examples.map((ex) => (
-                      <span key={ex} className="text-xs px-2 py-0.5 rounded-full border" style={{ color: 'var(--brand-blue)', borderColor: 'var(--brand-blue-light)' }}>
+                      <span key={ex} className="text-xs px-2 py-0.5 rounded-full border border-brand-blue/30 text-brand-blue">
                         {ex}
                       </span>
                     ))}
@@ -47,7 +48,7 @@ export default function FieldsPage() {
               </div>
             ))}
           </div>
-        </div>
+        </PageShell>
       </section>
     </div>
   );

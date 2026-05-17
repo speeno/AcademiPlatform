@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Loader2, XCircle } from 'lucide-react';
+import { ClipboardList, XCircle } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import { ApplicationDepositSummary } from '@/components/exam/ApplicationDepositSummary';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
 import type { DepositAccountInfo } from '@/lib/referrer';
 
@@ -79,25 +81,16 @@ export default function ApplicationsPage() {
     finally { setCancellingId(null); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>시험 신청 내역</h1>
-        <p className="text-sm text-gray-500 mt-1">접수한 시험 일정을 확인하세요.</p>
-      </div>
+      <PageHeader title="시험 신청 내역" description="접수한 시험 일정을 확인하세요." />
 
       {apps.length === 0 ? (
         <div className="text-center py-20">
-          <ClipboardList className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500">접수한 시험이 없습니다.</p>
+          <ClipboardList className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-muted-foreground">접수한 시험이 없습니다.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -110,9 +103,9 @@ export default function ApplicationsPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <BrandBadge variant={s.variant}>{s.label}</BrandBadge>
                     </div>
-                    <h3 className="font-bold text-gray-900">{app.examSession?.qualificationName ?? '시험'}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{app.examSession?.roundName ?? ''}</p>
-                    <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-500">
+                    <h3 className="font-bold text-foreground">{app.examSession?.qualificationName ?? '시험'}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{app.examSession?.roundName ?? ''}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
                       <span>시험일: {app.examSession?.examAt ? new Date(app.examSession.examAt).toLocaleDateString('ko-KR') : '-'}</span>
                       {app.examSession?.place && <span>장소: {app.examSession.place}</span>}
                       <span>응시료: {Number(app.examSession?.fee ?? 0).toLocaleString()}원</span>

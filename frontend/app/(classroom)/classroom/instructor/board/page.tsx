@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, Pencil, Trash2, Loader2, Pin } from 'lucide-react';
+import { Plus, Pencil, Trash2, Pin } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -106,55 +108,50 @@ export default function InstructorBoardPage() {
     } catch { toast.error('삭제에 실패했습니다.'); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>강사 게시판</h1>
-          <p className="text-sm text-gray-500 mt-1">강사들의 소통 공간 · 총 {posts.length}건</p>
-        </div>
-        <BrandButton variant="primary" size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" /> 글쓰기
-        </BrandButton>
-      </div>
+      <PageHeader
+        title="강사 게시판"
+        description={`강사들의 소통 공간 · 총 ${posts.length}건`}
+        eyebrow="강사"
+        actions={
+          <BrandButton variant="primary" size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> 글쓰기
+          </BrandButton>
+        }
+      />
 
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-muted/30 border-b">
             <tr>
               {['제목', '작성자', '고정', '작성일', '관리'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y">
             {posts.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-12 text-gray-400">게시글이 없습니다.</td></tr>
+              <tr><td colSpan={5} className="text-center py-12 text-muted-foreground">게시글이 없습니다.</td></tr>
             ) : posts.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50">
+              <tr key={p.id} className="hover:bg-muted/30">
                 <td className="px-4 py-3">
-                  <Link href={`/classroom/instructor/board/${p.id}`} className="font-medium text-gray-800 hover:underline line-clamp-1">
+                  <Link href={`/classroom/instructor/board/${p.id}`} className="font-medium text-foreground hover:underline line-clamp-1">
                     {p.title}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-gray-600 text-xs">{p.author.name}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{p.author.name}</td>
                 <td className="px-4 py-3">
-                  {p.isPinned && <Pin className="w-4 h-4" style={{ color: 'var(--brand-orange)' }} />}
+                  {p.isPinned && <Pin className="w-4 h-4 text-brand-orange"  />}
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{new Date(p.createdAt).toLocaleDateString('ko-KR')}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(p.createdAt).toLocaleDateString('ko-KR')}</td>
                 <td className="px-4 py-3">
                   {canManage(p) && (
                     <div className="flex gap-2">
-                      <button onClick={() => openEdit(p)} className="p-1.5 rounded hover:bg-gray-100">
-                        <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                      <button onClick={() => openEdit(p)} className="p-1.5 rounded hover:bg-muted">
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                       <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded hover:bg-red-50">
                         <Trash2 className="w-3.5 h-3.5 text-red-400" />

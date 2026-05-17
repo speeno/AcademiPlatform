@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Clock, Users, BookOpen, ArrowRight } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
@@ -38,10 +39,10 @@ export default async function CoursesPage() {
       {/* 헤더 */}
       <section className="bg-hero-gradient py-14 border-b">
         <div className="max-w-5xl mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-brand-blue" >
             교육과정
           </h1>
-          <p className="text-gray-600">AI 자격 취득을 위한 체계적인 교육과정을 만나보세요.</p>
+          <p className="text-muted-foreground">AI 자격 취득을 위한 체계적인 교육과정을 만나보세요.</p>
         </div>
       </section>
 
@@ -49,7 +50,7 @@ export default async function CoursesPage() {
         <div className="max-w-5xl mx-auto px-4">
           {/* 과정 목록 */}
           {courses.length === 0 ? (
-            <div className="rounded-xl border bg-white p-10 text-center text-gray-500">
+            <div className="rounded-xl border bg-white p-10 text-center text-muted-foreground">
               현재 공개된 교육과정이 없습니다.
             </div>
           ) : (
@@ -58,7 +59,7 @@ export default async function CoursesPage() {
               const isUpcoming = course.status === 'UPCOMING';
               const card = (
                 <BrandCard hoverable={!isUpcoming} accent="blue" padding="none" className={`overflow-hidden h-full flex flex-col${isUpcoming ? ' opacity-75' : ''}`}>
-                  <div className="relative h-48 overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="relative h-48 overflow-hidden bg-muted flex-shrink-0">
                     {course.thumbnailUrl ? (
                       <Image
                         src={course.thumbnailUrl}
@@ -87,9 +88,9 @@ export default async function CoursesPage() {
                       <BrandBadge variant="blue" className="mb-2 self-start">{course.category}</BrandBadge>
                     )}
                     <BrandCardTitle className="mb-2 line-clamp-2">{course.title}</BrandCardTitle>
-                    <p className="text-xs text-gray-400 mb-3">강사: {course.instructor?.name ?? '-'}</p>
+                    <p className="text-xs text-muted-foreground mb-3">강사: {course.instructor?.name ?? '-'}</p>
 
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
                       {course.learningPeriodDays && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" /> {course.learningPeriodDays}일
@@ -104,15 +105,15 @@ export default async function CoursesPage() {
 
                     <div className="mt-auto flex items-center justify-between">
                       {isUpcoming ? (
-                        <span className="text-sm font-medium text-gray-400">가격 미정</span>
+                        <span className="text-sm font-medium text-muted-foreground">가격 미정</span>
                       ) : (
                         <PriceDisplay
                           price={course.price ?? 0}
-                          className="text-lg font-extrabold"
-                          style={{ color: 'var(--brand-orange)' }}
+                          className="text-lg font-extrabold text-brand-orange"
+                          
                         />
                       )}
-                      <span className="text-xs font-medium" style={{ color: isUpcoming ? '#9ca3af' : 'var(--brand-blue)' }}>
+                      <span className={cn('text-xs font-medium', isUpcoming ? 'text-muted-foreground' : 'text-brand-blue')}>
                         {isUpcoming ? '준비 중' : '상세 보기 →'}
                       </span>
                     </div>

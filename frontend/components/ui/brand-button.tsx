@@ -13,11 +13,11 @@ interface BrandButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<BrandVariant, string> = {
-  primary:   'bg-[var(--brand-orange)] text-white hover:bg-[var(--brand-orange-dark)] shadow-sm',
-  secondary: 'bg-[var(--brand-blue)] text-white hover:bg-[var(--brand-blue-dark)] shadow-sm',
-  outline:   'border border-[var(--brand-blue)] text-[var(--brand-blue)] bg-transparent hover:bg-[var(--brand-blue-subtle)]',
-  ghost:     'text-[var(--brand-blue)] bg-transparent hover:bg-[var(--brand-blue-subtle)]',
-  danger:    'bg-red-600 text-white hover:bg-red-700',
+  primary:   'bg-brand-orange text-white hover:bg-brand-orange-dark shadow-sm',
+  secondary: 'bg-brand-blue text-white hover:bg-brand-blue-dark shadow-sm',
+  outline:   'border border-brand-blue text-brand-blue bg-transparent hover:bg-brand-blue-subtle',
+  ghost:     'text-brand-blue bg-transparent hover:bg-brand-blue-subtle',
+  danger:    'bg-destructive text-white hover:opacity-90',
 };
 
 const sizeStyles: Record<BrandSize, string> = {
@@ -35,7 +35,7 @@ export const BrandButton = forwardRef<HTMLButtonElement, BrandButtonProps>(
         disabled={disabled || loading}
         className={cn(
           'inline-flex items-center justify-center font-semibold transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-blue)] focus-visible:ring-offset-2',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           variantStyles[variant],
           sizeStyles[size],

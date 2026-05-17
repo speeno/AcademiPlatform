@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,37 +53,39 @@ export default async function FaqPage() {
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-3xl font-extrabold mb-2" style={{ color: 'var(--brand-blue)' }}>자주 묻는 질문</h1>
-          <p className="text-gray-600">궁금한 사항을 빠르게 찾아보세요.</p>
-        </div>
+        <PageShell size="content" flush>
+          <h1 className="text-3xl font-extrabold mb-2 text-brand-blue">자주 묻는 질문</h1>
+          <p className="text-muted-foreground">궁금한 사항을 빠르게 찾아보세요.</p>
+        </PageShell>
       </section>
 
       <section className="py-10">
-        <div className="max-w-4xl mx-auto px-4 space-y-10">
-          {categories.map((cat) => (
-            <div key={cat as string}>
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--brand-blue)' }}>
-                <HelpCircle className="w-5 h-5" /> {cat as string}
-              </h2>
-              <div className="space-y-2">
-                {list
-                  .filter((f: any) => f.category === cat)
-                  .map((faq: any) => (
-                    <details key={faq.id} className="bg-white border rounded-xl group overflow-hidden">
-                      <summary className="flex items-start justify-between gap-3 px-5 py-4 cursor-pointer select-none hover:bg-gray-50">
-                        <span className="font-medium text-gray-900 flex-1">{faq.question}</span>
-                        <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5 transition-transform group-open:rotate-180" />
-                      </summary>
-                      <div className="px-5 pb-5 text-sm text-gray-600 leading-relaxed border-t bg-gray-50">
-                        <div className="pt-4">{faq.answer}</div>
-                      </div>
-                    </details>
-                  ))}
+        <PageShell size="content" flush>
+          <div className="space-y-10">
+            {categories.map((cat) => (
+              <div key={cat as string}>
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-brand-blue">
+                  <HelpCircle className="w-5 h-5" /> {cat as string}
+                </h2>
+                <div className="space-y-2">
+                  {list
+                    .filter((f: any) => f.category === cat)
+                    .map((faq: any) => (
+                      <details key={faq.id} className="bg-white border rounded-xl group overflow-hidden">
+                        <summary className="flex items-start justify-between gap-3 px-5 py-4 cursor-pointer select-none hover:bg-muted/30">
+                          <span className="font-medium text-foreground flex-1">{faq.question}</span>
+                          <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed border-t bg-muted/30">
+                          <div className="pt-4">{faq.answer}</div>
+                        </div>
+                      </details>
+                    ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </PageShell>
       </section>
     </div>
   );

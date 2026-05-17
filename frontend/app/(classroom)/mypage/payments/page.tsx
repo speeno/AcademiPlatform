@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreditCard, Loader2 } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
 
 const targetTypeLabel: Record<string, string> = {
@@ -48,45 +50,36 @@ export default function PaymentsPage() {
     fetch_();
   }, [router]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>결제 내역</h1>
-        <p className="text-sm text-gray-500 mt-1">결제 및 환불 내역을 확인하세요.</p>
-      </div>
+      <PageHeader title="결제 내역" description="결제 및 환불 내역을 확인하세요." />
 
       {payments.length === 0 ? (
         <div className="text-center py-20">
-          <CreditCard className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500">결제 내역이 없습니다.</p>
+          <CreditCard className="w-12 h-12 mx-auto mb-3 text-muted-foreground/60" />
+          <p className="text-muted-foreground">결제 내역이 없습니다.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {payments.map((p) => {
             const s = paymentStatusInfo[p.paymentStatus] ?? { label: p.paymentStatus, variant: 'default' as const };
             return (
-              <div key={p.id} className="bg-white rounded-xl border px-5 py-4 flex items-center justify-between gap-4">
+              <div key={p.id} className="bg-card rounded-xl border border-border px-5 py-4 flex items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <BrandBadge variant={s.variant} className="text-xs">{s.label}</BrandBadge>
-                    <span className="text-xs text-gray-400">{targetTypeLabel[p.targetType] ?? p.targetType}</span>
+                    <span className="text-xs text-muted-foreground">{targetTypeLabel[p.targetType] ?? p.targetType}</span>
                   </div>
-                  <p className="text-xs text-gray-400">주문번호: {p.orderNo}</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-muted-foreground">주문번호: {p.orderNo}</p>
+                  <p className="text-xs text-muted-foreground">
                     {p.paidAt
                       ? `결제일: ${new Date(p.paidAt).toLocaleDateString('ko-KR')}`
                       : `생성일: ${new Date(p.createdAt).toLocaleDateString('ko-KR')}`}
                   </p>
                 </div>
-                <span className="font-extrabold text-lg flex-shrink-0" style={{ color: 'var(--brand-orange)' }}>
+                <span className="font-extrabold text-lg flex-shrink-0 text-brand-orange">
                   {p.amount.toLocaleString()}원
                 </span>
               </div>

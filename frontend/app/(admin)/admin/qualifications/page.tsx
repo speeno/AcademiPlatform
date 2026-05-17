@@ -129,19 +129,19 @@ export default function AdminQualificationsPage() {
   };
 
   if (loading)
-    return <div className="text-sm text-gray-500">불러오는 중...</div>;
+    return <div className="text-sm text-muted-foreground">불러오는 중...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1
-            className="text-2xl font-extrabold"
-            style={{ color: 'var(--brand-blue)' }}
+            className="text-2xl font-extrabold text-brand-blue"
+            
           >
             자격 소개 관리
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             시험 접수 페이지에 표시되는 자격 소개 항목을 관리합니다.
           </p>
         </div>
@@ -157,15 +157,15 @@ export default function AdminQualificationsPage() {
           className="bg-white rounded-xl border p-5 space-y-4"
         >
           <div className="flex items-center gap-2 mb-1">
-            <GripVertical className="w-4 h-4 text-gray-300" />
-            <span className="text-xs text-gray-400 font-mono">
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground font-mono">
               #{idx + 1}
             </span>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
                 표시 이름
               </label>
               <input
@@ -176,7 +176,7 @@ export default function AdminQualificationsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
                 매칭 키워드 (쉼표로 구분)
               </label>
               <input
@@ -194,14 +194,14 @@ export default function AdminQualificationsPage() {
                   )
                 }
               />
-              <p className="text-[11px] text-gray-400 mt-1">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 시험 세션의 자격명에 모든 키워드가 포함되어야 매칭됩니다.
               </p>
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">
               업무 핵심
             </label>
             <input
@@ -214,20 +214,20 @@ export default function AdminQualificationsPage() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-gray-500">
+              <label className="text-xs font-medium text-muted-foreground">
                 가능한 역할
               </label>
               <button
                 type="button"
                 onClick={() => addRole(idx)}
-                className="text-xs flex items-center gap-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
-                style={{ color: 'var(--brand-blue)' }}
+                className="text-xs flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted transition-colors text-brand-blue"
+                
               >
                 <Plus className="w-3.5 h-3.5" /> 역할 추가
               </button>
             </div>
             {item.roles.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">
+              <p className="text-xs text-muted-foreground py-2">
                 역할이 없습니다. &quot;역할 추가&quot;를 클릭하세요.
               </p>
             ) : (
@@ -243,7 +243,7 @@ export default function AdminQualificationsPage() {
                     <button
                       type="button"
                       onClick={() => removeRole(idx, rIdx)}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -255,7 +255,7 @@ export default function AdminQualificationsPage() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-700 flex items-center gap-2">
+              <label className="text-sm text-foreground flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={item.isActive !== false}
@@ -267,7 +267,7 @@ export default function AdminQualificationsPage() {
               </label>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
                 표시 순서
               </label>
               <input
@@ -302,7 +302,7 @@ export default function AdminQualificationsPage() {
       ))}
 
       {items.length === 0 && (
-        <div className="text-center text-gray-400 py-10 bg-white rounded-xl border">
+        <div className="text-center text-muted-foreground py-10 bg-white rounded-xl border">
           등록된 자격 소개가 없습니다. 위 &quot;항목 추가&quot; 버튼을 눌러
           추가하세요.
         </div>

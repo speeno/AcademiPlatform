@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Clock, ArrowRight, Loader2 } from 'lucide-react';
+import { BookOpen, Clock, ArrowRight } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandProgress } from '@/components/ui/brand-progress';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { buildAuthHeader, getAccessToken, redirectToLogin } from '@/lib/auth';
 
 interface Enrollment {
@@ -51,29 +53,20 @@ export default function ClassroomPage() {
     fetchEnrollments();
   }, [router]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>내 강의실</h1>
-        <p className="text-sm text-gray-500 mt-1">수강 중인 과정을 확인하고 학습을 이어가세요.</p>
-      </div>
+      <PageHeader title="내 강의실" description="수강 중인 과정을 확인하고 학습을 이어가세요." />
 
       {enrollments.length === 0 ? (
         <div className="text-center py-20">
-          <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500 mb-4">수강 중인 과정이 없습니다.</p>
+          <BookOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-muted-foreground mb-4">수강 중인 과정이 없습니다.</p>
           <Link
             href="/courses"
-            className="inline-flex items-center gap-1 text-sm font-semibold"
-            style={{ color: 'var(--brand-orange)' }}
+            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-orange"
+            
           >
             교육과정 보기 <ArrowRight className="w-4 h-4" />
           </Link>
@@ -85,18 +78,18 @@ export default function ClassroomPage() {
               <BrandCard hoverable accent="blue" padding="lg" className="h-full flex flex-col">
                 <div className="flex items-start justify-between mb-3">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--brand-blue-subtle)' }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-blue-subtle"
+                    
                   >
-                    <BookOpen className="w-5 h-5" style={{ color: 'var(--brand-blue)' }} />
+                    <BookOpen className="w-5 h-5 text-brand-blue"  />
                   </div>
                   {enrollment.course.category && (
                     <BrandBadge variant="blue" className="text-xs">{enrollment.course.category}</BrandBadge>
                   )}
                 </div>
 
-                <h3 className="font-bold text-gray-900 mb-1 line-clamp-2">{enrollment.course.title}</h3>
-                <p className="text-xs text-gray-400 mb-4">강사: {enrollment.course.instructor?.name}</p>
+                <h3 className="font-bold text-foreground mb-1 line-clamp-2">{enrollment.course.title}</h3>
+                <p className="text-xs text-muted-foreground mb-4">강사: {enrollment.course.instructor?.name}</p>
 
                 <div className="mt-auto">
                   <BrandProgress
@@ -108,7 +101,7 @@ export default function ClassroomPage() {
                   />
 
                   {enrollment.expiresAt && (
-                    <div className="flex items-center gap-1.5 mt-3 text-xs text-gray-400">
+                    <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
                       <Clock className="w-3.5 h-3.5" />
                       수강 만료: {new Date(enrollment.expiresAt).toLocaleDateString('ko-KR')}
                     </div>

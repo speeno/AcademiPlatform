@@ -84,8 +84,8 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {stats.map((s) => (
               <div key={s.label}>
-                <p className="text-3xl font-extrabold" style={{ color: 'var(--brand-orange)' }}>{s.value}</p>
-                <p className="text-sm text-gray-500 mt-1">{s.label}</p>
+                <p className="text-3xl font-extrabold text-brand-orange" >{s.value}</p>
+                <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
               </div>
             ))}
           </div>
@@ -93,13 +93,13 @@ export default async function HomePage() {
       </section>
 
       {/* 특징 섹션 */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>
+            <h2 className="text-3xl font-extrabold mb-3 text-brand-blue" >
               왜 AcademiQ인가요?
             </h2>
-            <p className="text-gray-500">교육부터 자격 취득까지 완성되는 플랫폼</p>
+            <p className="text-muted-foreground">교육부터 자격 취득까지 완성되는 플랫폼</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {features.map((f) => (
@@ -107,8 +107,8 @@ export default async function HomePage() {
                 <div className="mb-4">
                   <Image src={f.iconSrc} alt={f.title} width={56} height={56} className="object-contain" />
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-gray-900">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                <h3 className="text-lg font-bold mb-2 text-foreground">{f.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
               </BrandCard>
             ))}
           </div>
@@ -122,20 +122,19 @@ export default async function HomePage() {
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ background: 'var(--brand-blue-subtle)' }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-brand-blue-subtle"
                 >
-                  <Video className="w-5 h-5" style={{ color: 'var(--brand-blue)' }} />
+                  <Video className="w-5 h-5 text-brand-blue"  />
                 </div>
                 <div>
-                  <h2 className="text-xl font-extrabold text-gray-900">AI Tip 영상</h2>
-                  <p className="text-sm text-gray-500">AI 활용 팁 영상을 확인하세요</p>
+                  <h2 className="text-xl font-extrabold text-foreground">AI Tip 영상</h2>
+                  <p className="text-sm text-muted-foreground">AI 활용 팁 영상을 확인하세요</p>
                 </div>
               </div>
               <Link
                 href="/shorts"
-                className="text-sm font-medium hover:underline flex items-center gap-1"
-                style={{ color: 'var(--brand-blue)' }}
+                className="text-sm font-medium hover:underline flex items-center gap-1 text-brand-blue"
+                
               >
                 전체 보기 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
@@ -149,10 +148,10 @@ export default async function HomePage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>
+            <h2 className="text-3xl font-extrabold mb-3 text-brand-blue" >
               이렇게 시작하세요
             </h2>
-            <p className="text-gray-500">4단계로 완성되는 자격 취득 여정</p>
+            <p className="text-muted-foreground">4단계로 완성되는 자격 취득 여정</p>
           </div>
           <div className="grid md:grid-cols-4 gap-6 relative">
             {/* 연결선 */}
@@ -165,9 +164,9 @@ export default async function HomePage() {
                 <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <Image src={step.iconSrc} alt={step.label} width={56} height={56} className="object-contain drop-shadow-md" />
                 </div>
-                <p className="text-xs font-bold mb-1" style={{ color: 'var(--brand-sky)' }}>{step.num}</p>
-                <h4 className="font-bold text-gray-900 mb-1">{step.label}</h4>
-                <p className="text-sm text-gray-500">{step.desc}</p>
+                <p className="text-xs font-bold mb-1 text-brand-sky" >{step.num}</p>
+                <h4 className="font-bold text-foreground mb-1">{step.label}</h4>
+                <p className="text-sm text-muted-foreground">{step.desc}</p>
               </div>
             ))}
           </div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { API_BASE } from '@/lib/api-base';
@@ -68,7 +69,7 @@ export default function ExamApplicationsPage() {
     } catch { /* ignore */ } finally { setUpdatingId(null); }
   };
 
-  if (loading) return <div className="flex justify-center h-64 items-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>;
+  if (loading) return <PageLoader />;
 
   return (
     <div>
@@ -77,29 +78,29 @@ export default function ExamApplicationsPage() {
           <ArrowLeft className="w-4 h-4 mr-1" /> 뒤로
         </BrandButton>
         <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>접수자 목록</h1>
-          <p className="text-sm text-gray-500 mt-1">총 {apps.length}명 접수</p>
+          <h1 className="text-heading text-brand-blue">접수자 목록</h1>
+          <p className="text-sm text-muted-foreground mt-1">총 {apps.length}명 접수</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '상태', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>)}</tr>
+          <thead className="bg-muted/30 border-b">
+            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '상태', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y">
             {apps.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">접수자가 없습니다.</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">접수자가 없습니다.</td></tr>
             ) : apps.map((a) => {
               const si = statusInfo[a.status] ?? { label: a.status, variant: 'default' as const };
               return (
-                <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-800">{getApplicantName(a)}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{getApplicantEmail(a)}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{getApplicantPhone(a)}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{(a.formJson?.occupation as string) || '-'}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{a.referrerCode || '-'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{new Date(a.appliedAt).toLocaleDateString('ko-KR')}</td>
+                <tr key={a.id} className="hover:bg-muted/30">
+                  <td className="px-4 py-3 font-medium text-foreground">{getApplicantName(a)}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{getApplicantEmail(a)}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{getApplicantPhone(a)}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{(a.formJson?.occupation as string) || '-'}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{a.referrerCode || '-'}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(a.appliedAt).toLocaleDateString('ko-KR')}</td>
                   <td className="px-4 py-3"><BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge></td>
                   <td className="px-4 py-3">
                     <select

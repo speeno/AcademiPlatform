@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { apiFetchWithAuth } from '@/lib/api-client';
 
 const targetTypeLabel: Record<string, string> = { ENROLLMENT: '수강 신청', EXAM_APPLICATION: '시험 접수', TEXTBOOK: '교재 구매' };
@@ -44,59 +46,50 @@ export default function AdminPaymentsPage() {
 
   const totalAmount = payments.filter((p) => p.paymentStatus === 'PAID').reduce((acc, p) => acc + p.amount, 0);
 
+  const columns: DataTableColumn<Payment>[] = [
+    { key: 'orderNo', header: '주문번호', cell: (p) => <span className="text-xs font-mono text-muted-foreground">{p.orderNo}</span>, className: 'w-36', hideOnMobile: true },
+    { key: 'user', header: '회원', cell: (p) => <div><p className="font-medium text-xs">{p.user?.name}</p><p className="text-xs text-muted-foreground">{p.user?.email}</p></div>, className: 'w-44' },
+    { key: 'type', header: '유형', cell: (p) => <span className="text-xs text-muted-foreground">{targetTypeLabel[p.targetType] ?? p.targetType}</span>, className: 'w-28', hideOnMobile: true },
+    { key: 'amount', header: '금액', cell: (p) => <span className="font-semibold">{p.amount.toLocaleString()}원</span>, className: 'w-28' },
+    { key: 'status', header: '상태', cell: (p) => { const si = paymentStatusInfo[p.paymentStatus] ?? { label: p.paymentStatus, variant: 'default' as const }; return <BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge>; }, className: 'w-24' },
+    { key: 'paidAt', header: '결제일', cell: (p) => <span className="text-xs text-muted-foreground">{p.paidAt ? new Date(p.paidAt).toLocaleDateString('ko-KR') : '-'}</span>, className: 'w-24', hideOnMobile: true },
+    { key: 'createdAt', header: '생성일', cell: (p) => <span className="text-xs text-muted-foreground">{new Date(p.createdAt).toLocaleDateString('ko-KR')}</span>, className: 'w-24', hideOnMobile: true },
+  ];
+
+  const filterBar = (
+    <div className="flex gap-3">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="이름, 이메일, 주문번호" className="pl-9 pr-3 py-2 border rounded-lg text-sm" />
+      </div>
+      <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm bg-white">
+        <option value="">전체 상태</option>
+        {Object.entries(paymentStatusInfo).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
+      </select>
+      <BrandButton variant="outline" size="sm" onClick={() => { setPage(1); load(); }}>검색</BrandButton>
+    </div>
+  );
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>결제 내역 관리</h1>
-        <p className="text-sm text-gray-500 mt-1">총 {total}건 / 이 페이지 결제 합계: {totalAmount.toLocaleString()}원</p>
-      </div>
+      <PageHeader
+        title="결제 내역 관리"
+        description={`총 ${total}건 · 이 페이지 합계 ${totalAmount.toLocaleString()}원`}
+        actions={filterBar}
+      />
 
-      <div className="flex gap-3 mb-4">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="이름, 이메일, 주문번호" className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" />
-        </div>
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm bg-white">
-          <option value="">전체 상태</option>
-          {Object.entries(paymentStatusInfo).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
-        </select>
-        <BrandButton variant="outline" size="sm" onClick={() => { setPage(1); load(); }}>검색</BrandButton>
-      </div>
-
-      <div className="bg-white rounded-xl border overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>{['주문번호', '회원', '결제 유형', '금액', '상태', '결제일', '생성일'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y">
-              {payments.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">결제 내역이 없습니다.</td></tr>
-              ) : payments.map((p) => {
-                const si = paymentStatusInfo[p.paymentStatus] ?? { label: p.paymentStatus, variant: 'default' as const };
-                return (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-xs text-gray-500 font-mono">{p.orderNo}</td>
-                    <td className="px-4 py-3"><p className="font-medium text-gray-800 text-xs">{p.user?.name}</p><p className="text-xs text-gray-400">{p.user?.email}</p></td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{targetTypeLabel[p.targetType] ?? p.targetType}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900">{p.amount.toLocaleString()}원</td>
-                    <td className="px-4 py-3"><BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge></td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{p.paidAt ? new Date(p.paidAt).toLocaleDateString('ko-KR') : '-'}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{new Date(p.createdAt).toLocaleDateString('ko-KR')}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DataTable
+        columns={columns}
+        rows={payments}
+        rowKey={(p) => p.id}
+        loading={loading}
+        empty={<p>결제 내역이 없습니다.</p>}
+      />
 
       {total > 20 && (
         <div className="flex items-center justify-center gap-3 mt-4">
           <BrandButton variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>이전</BrandButton>
-          <span className="text-sm text-gray-500">{page} / {Math.ceil(total / 20)}</span>
+          <span className="text-sm text-muted-foreground">{page} / {Math.ceil(total / 20)}</span>
           <BrandButton variant="outline" size="sm" disabled={page >= Math.ceil(total / 20)} onClick={() => setPage((p) => p + 1)}>다음</BrandButton>
         </div>
       )}

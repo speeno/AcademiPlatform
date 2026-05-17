@@ -121,10 +121,10 @@ export function PdfViewer({ pdfUrl, viewerToken, totalPages }: PdfViewerProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96 bg-gray-50 rounded-xl border border-border">
+      <div className="flex items-center justify-center h-96 bg-muted/30 rounded-xl border border-border">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" style={{ color: 'var(--brand-blue)' }} />
-          <p className="text-sm text-gray-500">교재를 불러오는 중...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-brand-blue"  />
+          <p className="text-sm text-muted-foreground">교재를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -141,7 +141,7 @@ export function PdfViewer({ pdfUrl, viewerToken, totalPages }: PdfViewerProps) {
   return (
     <div className="flex flex-col h-full">
       {/* 툴바 — 다운로드/인쇄 버튼 없음 */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-900 rounded-t-xl text-white">
+      <div className="flex items-center justify-between px-4 py-2 bg-brand-blue-dark rounded-t-xl text-white">
         <div className="flex items-center gap-2">
           <button
             onClick={goToPrev}
@@ -178,7 +178,7 @@ export function PdfViewer({ pdfUrl, viewerToken, totalPages }: PdfViewerProps) {
       {/* 뷰어 영역 */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto bg-gray-700 rounded-b-xl flex justify-center py-4 select-none"
+        className="flex-1 overflow-auto bg-brand-blue-dark rounded-b-xl flex justify-center py-4 select-none"
         style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
       >
         <canvas

@@ -31,7 +31,7 @@ export function ShortsGalleryClient({ items }: { items: VideoItem[] }) {
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 tab === t.key
                   ? 'text-white'
-                  : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
+                  : 'text-muted-foreground bg-muted hover:bg-muted'
               }`}
               style={tab === t.key ? { backgroundColor: 'var(--brand-blue)' } : {}}
             >
@@ -42,7 +42,7 @@ export function ShortsGalleryClient({ items }: { items: VideoItem[] }) {
       )}
 
       {filtered.length === 0 ? (
-        <div className="text-center text-gray-400 py-10">
+        <div className="text-center text-muted-foreground py-10">
           해당 유형의 영상이 없습니다.
         </div>
       ) : (

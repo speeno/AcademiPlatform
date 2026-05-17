@@ -94,7 +94,7 @@ export function HtmlWysiwygEditor({
 
   if (!QuillComp) {
     return (
-      <div className="min-h-[320px] w-full rounded-lg border px-3 py-2 text-sm text-gray-400 flex items-center justify-center">
+      <div className="min-h-[320px] w-full rounded-lg border px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
         에디터 로딩 중...
       </div>
     );
@@ -124,7 +124,7 @@ export function HtmlWysiwygEditor({
           e.currentTarget.value = '';
         }}
       />
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="text-xs text-muted-foreground mt-1">
         이미지는 HTML 내부 base64로 저장됩니다. (최대 {maxImageSizeMb}MB)
       </p>
     </div>

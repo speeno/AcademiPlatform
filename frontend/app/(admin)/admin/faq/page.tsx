@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { apiFetchWithAuth } from '@/lib/api-client';
 const CATEGORIES = ['수강신청', '결제/환불', '시험접수', '교재', '기술 문의', '기타'];
 
@@ -49,44 +51,39 @@ export default function AdminFaqPage() {
     setFaqs((p) => p.filter((f) => f.id !== id));
   };
 
-  if (loading) return <div className="flex justify-center h-64 items-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>;
+  const columns: DataTableColumn<Faq>[] = [
+    { key: 'category', header: '카테고리', cell: (f) => <BrandBadge variant="blue" className="text-xs">{f.category}</BrandBadge>, className: 'w-28' },
+    { key: 'question', header: '질문', cell: (f) => <span className="line-clamp-1">{f.question}</span> },
+    { key: 'published', header: '게시', cell: (f) => <BrandBadge variant={f.isPublished ? 'green' : 'default'} className="text-xs">{f.isPublished ? '게시' : '비공개'}</BrandBadge>, className: 'w-20' },
+    {
+      key: 'actions', header: '관리', cell: (f) => (
+        <div className="flex gap-2">
+          <button onClick={() => openEdit(f)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
+          <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+        </div>
+      ), className: 'w-20',
+    },
+  ];
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>FAQ 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">총 {faqs.length}건</p>
-        </div>
-        <BrandButton variant="primary" size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" /> FAQ 등록
-        </BrandButton>
-      </div>
+      <PageHeader
+        title="FAQ 관리"
+        description={`총 ${faqs.length}건`}
+        actions={
+          <BrandButton variant="primary" size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> FAQ 등록
+          </BrandButton>
+        }
+      />
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>{['카테고리', '질문', '게시', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>)}</tr>
-          </thead>
-          <tbody className="divide-y">
-            {faqs.length === 0 ? (
-              <tr><td colSpan={4} className="text-center py-12 text-gray-400">FAQ가 없습니다.</td></tr>
-            ) : faqs.map((f) => (
-              <tr key={f.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3"><BrandBadge variant="blue" className="text-xs">{f.category}</BrandBadge></td>
-                <td className="px-4 py-3 text-gray-800 line-clamp-1 max-w-xs">{f.question}</td>
-                <td className="px-4 py-3"><BrandBadge variant={f.isPublished ? 'green' : 'default'} className="text-xs">{f.isPublished ? '게시' : '비공개'}</BrandBadge></td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button onClick={() => openEdit(f)} className="p-1.5 rounded hover:bg-gray-100"><Pencil className="w-3.5 h-3.5 text-gray-500" /></button>
-                    <button onClick={() => handleDelete(f.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={faqs}
+        rowKey={(f) => f.id}
+        loading={loading}
+        empty={<p>FAQ가 없습니다.</p>}
+      />
 
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

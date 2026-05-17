@@ -1,12 +1,14 @@
+'use client';
+
 import Link from 'next/link';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
   MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award, BarChart3,
 } from 'lucide-react';
-import { Logo } from '@/components/layout/Logo';
+import { AppSidebar, type SidebarNavGroup } from '@/components/layout/AppSidebar';
 
-const navGroups = [
+const navGroups: SidebarNavGroup[] = [
   {
     label: '대시보드',
     items: [
@@ -17,8 +19,8 @@ const navGroups = [
   {
     label: '교육',
     items: [
-      { href: '/admin/courses', icon: BookOpen, label: '교육과정 관리' },
-      { href: '/admin/textbooks', icon: Library, label: '교재 관리' },
+      { href: '/admin/courses', icon: BookOpen, label: '교육과정 관리', matchPrefix: true },
+      { href: '/admin/textbooks', icon: Library, label: '교재 관리', matchPrefix: true },
       { href: '/admin/cms', icon: FileText, label: '콘텐츠 CMS' },
       { href: '/admin/cms/review', icon: FileText, label: 'CMS 승인함' },
     ],
@@ -26,7 +28,7 @@ const navGroups = [
   {
     label: '시험 & 결제',
     items: [
-      { href: '/admin/exam', icon: ClipboardList, label: '시험 접수 관리' },
+      { href: '/admin/exam', icon: ClipboardList, label: '시험 접수 관리', matchPrefix: true },
       { href: '/admin/qualifications', icon: Award, label: '자격 소개 관리' },
       { href: '/admin/referrers', icon: UserCheck, label: '권유자 관리' },
       { href: '/admin/payments', icon: CreditCard, label: '결제 관리' },
@@ -36,13 +38,13 @@ const navGroups = [
   {
     label: '회원',
     items: [
-      { href: '/admin/users', icon: Users, label: '회원 관리' },
+      { href: '/admin/users', icon: Users, label: '회원 관리', matchPrefix: true },
     ],
   },
   {
     label: '커뮤니케이션',
     items: [
-      { href: '/admin/notices', icon: Bell, label: '공지사항' },
+      { href: '/admin/notices', icon: Bell, label: '공지사항', matchPrefix: true },
       { href: '/admin/faq', icon: HelpCircle, label: 'FAQ' },
       { href: '/admin/inquiries', icon: MessageSquare, label: '1:1 문의' },
     ],
@@ -61,45 +63,20 @@ const navGroups = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* 사이드바 */}
-      <aside className="w-60 bg-gray-900 text-white flex flex-col shrink-0">
-        <div className="p-4 border-b border-white/10">
-          <Logo size="sm" href="/admin/dashboard" />
-          <p className="text-xs text-gray-400 mt-1 ml-0.5">관리자</p>
-        </div>
-
-        <nav className="flex-1 py-4 overflow-y-auto">
-          {navGroups.map((group) => (
-            <div key={group.label} className="mb-5">
-              <p className="px-4 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                {group.label}
-              </p>
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors rounded-md mx-1"
-                  >
-                    <Icon className="w-4 h-4 shrink-0" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-white/10">
-          <Link href="/" className="text-xs text-gray-400 hover:text-white">
+    <div className="flex min-h-screen bg-muted/30">
+      <AppSidebar
+        variant="dark"
+        eyebrow="관리자"
+        homeHref="/admin/dashboard"
+        groups={navGroups}
+        width="md"
+        footer={
+          <Link href="/" className="text-xs text-white/60 hover:text-white">
             ← 사이트로 돌아가기
           </Link>
-        </div>
-      </aside>
+        }
+      />
 
-      {/* 메인 콘텐츠 */}
       <main className="flex-1 overflow-auto">
         <div className="p-6 md:p-8">
           {children}

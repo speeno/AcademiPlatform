@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 
@@ -56,10 +57,10 @@ export default function AdminVouchersPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>북이오 무료 이용권 관리</h1>
-        <p className="text-sm text-gray-500 mt-1">캠페인을 만들고 이용권 코드를 업로드하면 수강신청자에게 자동 지급됩니다.</p>
-      </div>
+      <PageHeader
+        title="북이오 무료 이용권 관리"
+        description="캠페인을 만들고 이용권 코드를 업로드하면 수강신청자에게 자동 지급됩니다."
+      />
 
       <div className="bg-white rounded-xl border p-4 flex gap-2">
         <input
@@ -75,8 +76,8 @@ export default function AdminVouchersPage() {
         <div key={campaign.id} className="bg-white rounded-xl border p-4 space-y-3">
           <div className="flex justify-between items-center">
             <div>
-              <p className="font-semibold text-gray-800">{campaign.name}</p>
-              <p className="text-xs text-gray-500">코드 {campaign._count?.codes ?? 0}개 / 지급 {campaign._count?.grants ?? 0}건</p>
+              <p className="font-semibold text-foreground">{campaign.name}</p>
+              <p className="text-xs text-muted-foreground">코드 {campaign._count?.codes ?? 0}개 / 지급 {campaign._count?.grants ?? 0}건</p>
             </div>
           </div>
           <textarea

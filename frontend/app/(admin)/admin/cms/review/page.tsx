@@ -84,36 +84,36 @@ export default function CmsReviewPage() {
     await load();
   };
 
-  if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">불러오는 중...</div>;
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>CMS 승인함</h1>
-        <p className="text-sm text-gray-500 mt-1">강사 검수요청 승인/반려 및 버전 롤백</p>
+        <h1 className="text-heading text-brand-blue">CMS 승인함</h1>
+        <p className="text-sm text-muted-foreground mt-1">강사 검수요청 승인/반려 및 버전 롤백</p>
       </div>
 
       {queue.length === 0 ? (
-        <div className="bg-white border rounded-xl p-6 text-sm text-gray-500">대기 중인 검수 요청이 없습니다.</div>
+        <div className="bg-white border rounded-xl p-6 text-sm text-muted-foreground">대기 중인 검수 요청이 없습니다.</div>
       ) : (
         <div className="space-y-3">
           {queue.map((item) => (
             <div key={item.id} className="bg-white border rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900">{item.item.course.title} / {item.item.lesson.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="font-semibold text-foreground">{item.item.course.title} / {item.item.lesson.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     요청자: {item.requestedBy.name} ({item.requestedBy.email}) | 타입: {item.item.contentType} | 버전: {item.version?.versionNo ?? '-'}
                   </p>
                 </div>
-                <p className="text-xs text-gray-400">{new Date(item.createdAt).toLocaleString('ko-KR')}</p>
+                <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString('ko-KR')}</p>
               </div>
 
-              <div className="border rounded-lg p-3 bg-gray-50">
-                <p className="text-xs font-semibold text-gray-600 mb-2">변경 메모</p>
-                <p className="text-sm text-gray-700">{item.version?.changeNote || '-'}</p>
-                <p className="text-xs font-semibold text-gray-600 mt-3 mb-1">스키마 미리보기</p>
-                <pre className="text-xs text-gray-700 whitespace-pre-wrap break-words">{JSON.stringify(item.version?.schemaJson ?? {}, null, 2)}</pre>
+              <div className="border rounded-lg p-3 bg-muted/30">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">변경 메모</p>
+                <p className="text-sm text-foreground">{item.version?.changeNote || '-'}</p>
+                <p className="text-xs font-semibold text-muted-foreground mt-3 mb-1">스키마 미리보기</p>
+                <pre className="text-xs text-foreground whitespace-pre-wrap break-words">{JSON.stringify(item.version?.schemaJson ?? {}, null, 2)}</pre>
               </div>
 
               <div className="flex flex-wrap gap-2 items-center">

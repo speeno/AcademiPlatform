@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Loader2, Eye, Users, LogIn, TrendingUp } from 'lucide-react';
+import { Eye, Users, LogIn, TrendingUp } from 'lucide-react';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
+import { PageLoader } from '@/components/ui/page-loader';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { toast } from 'sonner';
 
 type Period = 'today' | 'week' | 'month';
@@ -60,10 +62,7 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>접속 통계</h1>
-        <p className="text-sm text-gray-500 mt-1">사이트 방문 및 페이지뷰 통계를 확인합니다.</p>
-      </div>
+      <PageHeader title="접속 통계" description="사이트 방문 및 페이지뷰 통계를 확인합니다." />
 
       <div className="flex gap-1 border-b">
         {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([key, label]) => (
@@ -73,7 +72,7 @@ export default function AdminAnalyticsPage() {
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               period === key
                 ? 'border-[var(--brand-blue)] text-[var(--brand-blue)]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {label}
@@ -82,9 +81,7 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {loading || !data ? (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-        </div>
+        <PageLoader height="h-48" />
       ) : (
         <>
           {/* 요약 카드 */}
@@ -98,25 +95,25 @@ export default function AdminAnalyticsPage() {
           {/* 인기 페이지 */}
           <Section title="인기 페이지 TOP 10">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted/30 border-b">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 w-10">#</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">경로</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">PV</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">UV</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground w-10">#</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground">경로</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-muted-foreground">PV</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-muted-foreground">UV</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {data.topPages.map((p, i) => (
-                  <tr key={p.path} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-400 text-xs">{i + 1}</td>
-                    <td className="px-4 py-2 font-mono text-xs text-gray-700 break-all">{p.path}</td>
-                    <td className="px-4 py-2 text-right font-semibold" style={{ color: 'var(--brand-blue)' }}>{p.pv.toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right text-gray-600">{p.uv.toLocaleString()}</td>
+                  <tr key={p.path} className="hover:bg-muted/30">
+                    <td className="px-4 py-2 text-muted-foreground text-xs">{i + 1}</td>
+                    <td className="px-4 py-2 font-mono text-xs text-foreground break-all">{p.path}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-brand-blue" >{p.pv.toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right text-muted-foreground">{p.uv.toLocaleString()}</td>
                   </tr>
                 ))}
                 {data.topPages.length === 0 && (
-                  <tr><td colSpan={4} className="text-center py-8 text-gray-400">데이터가 없습니다.</td></tr>
+                  <tr><td colSpan={4} className="text-center py-8 text-muted-foreground">데이터가 없습니다.</td></tr>
                 )}
               </tbody>
             </table>
@@ -142,7 +139,7 @@ export default function AdminAnalyticsPage() {
               </div>
               <div className="flex gap-1 mt-1">
                 {data.hourly.map((h) => (
-                  <div key={h.hour} className="flex-1 text-center text-[10px] text-gray-400">
+                  <div key={h.hour} className="flex-1 text-center text-[10px] text-muted-foreground">
                     {h.hour % 3 === 0 ? `${h.hour}` : ''}
                   </div>
                 ))}
@@ -176,21 +173,21 @@ export default function AdminAnalyticsPage() {
           {/* 외부 유입 경로 */}
           <Section title="외부 유입 경로 TOP 10">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted/30 border-b">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">유입 경로</th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500">PV</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground">유입 경로</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-muted-foreground">PV</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {data.referrers.map((r) => (
-                  <tr key={r.domain} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-xs text-gray-700 break-all">{r.domain}</td>
-                    <td className="px-4 py-2 text-right font-semibold" style={{ color: 'var(--brand-blue)' }}>{r.count.toLocaleString()}</td>
+                  <tr key={r.domain} className="hover:bg-muted/30">
+                    <td className="px-4 py-2 text-xs text-foreground break-all">{r.domain}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-brand-blue" >{r.count.toLocaleString()}</td>
                   </tr>
                 ))}
                 {data.referrers.length === 0 && (
-                  <tr><td colSpan={2} className="text-center py-8 text-gray-400">외부 유입 데이터가 없습니다.</td></tr>
+                  <tr><td colSpan={2} className="text-center py-8 text-muted-foreground">외부 유입 데이터가 없습니다.</td></tr>
                 )}
               </tbody>
             </table>
@@ -205,10 +202,10 @@ function SummaryCard({ icon: Icon, label, value }: { icon: any; label: string; v
   return (
     <div className="bg-white rounded-xl border p-5">
       <div className="flex items-center gap-2 mb-2">
-        <Icon className="w-4 h-4 text-gray-400" />
-        <span className="text-xs font-medium text-gray-500">{label}</span>
+        <Icon className="w-4 h-4 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
       </div>
-      <p className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>{value}</p>
+      <p className="text-2xl font-extrabold text-brand-blue" >{value}</p>
     </div>
   );
 }
@@ -216,8 +213,8 @@ function SummaryCard({ icon: Icon, label, value }: { icon: any; label: string; v
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-xl border overflow-hidden">
-      <div className="px-4 py-3 border-b bg-gray-50">
-        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
+      <div className="px-4 py-3 border-b bg-muted/30">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       </div>
       {children}
     </div>
@@ -231,23 +228,23 @@ function DistributionTable({ items, total }: { items: { label: string; count: nu
         {items.map((item) => {
           const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
           return (
-            <tr key={item.label} className="hover:bg-gray-50">
-              <td className="px-4 py-2.5 text-gray-700">{item.label}</td>
+            <tr key={item.label} className="hover:bg-muted/30">
+              <td className="px-4 py-2.5 text-foreground">{item.label}</td>
               <td className="px-4 py-2.5 w-32">
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div
-                    className="h-2 rounded-full transition-all"
-                    style={{ width: `${pct}%`, background: 'var(--brand-blue)' }}
+                    className="h-2 rounded-full transition-all bg-brand-blue"
+                    style={{ width: `${pct}%` }}
                   />
                 </div>
               </td>
-              <td className="px-4 py-2.5 text-right text-xs text-gray-500 w-16">{pct}%</td>
-              <td className="px-4 py-2.5 text-right font-semibold w-16" style={{ color: 'var(--brand-blue)' }}>{item.count.toLocaleString()}</td>
+              <td className="px-4 py-2.5 text-right text-xs text-muted-foreground w-16">{pct}%</td>
+              <td className="px-4 py-2.5 text-right font-semibold w-16 text-brand-blue" >{item.count.toLocaleString()}</td>
             </tr>
           );
         })}
         {items.length === 0 && (
-          <tr><td colSpan={4} className="text-center py-8 text-gray-400">데이터가 없습니다.</td></tr>
+          <tr><td colSpan={4} className="text-center py-8 text-muted-foreground">데이터가 없습니다.</td></tr>
         )}
       </tbody>
     </table>

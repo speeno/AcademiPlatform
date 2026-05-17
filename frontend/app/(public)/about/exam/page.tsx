@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import { ClipboardCheck, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -25,39 +27,42 @@ export default function ExamGuidePage() {
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
+        <PageShell size="content" flush>
+          <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
             <Link href="/about" className="hover:text-brand-blue">소개</Link>
             <span>/</span>
-            <span style={{ color: 'var(--brand-blue)' }}>시험 안내</span>
+            <span className="text-brand-blue" >시험 안내</span>
           </div>
           <BrandBadge variant="orange" dot className="mb-3">시험 안내</BrandBadge>
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ color: 'var(--brand-blue)' }}>
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-4 text-brand-blue" >
             시험 안내
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             응시 절차와 준비물을 확인하고 시험을 준비하세요.
           </p>
-        </div>
+        </PageShell>
       </section>
 
       <section className="py-14 bg-white">
-        <div className="max-w-4xl mx-auto px-4 space-y-12">
+        <PageShell size="content" flush>
+        <div className="space-y-12">
           {/* 응시 절차 */}
           <div>
-            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--brand-blue)' }}>응시 절차</h2>
+            <h2 className="text-2xl font-bold mb-6 text-brand-blue" >응시 절차</h2>
             <div className="space-y-4">
               {steps.map((step, i) => (
                 <div key={step.num} className="flex gap-4">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                    style={{ background: i % 2 === 0 ? 'var(--brand-blue)' : 'var(--brand-orange)' }}
+                    className={cn(
+                      'w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0',
+                      i % 2 === 0 ? 'bg-brand-blue' : 'bg-brand-orange',
+                    )}
                   >
                     {step.num}
                   </div>
                   <div className="pt-1">
-                    <h3 className="font-semibold text-gray-900">{step.title}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">{step.desc}</p>
+                    <h3 className="font-semibold text-foreground">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">{step.desc}</p>
                   </div>
                 </div>
               ))}
@@ -66,13 +71,13 @@ export default function ExamGuidePage() {
 
           {/* 준비물 */}
           <div>
-            <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--brand-blue)' }}>응시 준비물</h2>
+            <h2 className="text-2xl font-bold mb-4 text-brand-blue" >응시 준비물</h2>
             <BrandCard accent="orange" padding="lg">
               <ul className="space-y-3">
                 {prepItems.map((item) => (
                   <li key={item} className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: 'var(--brand-orange)' }} />
-                    <span className="text-gray-700">{item}</span>
+                    <CheckCircle2 className="w-5 h-5 shrink-0 text-brand-orange"  />
+                    <span className="text-foreground">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -81,7 +86,7 @@ export default function ExamGuidePage() {
 
           {/* 유의사항 */}
           <div>
-            <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--brand-blue)' }}>유의사항</h2>
+            <h2 className="text-2xl font-bold mb-4 text-brand-blue" >유의사항</h2>
             <BrandCard padding="lg" className="border-yellow-200 bg-yellow-50">
               <div className="flex gap-3">
                 <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
@@ -94,10 +99,11 @@ export default function ExamGuidePage() {
             </BrandCard>
           </div>
         </div>
+        </PageShell>
       </section>
 
-      <section className="py-10 bg-gray-50 border-t">
-        <div className="max-w-2xl mx-auto text-center px-4 space-y-4">
+      <section className="py-10 bg-muted/30 border-t">
+        <PageShell size="narrow" flush className="text-center">
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/exam">
               <BrandButton variant="primary" size="lg">
@@ -108,7 +114,7 @@ export default function ExamGuidePage() {
               <BrandButton variant="outline">문의하기</BrandButton>
             </Link>
           </div>
-        </div>
+        </PageShell>
       </section>
     </div>
   );

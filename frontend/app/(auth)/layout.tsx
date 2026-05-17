@@ -19,8 +19,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {children}
 
       {/* 홈 링크 */}
-      <p className="mt-6 text-xs text-gray-400">
-        <Link href="/" className="hover:text-gray-600 underline">
+      <p className="mt-6 text-xs text-muted-foreground">
+        <Link href="/" className="hover:text-muted-foreground underline">
           ← 홈으로 돌아가기
         </Link>
       </p>

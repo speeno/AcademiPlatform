@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { GraduationCap, UserCheck } from 'lucide-react';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = {
   title: '대표 강사 소개',
@@ -68,45 +69,46 @@ export default function InstructorsPage() {
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--brand-orange)' }}>
+        <PageShell size="content" flush>
+          <p className="text-sm font-semibold mb-2 text-brand-orange">
             대표 강사 소개
           </p>
-          <h1 className="text-3xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>
+          <h1 className="text-3xl font-extrabold mb-3 text-brand-blue">
             AcademiQ 대표 강사진
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             실무와 교육 현장을 연결하는 대표 강사의 전문성과 주요 이력을 소개합니다.
           </p>
-        </div>
+        </PageShell>
       </section>
 
       <section className="py-14">
-        <div className="max-w-4xl mx-auto px-4 space-y-8">
+        <PageShell size="content" flush>
+        <div className="space-y-8">
           {instructors.map((instructor) => (
             <article key={instructor.name} className="bg-white rounded-2xl border p-8">
               <div className="flex items-center gap-3 mb-5">
                 <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: 'var(--brand-blue-subtle)' }}
+                  className="w-11 h-11 rounded-xl flex items-center justify-center bg-brand-blue-subtle"
+                  
                 >
-                  <UserCheck className="w-6 h-6" style={{ color: 'var(--brand-blue)' }} />
+                  <UserCheck className="w-6 h-6 text-brand-blue"  />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">{instructor.name}</h2>
+                <h2 className="text-2xl font-bold text-foreground">{instructor.name}</h2>
               </div>
 
-              <div className="space-y-4 text-gray-700 leading-relaxed">
+              <div className="space-y-4 text-foreground leading-relaxed">
                 {instructor.summary.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
 
-              <div className="mt-8 rounded-xl border p-5" style={{ backgroundColor: 'var(--brand-blue-subtle)' }}>
-                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5" style={{ color: 'var(--brand-orange)' }} />
+              <div className="mt-8 rounded-xl border p-5 bg-brand-blue-subtle" >
+                <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-brand-orange"  />
                   주요약력
                 </h3>
-                <ul className="space-y-2 text-sm text-gray-700">
+                <ul className="space-y-2 text-sm text-foreground">
                   {instructor.careers.map((career) => (
                     <li key={career}>- {career}</li>
                   ))}
@@ -114,8 +116,8 @@ export default function InstructorsPage() {
               </div>
 
               <div className="mt-4 rounded-xl border p-5 bg-white">
-                <h3 className="font-bold text-gray-900 mb-3">대표 교재 (저자)</h3>
-                <ul className="space-y-2 text-sm text-gray-700">
+                <h3 className="font-bold text-foreground mb-3">대표 교재 (저자)</h3>
+                <ul className="space-y-2 text-sm text-foreground">
                   {(INSTRUCTOR_BOOKS[instructor.name] ?? []).map((book) => (
                     <li key={book.id}>- {book.title}</li>
                   ))}
@@ -127,6 +129,7 @@ export default function InstructorsPage() {
             </article>
           ))}
         </div>
+        </PageShell>
       </section>
     </div>
   );

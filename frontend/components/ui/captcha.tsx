@@ -68,12 +68,12 @@ export function Captcha({ onVerified }: CaptchaProps) {
   }, [userAnswer, question.answer, onVerified]);
 
   return (
-    <div className="rounded-lg border bg-gray-50 p-4">
-      <p className="text-sm font-medium text-gray-700 mb-2">
+    <div className="rounded-lg border bg-muted/30 p-4">
+      <p className="text-sm font-medium text-foreground mb-2">
         사람 인증 <span className="text-red-500">*</span>
       </p>
       <div className="flex items-center gap-3">
-        <span className="text-base font-bold text-gray-800 whitespace-nowrap select-none">
+        <span className="text-base font-bold text-foreground whitespace-nowrap select-none">
           {question.a} {question.op} {question.b} =
         </span>
         <Input
@@ -93,7 +93,7 @@ export function Captcha({ onVerified }: CaptchaProps) {
         <button
           type="button"
           onClick={refresh}
-          className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-muted-foreground hover:bg-muted transition-colors"
           title="다른 문제"
         >
           <RefreshCw className="w-4 h-4" />
@@ -102,7 +102,7 @@ export function Captcha({ onVerified }: CaptchaProps) {
           <span className="text-green-600 text-sm font-medium">✓</span>
         )}
       </div>
-      <p className="text-xs text-gray-400 mt-1.5">위 산술 문제를 풀어주세요.</p>
+      <p className="text-xs text-muted-foreground mt-1.5">위 산술 문제를 풀어주세요.</p>
     </div>
   );
 }

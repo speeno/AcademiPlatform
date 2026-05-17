@@ -47,7 +47,7 @@ export function VideoCard({ item }: { item: VideoItem }) {
       className="group block rounded-xl overflow-hidden border bg-white hover:shadow-lg transition-shadow"
     >
       <div
-        className={`relative bg-gray-900 overflow-hidden ${isVertical ? 'aspect-[9/16]' : 'aspect-square'}`}
+        className={`relative bg-brand-blue-dark overflow-hidden ${isVertical ? 'aspect-[9/16]' : 'aspect-square'}`}
       >
         {thumb ? (
           <img
@@ -62,7 +62,7 @@ export function VideoCard({ item }: { item: VideoItem }) {
         )}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-            <PlayCircle className="w-8 h-8" style={{ color: 'var(--brand-blue)' }} />
+            <PlayCircle className="w-8 h-8 text-brand-blue"  />
           </div>
         </div>
         <div
@@ -74,7 +74,7 @@ export function VideoCard({ item }: { item: VideoItem }) {
       </div>
       {item.title && (
         <div className="p-3">
-          <p className="text-sm font-medium text-gray-800 line-clamp-2">{item.title}</p>
+          <p className="text-sm font-medium text-foreground line-clamp-2">{item.title}</p>
         </div>
       )}
     </a>

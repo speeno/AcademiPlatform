@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Save, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Save, ChevronDown, ChevronRight } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { apiFetchWithAuth } from '@/lib/api-client';
@@ -115,7 +116,7 @@ export default function AdminIntroPage() {
     setSectionModal({ open: true, editing: section });
   };
 
-  if (loading) return <div className="flex justify-center h-64 items-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>;
+  if (loading) return <PageLoader />;
 
   return (
     <div className="flex gap-6 h-full">
@@ -123,20 +124,20 @@ export default function AdminIntroPage() {
       <aside className="w-64 flex-shrink-0">
         <div className="bg-white rounded-xl border overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b">
-            <h2 className="font-bold text-gray-800 text-sm">소개 페이지</h2>
-            <button onClick={() => { setPageForm({ slug: '', title: '', status: 'DRAFT' }); setPageModal(true); }} className="p-1 rounded hover:bg-gray-100">
-              <Plus className="w-4 h-4 text-gray-500" />
+            <h2 className="font-bold text-foreground text-sm">소개 페이지</h2>
+            <button onClick={() => { setPageForm({ slug: '', title: '', status: 'DRAFT' }); setPageModal(true); }} className="p-1 rounded hover:bg-muted">
+              <Plus className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
           {pages.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm">페이지가 없습니다.</div>
+            <div className="text-center py-8 text-muted-foreground text-sm">페이지가 없습니다.</div>
           ) : (
             <ul className="divide-y">
               {pages.map((page) => (
                 <li key={page.id}>
                   <button
                     onClick={() => setSelectedPage(page)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm transition-colors ${selectedPage?.id === page.id ? 'text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm transition-colors ${selectedPage?.id === page.id ? 'text-white' : 'text-foreground hover:bg-muted/30'}`}
                     style={selectedPage?.id === page.id ? { backgroundColor: 'var(--brand-blue)' } : {}}
                   >
                     <span className="flex-1 line-clamp-1">{page.title}</span>
@@ -156,15 +157,15 @@ export default function AdminIntroPage() {
       {/* 우측 섹션 편집기 */}
       <div className="flex-1">
         {!selectedPage ? (
-          <div className="flex items-center justify-center h-64 text-gray-400">
+          <div className="flex items-center justify-center h-64 text-muted-foreground">
             <p>좌측에서 페이지를 선택하거나 새 페이지를 추가하세요.</p>
           </div>
         ) : (
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-xl font-extrabold text-gray-900">{selectedPage.title}</h1>
-                <p className="text-xs text-gray-400 mt-0.5">페이지 키: {selectedPage.slug}</p>
+                <h1 className="text-xl font-extrabold text-foreground">{selectedPage.title}</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">페이지 키: {selectedPage.slug}</p>
               </div>
               <div className="flex items-center gap-3">
                 <BrandBadge variant={selectedPage.status === 'PUBLISHED' ? 'green' : 'default'}>
@@ -180,7 +181,7 @@ export default function AdminIntroPage() {
             </div>
 
             {selectedPage.sections.length === 0 ? (
-              <div className="bg-white rounded-xl border p-12 text-center text-gray-400">
+              <div className="bg-white rounded-xl border p-12 text-center text-muted-foreground">
                 <p>섹션이 없습니다. 섹션을 추가하세요.</p>
               </div>
             ) : (
@@ -192,18 +193,18 @@ export default function AdminIntroPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <BrandBadge variant="blue" className="text-xs">{SECTION_TYPE_LABELS[section.sectionType] ?? section.sectionType}</BrandBadge>
                           {!section.isVisible && <BrandBadge variant="default" className="text-xs">숨김</BrandBadge>}
-                          <span className="text-xs text-gray-400">순서: {section.sortOrder}</span>
+                          <span className="text-xs text-muted-foreground">순서: {section.sortOrder}</span>
                         </div>
-                        <h3 className="font-semibold text-gray-900">{section.title}</h3>
+                        <h3 className="font-semibold text-foreground">{section.title}</h3>
                         {Object.keys(section.contentJson).length > 0 && (
-                          <pre className="text-xs text-gray-400 mt-2 bg-gray-50 rounded p-2 overflow-x-auto max-h-20">
+                          <pre className="text-xs text-muted-foreground mt-2 bg-muted/30 rounded p-2 overflow-x-auto max-h-20">
                             {JSON.stringify(section.contentJson, null, 2)}
                           </pre>
                         )}
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button onClick={() => openEditSection(section)} className="p-1.5 rounded hover:bg-gray-100">
-                          <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                        <button onClick={() => openEditSection(section)} className="p-1.5 rounded hover:bg-muted">
+                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                         </button>
                         <button onClick={() => handleDeleteSection(section.id)} className="p-1.5 rounded hover:bg-red-50">
                           <Trash2 className="w-3.5 h-3.5 text-red-400" />

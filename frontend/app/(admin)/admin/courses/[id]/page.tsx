@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, Loader2, Save, GripVertical, PlayCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, GripVertical, PlayCircle, FileText } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 
@@ -162,7 +163,7 @@ export default function AdminCourseEditorPage() {
     if (res.ok) load();
   };
 
-  if (loading) return <div className="flex justify-center h-64 items-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>;
+  if (loading) return <PageLoader />;
   if (!course) return null;
 
   return (
@@ -172,15 +173,15 @@ export default function AdminCourseEditorPage() {
           <ArrowLeft className="w-4 h-4 mr-1" /> 목록
         </BrandButton>
         <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>강좌 편집</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{course.title}</p>
+          <h1 className="text-heading text-brand-blue">강좌 편집</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{course.title}</p>
         </div>
       </div>
 
       <div className="space-y-8">
         {/* 기본 정보 */}
         <section className="bg-white rounded-xl border p-6">
-          <h2 className="text-lg font-bold mb-5 text-gray-900">기본 정보</h2>
+          <h2 className="text-lg font-bold mb-5 text-foreground">기본 정보</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-1">제목</label>
@@ -245,9 +246,9 @@ export default function AdminCourseEditorPage() {
                   <label className="block text-xs font-medium mb-1">유효 종료</label>
                   <input type="datetime-local" value={basicForm.priceValidUntil} onChange={(e) => setBasicForm((p) => ({ ...p, priceValidUntil: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                 </div>
-                <div className="md:col-span-3 rounded-lg border bg-gray-50 px-3 py-2 text-sm">
+                <div className="md:col-span-3 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
                   최종 결제 예상가: <span className="font-semibold">{finalPreviewPrice.toLocaleString()}원</span>
-                  <span className="ml-2 text-xs text-gray-500">
+                  <span className="ml-2 text-xs text-muted-foreground">
                     (정가 {basePriceNum.toLocaleString()} / 판매가 {salePriceNum.toLocaleString()} / 할인 {discountAmount.toLocaleString()})
                   </span>
                 </div>
@@ -264,7 +265,7 @@ export default function AdminCourseEditorPage() {
         {/* 커리큘럼 편집기 */}
         <section className="bg-white rounded-xl border p-6">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-gray-900">커리큘럼</h2>
+            <h2 className="text-lg font-bold text-foreground">커리큘럼</h2>
             <BrandButton variant="outline" size="sm" onClick={() => setAddingModule(true)}>
               <Plus className="w-4 h-4 mr-1" /> 모듈 추가
             </BrandButton>
@@ -285,15 +286,15 @@ export default function AdminCourseEditorPage() {
           )}
 
           {course.modules.length === 0 ? (
-            <p className="text-center py-8 text-gray-400">모듈이 없습니다. 모듈을 추가하세요.</p>
+            <p className="text-center py-8 text-muted-foreground">모듈이 없습니다. 모듈을 추가하세요.</p>
           ) : (
             <div className="space-y-4">
               {course.modules.map((module, mIdx) => (
                 <div key={module.id} className="border rounded-xl overflow-hidden">
-                  <div className="flex items-center gap-3 px-4 py-3 bg-gray-50">
-                    <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                    <span className="font-semibold text-gray-800 flex-1">{mIdx + 1}. {module.title}</span>
-                    <span className="text-xs text-gray-400">{module.lessons.length}강</span>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-muted/30">
+                    <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="font-semibold text-foreground flex-1">{mIdx + 1}. {module.title}</span>
+                    <span className="text-xs text-muted-foreground">{module.lessons.length}강</span>
                     <button onClick={() => handleDeleteModule(module.id)} className="p-1 rounded hover:bg-red-100">
                       <Trash2 className="w-3.5 h-3.5 text-red-400" />
                     </button>
@@ -303,13 +304,13 @@ export default function AdminCourseEditorPage() {
                   <ul className="divide-y">
                     {module.lessons.map((lesson, lIdx) => (
                       <li key={lesson.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                        <GripVertical className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                        <GripVertical className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                         {lesson.lessonType.startsWith('VIDEO') ? (
-                          <PlayCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <PlayCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         ) : (
-                          <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         )}
-                        <span className="flex-1 text-gray-700">{mIdx + 1}-{lIdx + 1}. {lesson.title}</span>
+                        <span className="flex-1 text-foreground">{mIdx + 1}-{lIdx + 1}. {lesson.title}</span>
                         <BrandBadge variant="default" className="text-xs">{LESSON_TYPE_LABELS[lesson.lessonType] ?? lesson.lessonType}</BrandBadge>
                         {lesson.isPreview && <BrandBadge variant="orange" className="text-xs">미리보기</BrandBadge>}
                         <button onClick={() => handleDeleteLesson(module.id, lesson.id)} className="p-1 rounded hover:bg-red-100">
@@ -338,7 +339,7 @@ export default function AdminCourseEditorPage() {
                   ) : (
                     <button
                       onClick={() => setAddingLesson(module.id)}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-gray-400 hover:bg-gray-50 border-t transition-colors"
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-muted-foreground hover:bg-muted/30 border-t transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" /> 강의 추가
                     </button>

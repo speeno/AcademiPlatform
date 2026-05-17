@@ -143,7 +143,7 @@ export default function ExamApplyPage() {
   if (!authReady) {
     return (
       <div className="min-h-screen bg-hero-gradient flex items-center justify-center p-4">
-        <p className="text-sm text-gray-500">로그인 확인 중...</p>
+        <p className="text-sm text-muted-foreground">로그인 확인 중...</p>
       </div>
     );
   }
@@ -153,15 +153,15 @@ export default function ExamApplyPage() {
       <div className="min-h-screen bg-hero-gradient flex items-center justify-center p-4">
         <BrandCard padding="lg" className="max-w-lg w-full text-center">
           <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: 'var(--brand-blue-subtle)' }}
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-brand-blue-subtle"
+            
           >
-            <CheckCircle2 className="w-8 h-8" style={{ color: 'var(--brand-blue)' }} />
+            <CheckCircle2 className="w-8 h-8 text-brand-blue"  />
           </div>
-          <h2 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--brand-blue)' }}>
+          <h2 className="text-2xl font-extrabold mb-2 text-brand-blue" >
             접수 완료
           </h2>
-          <p className="text-gray-600 mb-5">시험 접수가 완료되었습니다.</p>
+          <p className="text-muted-foreground mb-5">시험 접수가 완료되었습니다.</p>
 
           <div className="text-left mb-4">
             <ExamApplySessionSummary session={sessionInfo} />
@@ -179,6 +179,9 @@ export default function ExamApplyPage() {
     );
   }
 
+  const isStepActive = (i: number) =>
+    (i === 0 && step === 'form') || (i === 1 && step === 'payment');
+
   return (
     <div className="min-h-screen bg-hero-gradient py-12 px-4">
       <div className="max-w-2xl mx-auto">
@@ -187,28 +190,26 @@ export default function ExamApplyPage() {
             <div key={label} className="flex items-center gap-2">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                  (i === 0 && step === 'form') || (i === 1 && step === 'payment')
-                    ? 'text-white'
-                    : 'text-gray-400 bg-gray-100'
+                  isStepActive(i)
+                    ? 'text-white bg-brand-orange'
+                    : 'text-muted-foreground bg-muted'
                 }`}
-                style={(i === 0 && step === 'form') || (i === 1 && step === 'payment')
-                  ? { backgroundColor: 'var(--brand-orange)' } : {}}
               >
                 {i + 1}
               </div>
-              <span className={`text-sm font-medium ${step === (i === 0 ? 'form' : 'payment') ? 'text-gray-900' : 'text-gray-400'}`}>
+              <span className={`text-sm font-medium ${isStepActive(i) ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {label}
               </span>
-              {i < 1 && <div className="w-8 h-px bg-gray-200" />}
+              {i < 1 && <div className="w-8 h-px bg-muted" />}
             </div>
           ))}
         </div>
 
         <BrandCard padding="lg">
-          <h1 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--brand-blue)' }}>
+          <h1 className="text-2xl font-extrabold mb-2 text-brand-blue" >
             {step === 'form' ? '시험 접수 신청' : '접수 확인'}
           </h1>
-          <p className="text-sm text-gray-500 mb-4">아래 시험에 대한 접수를 진행합니다.</p>
+          <p className="text-sm text-muted-foreground mb-4">아래 시험에 대한 접수를 진행합니다.</p>
 
           <ExamApplySessionSummary session={sessionInfo} loading={sessionLoading} />
 
@@ -216,7 +217,7 @@ export default function ExamApplyPage() {
             <form onSubmit={handleFormSubmit} className="space-y-5">
               {FORM_FIELDS.map((field) => (
                 <div key={field.key}>
-                  <label className="text-sm font-medium text-gray-700 mb-2.5 block">
+                  <label className="text-sm font-medium text-foreground mb-2.5 block">
                     {field.label} {field.required && <span className="text-red-500">*</span>}
                   </label>
                   <Input
@@ -230,9 +231,9 @@ export default function ExamApplyPage() {
               ))}
 
               {referrerGroups.length > 0 && (
-                <div className="rounded-lg border bg-gray-50 p-4 space-y-3">
-                  <label className="text-sm font-medium text-gray-700 block">
-                    신청 계기 <span className="text-gray-400 font-normal">(선택사항)</span>
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <label className="text-sm font-medium text-foreground block">
+                    신청 계기 <span className="text-muted-foreground font-normal">(선택사항)</span>
                   </label>
                   <select
                     className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
@@ -272,7 +273,7 @@ export default function ExamApplyPage() {
                   onChange={(e) => setAgreedTerms(e.target.checked)}
                   className="mt-1"
                 />
-                <label htmlFor="agree" className="text-sm text-gray-600 cursor-pointer">
+                <label htmlFor="agree" className="text-sm text-muted-foreground cursor-pointer">
                   [필수] 개인정보 수집 및 이용에 동의합니다. 수집된 개인정보는 시험 접수 및 운영 목적으로만 사용됩니다.
                 </label>
               </div>
@@ -287,18 +288,18 @@ export default function ExamApplyPage() {
             <div className="space-y-6">
               <ExamDepositAccountInfo account={depositAccount} />
 
-              <div className="rounded-xl bg-gray-50 p-4 space-y-2">
+              <div className="rounded-xl bg-muted/30 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">신청자</span>
+                  <span className="text-muted-foreground">신청자</span>
                   <span className="font-medium">{formData.applicantName}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">이메일</span>
+                  <span className="text-muted-foreground">이메일</span>
                   <span className="font-medium">{formData.email}</span>
                 </div>
                 {selectedMember && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">신청 계기</span>
+                    <span className="text-muted-foreground">신청 계기</span>
                     <span className="font-medium">{selectedMember.label}</span>
                   </div>
                 )}

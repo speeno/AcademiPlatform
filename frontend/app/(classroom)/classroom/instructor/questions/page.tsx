@@ -5,6 +5,7 @@ import { Send } from 'lucide-react';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { toast } from 'sonner';
 
 interface InstructorQuestion {
@@ -78,45 +79,46 @@ export default function InstructorQuestionsPage() {
     }
   };
 
-  if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">불러오는 중...</div>;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>강사 질문함</h1>
-          <p className="text-sm text-gray-500 mt-1">본인에게 배정된 질문을 확인하고 답변합니다.</p>
-        </div>
-        <select
-          className="border rounded-lg px-3 py-2 text-sm bg-white"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as 'OPEN' | 'ANSWERED' | 'CLOSED')}
-        >
-          <option value="OPEN">OPEN</option>
-          <option value="ANSWERED">ANSWERED</option>
-          <option value="CLOSED">CLOSED</option>
-        </select>
-      </div>
+      <PageHeader
+        title="강사 질문함"
+        description="본인에게 배정된 질문을 확인하고 답변합니다."
+        eyebrow="강사"
+        actions={
+          <select
+            className="border rounded-lg px-3 py-2 text-sm bg-white"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'OPEN' | 'ANSWERED' | 'CLOSED')}
+          >
+            <option value="OPEN">OPEN</option>
+            <option value="ANSWERED">ANSWERED</option>
+            <option value="CLOSED">CLOSED</option>
+          </select>
+        }
+      />
 
       <div className="bg-white border rounded-xl p-4 space-y-3">
         {questions.length === 0 ? (
-          <p className="text-sm text-gray-500">해당 상태의 질문이 없습니다.</p>
+          <p className="text-sm text-muted-foreground">해당 상태의 질문이 없습니다.</p>
         ) : (
           questions.map((question) => (
             <div key={question.id} className="border rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <p className="font-medium text-gray-900">{question.title}</p>
-                <span className="text-xs text-gray-500">{question.status}</span>
+                <p className="font-medium text-foreground">{question.title}</p>
+                <span className="text-xs text-muted-foreground">{question.status}</span>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {question.course.title} | 학생: {question.user.name} ({question.user.email}) | {new Date(question.createdAt).toLocaleString('ko-KR')}
               </p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{question.content}</p>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{question.content}</p>
 
               <div className="space-y-1">
                 {question.answers.map((answer) => (
-                  <div key={answer.id} className="bg-gray-50 border rounded px-2 py-2 text-sm">
-                    <p className="text-xs text-gray-500 mb-1">
+                  <div key={answer.id} className="bg-muted/30 border rounded px-2 py-2 text-sm">
+                    <p className="text-xs text-muted-foreground mb-1">
                       {answer.user.name} ({answer.user.role}) | {new Date(answer.createdAt).toLocaleString('ko-KR')}
                     </p>
                     <p className="whitespace-pre-wrap">{answer.content}</p>

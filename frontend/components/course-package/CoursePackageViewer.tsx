@@ -126,7 +126,7 @@ export function CoursePackageViewer({
             onEnded={handleVideoEnded}
           />
         ) : (
-          <div className="aspect-video flex items-center justify-center text-gray-400 bg-gray-900">
+          <div className="aspect-video flex items-center justify-center text-muted-foreground bg-brand-blue-dark">
             <p className="text-sm">
               {activeChapter ? `${activeChapter.title} - 영상이 없습니다.` : '챕터를 선택하세요.'}
             </p>
@@ -134,12 +134,12 @@ export function CoursePackageViewer({
         )}
 
         {/* chapter info bar */}
-        <div className="bg-gray-900 px-4 py-2 flex items-center gap-3">
+        <div className="bg-brand-blue-dark px-4 py-2 flex items-center gap-3">
           <span className="text-white text-sm font-medium">
             {activeChapter?.title ?? ''}
           </span>
           {activeChapter?.brief?.summary && (
-            <span className="text-gray-400 text-xs truncate flex-1">
+            <span className="text-muted-foreground text-xs truncate flex-1">
               {activeChapter.brief.summary}
             </span>
           )}
@@ -157,8 +157,8 @@ export function CoursePackageViewer({
               onClick={() => setSideTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-medium transition ${
                 sideTab === tab.id
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'text-brand-blue border-b-2 border-brand-blue'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab.icon}
@@ -200,8 +200,8 @@ export function CoursePackageViewer({
             <div className="p-3 space-y-3">
               {activeChapter?.brief?.learning_objectives && activeChapter.brief.learning_objectives.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold text-gray-500 mb-1">학습 목표</h4>
-                  <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-1">학습 목표</h4>
+                  <ul className="list-disc list-inside text-sm text-foreground space-y-1">
                     {activeChapter.brief.learning_objectives.map((obj, i) => (
                       <li key={i}>{obj}</li>
                     ))}
@@ -210,14 +210,14 @@ export function CoursePackageViewer({
               )}
               {keyConcepts.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold text-gray-500 mb-1">핵심 개념</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-1">핵심 개념</h4>
                   <div className="space-y-1">
                     {keyConcepts.map((concept, i) => (
                       <details key={i} className="border rounded-lg">
-                        <summary className="text-sm font-medium text-gray-800 px-3 py-2 cursor-pointer hover:bg-gray-50">
+                        <summary className="text-sm font-medium text-foreground px-3 py-2 cursor-pointer hover:bg-muted/30">
                           {concept.term}
                         </summary>
-                        <p className="text-xs text-gray-600 px-3 pb-2">{concept.definition}</p>
+                        <p className="text-xs text-muted-foreground px-3 pb-2">{concept.definition}</p>
                       </details>
                     ))}
                   </div>
@@ -225,12 +225,12 @@ export function CoursePackageViewer({
               )}
               {activeChapter?.brief?.summary && (
                 <div>
-                  <h4 className="text-xs font-semibold text-gray-500 mb-1">요약</h4>
-                  <p className="text-sm text-gray-700">{activeChapter.brief.summary}</p>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-1">요약</h4>
+                  <p className="text-sm text-foreground">{activeChapter.brief.summary}</p>
                 </div>
               )}
               {!activeChapter?.brief && (
-                <p className="text-xs text-gray-400">요약 정보가 없습니다.</p>
+                <p className="text-xs text-muted-foreground">요약 정보가 없습니다.</p>
               )}
             </div>
           )}

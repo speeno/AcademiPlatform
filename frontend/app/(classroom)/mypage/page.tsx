@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Phone, Shield, Loader2, Save, ExternalLink, Pencil } from 'lucide-react';
+import { User, Mail, Phone, Shield, Save, ExternalLink, Pencil } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
@@ -100,28 +101,22 @@ export default function MyPagePage() {
     setPwLoading(false);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   if (!me) return null;
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>내 정보</h1>
-        <p className="text-sm text-gray-500 mt-1">회원 정보를 확인하세요.</p>
+        <h1 className="text-heading text-brand-blue">내 정보</h1>
+        <p className="text-sm text-muted-foreground mt-1">회원 정보를 확인하세요.</p>
       </div>
 
       <BrandCard accent="sky" padding="md">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p className="font-semibold text-gray-900">교재를 별도로 구매하시나요?</p>
-            <p className="text-sm text-gray-500 mt-1">주요 교재 구매 페이지에서 소장용 교재를 바로 구매할 수 있습니다.</p>
+            <p className="font-semibold text-foreground">교재를 별도로 구매하시나요?</p>
+            <p className="text-sm text-muted-foreground mt-1">주요 교재 구매 페이지에서 소장용 교재를 바로 구매할 수 있습니다.</p>
           </div>
           <Link href="/books">
             <BrandButton variant="outline" size="sm">
@@ -146,7 +141,7 @@ export default function MyPagePage() {
         {editing ? (
           <form id="profile-form" onSubmit={handleSaveProfile} className="space-y-4">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">이름</label>
+              <label className="block text-xs text-muted-foreground mb-1">이름</label>
               <input
                 type="text"
                 value={profileForm.name}
@@ -157,7 +152,7 @@ export default function MyPagePage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">연락처</label>
+              <label className="block text-xs text-muted-foreground mb-1">연락처</label>
               <input
                 type="tel"
                 value={profileForm.phone}
@@ -179,42 +174,42 @@ export default function MyPagePage() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--brand-blue-subtle)' }}>
-                <User className="w-4 h-4" style={{ color: 'var(--brand-blue)' }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-brand-blue-subtle" >
+                <User className="w-4 h-4 text-brand-blue"  />
               </div>
               <div>
-                <p className="text-xs text-gray-400">이름</p>
-                <p className="font-semibold text-gray-800">{me.name}</p>
+                <p className="text-xs text-muted-foreground">이름</p>
+                <p className="font-semibold text-foreground">{me.name}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--brand-blue-subtle)' }}>
-                <Mail className="w-4 h-4" style={{ color: 'var(--brand-blue)' }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-brand-blue-subtle" >
+                <Mail className="w-4 h-4 text-brand-blue"  />
               </div>
               <div>
-                <p className="text-xs text-gray-400">이메일</p>
-                <p className="font-semibold text-gray-800">{me.email}</p>
+                <p className="text-xs text-muted-foreground">이메일</p>
+                <p className="font-semibold text-foreground">{me.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--brand-blue-subtle)' }}>
-                <Phone className="w-4 h-4" style={{ color: 'var(--brand-blue)' }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-brand-blue-subtle" >
+                <Phone className="w-4 h-4 text-brand-blue"  />
               </div>
               <div>
-                <p className="text-xs text-gray-400">연락처</p>
-                <p className="font-semibold text-gray-800">{me.phone || '-'}</p>
+                <p className="text-xs text-muted-foreground">연락처</p>
+                <p className="font-semibold text-foreground">{me.phone || '-'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--brand-blue-subtle)' }}>
-                <Shield className="w-4 h-4" style={{ color: 'var(--brand-blue)' }} />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-brand-blue-subtle" >
+                <Shield className="w-4 h-4 text-brand-blue"  />
               </div>
               <div>
-                <p className="text-xs text-gray-400">역할</p>
+                <p className="text-xs text-muted-foreground">역할</p>
                 <BrandBadge variant="blue">{roleLabel[me.role] ?? me.role}</BrandBadge>
               </div>
             </div>
-            <p className="text-xs text-gray-400 pt-2 border-t">
+            <p className="text-xs text-muted-foreground pt-2 border-t">
               가입일: {new Date(me.createdAt).toLocaleDateString('ko-KR')}
             </p>
           </div>
@@ -225,15 +220,15 @@ export default function MyPagePage() {
       <BrandCard accent="green" padding="lg">
         <BrandCardTitle className="mb-4">북이오 무료 이용권</BrandCardTitle>
         {vouchers.length === 0 ? (
-          <p className="text-sm text-gray-500">지급된 이용권이 없습니다. 수강 신청 후 자동 지급될 수 있습니다.</p>
+          <p className="text-sm text-muted-foreground">지급된 이용권이 없습니다. 수강 신청 후 자동 지급될 수 있습니다.</p>
         ) : (
           <div className="space-y-3">
             {vouchers.map((voucher) => (
               <div key={voucher.id} className="rounded-lg border p-3 bg-white">
-                <p className="text-sm font-semibold text-gray-800">{voucher.campaign.name}</p>
-                <p className="text-xs text-gray-500 mt-1">코드: {voucher.code.code}</p>
-                <p className="text-xs text-gray-500">연계 강좌: {voucher.course?.title ?? '공통'}</p>
-                <p className="text-xs text-gray-400 mt-1">지급일: {new Date(voucher.grantedAt).toLocaleString('ko-KR')}</p>
+                <p className="text-sm font-semibold text-foreground">{voucher.campaign.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">코드: {voucher.code.code}</p>
+                <p className="text-xs text-muted-foreground">연계 강좌: {voucher.course?.title ?? '공통'}</p>
+                <p className="text-xs text-muted-foreground mt-1">지급일: {new Date(voucher.grantedAt).toLocaleString('ko-KR')}</p>
               </div>
             ))}
           </div>
@@ -250,13 +245,12 @@ export default function MyPagePage() {
             { label: '새 비밀번호 확인', key: 'confirm' },
           ].map(({ label, key }) => (
             <div key={key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+              <label className="block text-sm font-medium text-foreground mb-1">{label}</label>
               <input
                 type="password"
                 value={pwForm[key as keyof typeof pwForm]}
                 onChange={(e) => setPwForm((p) => ({ ...p, [key]: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': 'var(--brand-blue)' } as React.CSSProperties}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
                 required
               />
             </div>

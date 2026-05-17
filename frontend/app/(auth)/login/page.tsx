@@ -1,21 +1,50 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
-import { getPostLoginRedirect, setAccessToken, setRefreshToken } from '@/lib/auth';
+import {
+  applyPostLoginNavigation,
+  buildAuthHeader,
+  getPostLoginRedirect,
+  isLoggedIn,
+  setAccessToken,
+  setRefreshToken,
+} from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isLoggedIn()) return;
+    let cancelled = false;
+    (async () => {
+      const next = new URLSearchParams(window.location.search).get('next');
+      let role: string | undefined;
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, { headers: buildAuthHeader(false) });
+        if (res.ok) {
+          const me = await res.json();
+          role = me?.role;
+        }
+      } catch {
+        /* ignore */
+      }
+      if (!cancelled) {
+        applyPostLoginNavigation(getPostLoginRedirect(next, role));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +62,8 @@ export default function LoginPage() {
       if (data.refreshToken) setRefreshToken(data.refreshToken);
       toast.success('로그인 되었습니다.');
 
-      const nextPath =
-        typeof window !== 'undefined'
-          ? new URLSearchParams(window.location.search).get('next')
-          : null;
-      router.push(getPostLoginRedirect(nextPath, data.user?.role));
+      const nextPath = new URLSearchParams(window.location.search).get('next');
+      applyPostLoginNavigation(getPostLoginRedirect(nextPath, data.user?.role));
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -56,15 +82,13 @@ export default function LoginPage() {
         }}
       />
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>
-          로그인
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">AcademiQ 계정으로 로그인하세요</p>
+        <h1 className="text-heading text-brand-blue">로그인</h1>
+        <p className="text-sm text-muted-foreground mt-1">AcademiQ 계정으로 로그인하세요</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1 block">이메일</label>
+          <label className="text-sm font-medium text-foreground mb-1 block">이메일</label>
           <Input
             type="email"
             placeholder="example@email.com"
@@ -75,7 +99,7 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1 block">비밀번호</label>
+          <label className="text-sm font-medium text-foreground mb-1 block">비밀번호</label>
           <div className="relative">
             <Input
               type={showPw ? 'text' : 'password'}
@@ -86,7 +110,7 @@ export default function LoginPage() {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
               onClick={() => setShowPw(!showPw)}
             >
               {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -95,7 +119,7 @@ export default function LoginPage() {
         </div>
 
         <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-xs text-gray-500 hover:underline">
+          <Link href="/forgot-password" className="text-xs text-muted-foreground hover:underline">
             비밀번호를 잊으셨나요?
           </Link>
         </div>
@@ -107,9 +131,9 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           아직 회원이 아니신가요?{' '}
-          <Link href="/register" className="font-semibold hover:underline" style={{ color: 'var(--brand-orange)' }}>
+          <Link href="/register" className="font-semibold hover:underline text-brand-orange" >
             회원가입
           </Link>
         </p>

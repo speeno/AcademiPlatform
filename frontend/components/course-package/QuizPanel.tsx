@@ -23,7 +23,7 @@ export function QuizPanel({ questions, chapterTitle }: QuizPanelProps) {
   const [submitted, setSubmitted] = useState(false);
 
   if (!questions || questions.length === 0) {
-    return <p className="text-xs text-gray-400 p-3">퀴즈 문항이 없습니다.</p>;
+    return <p className="text-xs text-muted-foreground p-3">퀴즈 문항이 없습니다.</p>;
   }
 
   const correctCount = questions.filter(
@@ -49,7 +49,7 @@ export function QuizPanel({ questions, chapterTitle }: QuizPanelProps) {
   return (
     <div className="space-y-4 p-3">
       {chapterTitle && (
-        <h3 className="font-semibold text-gray-800 text-sm">{chapterTitle} 퀴즈</h3>
+        <h3 className="font-semibold text-foreground text-sm">{chapterTitle} 퀴즈</h3>
       )}
 
       {questions.map((q, qIdx) => {
@@ -64,10 +64,10 @@ export function QuizPanel({ questions, chapterTitle }: QuizPanelProps) {
               isCorrect ? 'border-green-300 bg-green-50' : isWrong ? 'border-red-300 bg-red-50' : ''
             }`}
           >
-            <p className="text-sm font-medium text-gray-800">
+            <p className="text-sm font-medium text-foreground">
               {qIdx + 1}. {q.question}
               {q.difficulty && (
-                <span className="ml-2 text-xs text-gray-400">[{q.difficulty}]</span>
+                <span className="ml-2 text-xs text-muted-foreground">[{q.difficulty}]</span>
               )}
             </p>
             <div className="space-y-1">
@@ -88,7 +88,7 @@ export function QuizPanel({ questions, chapterTitle }: QuizPanelProps) {
                           : 'bg-blue-50 border-blue-400 text-blue-800'
                         : isAnswer
                           ? 'bg-green-50 border-green-300'
-                          : 'hover:bg-gray-50'
+                          : 'hover:bg-muted/30'
                     }`}
                     disabled={submitted}
                   >
@@ -105,7 +105,7 @@ export function QuizPanel({ questions, chapterTitle }: QuizPanelProps) {
               })}
             </div>
             {submitted && q.explanation && (
-              <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+              <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
                 {q.explanation}
               </p>
             )}
@@ -116,7 +116,7 @@ export function QuizPanel({ questions, chapterTitle }: QuizPanelProps) {
       <div className="flex items-center justify-between pt-2">
         {submitted ? (
           <>
-            <p className="text-sm font-semibold text-gray-800">
+            <p className="text-sm font-semibold text-foreground">
               결과: {correctCount}/{questions.length} 정답 (
               {Math.round((correctCount / questions.length) * 100)}%)
             </p>
@@ -133,7 +133,7 @@ export function QuizPanel({ questions, chapterTitle }: QuizPanelProps) {
             type="button"
             onClick={handleSubmit}
             disabled={Object.keys(answers).length < questions.length}
-            className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500"
+            className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
           >
             제출하기
           </button>

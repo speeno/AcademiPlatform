@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Pencil, Trash2, Calendar, User, Loader2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Calendar, User } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
 import { API_BASE } from '@/lib/api-base';
@@ -99,17 +100,11 @@ export default function InstructorPostDetailPage() {
     } catch { toast.error('삭제에 실패했습니다.'); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   if (!post) {
     return (
-      <div className="text-center py-16 text-gray-400">
+      <div className="text-center py-16 text-muted-foreground">
         <p>게시글을 찾을 수 없습니다.</p>
         <BrandButton variant="ghost" size="sm" className="mt-4" onClick={() => router.push('/classroom/instructor/board')}>
           <ArrowLeft className="w-4 h-4 mr-1" /> 목록으로
@@ -168,8 +163,8 @@ export default function InstructorPostDetailPage() {
 
       <div className="bg-white rounded-xl border p-6">
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h1>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <h1 className="text-xl font-bold text-foreground mb-3">{post.title}</h1>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {post.author.name}</span>
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />

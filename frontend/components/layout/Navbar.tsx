@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Menu, X, BookOpen, LogIn, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BrandButton } from '@/components/ui/brand-button';
 import { Logo } from './Logo';
-import { buildAuthHeader, clearAccessToken } from '@/lib/auth';
+import { buildAuthHeader, clearAccessToken, subscribeAuthState } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 
 const navItems = [
@@ -62,8 +63,12 @@ export function Navbar() {
     };
 
     loadMe();
+    const unsubscribe = subscribeAuthState(() => {
+      if (active) loadMe();
+    });
     return () => {
       active = false;
+      unsubscribe();
     };
   }, []);
 
@@ -101,7 +106,7 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle transition-colors"
+                className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle transition-colors"
               >
                 {item.label}
               </Link>
@@ -111,7 +116,7 @@ export function Navbar() {
           {/* 우측 버튼 그룹 */}
           <div className="hidden md:flex items-center gap-2">
             <Link href={myEntryHref}>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-brand-blue">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand-blue">
                 {isAdmin ? <Shield className="w-4 h-4 mr-1" /> : <BookOpen className="w-4 h-4 mr-1" />}
                 {myEntryLabel}
               </Button>
@@ -127,7 +132,7 @@ export function Navbar() {
               </Button>
             ) : isAuthenticated ? (
               <>
-                <span className="text-sm font-semibold text-gray-700 px-1">{displayName}님</span>
+                <span className="text-sm font-semibold text-foreground px-1">{displayName}님</span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -147,19 +152,15 @@ export function Navbar() {
               </Link>
             )}
             <Link href="/courses">
-              <Button
-                size="sm"
-                style={{ backgroundColor: 'var(--brand-orange)', color: 'white' }}
-                className="hover:opacity-90 font-semibold"
-              >
+              <BrandButton size="sm" variant="primary">
                 수강 신청
-              </Button>
+              </BrandButton>
             </Link>
           </div>
 
           {/* 모바일 햄버거 */}
           <button
-            className="md:hidden p-2 rounded-md text-gray-600"
+            className="md:hidden p-2 rounded-md text-muted-foreground"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="메뉴 열기/닫기"
           >
@@ -169,19 +170,16 @@ export function Navbar() {
       </div>
 
       {/* 브랜드 그라디언트 하단 라인 */}
-      <div
-        className="h-0.5 w-full"
-        style={{ background: 'linear-gradient(90deg, #0F2771 0%, #1A3F9C 25%, #1A9AC5 50%, #5AB85C 75%, #F5A023 100%)' }}
-      />
+      <div className="h-0.5 w-full bg-logo-gradient" />
 
       {/* 모바일 메뉴 */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-white px-4 py-3 space-y-1">
+        <div className="md:hidden border-t border-border bg-background px-4 py-3 space-y-1">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle"
+              className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle"
               onClick={() => setMobileOpen(false)}
             >
               {item.label}
@@ -189,7 +187,7 @@ export function Navbar() {
           ))}
           <div className="pt-3 border-t border-border flex flex-col gap-2">
             <Link href={myEntryHref} onClick={() => setMobileOpen(false)}>
-              <Button variant="ghost" className="w-full text-gray-700">
+              <Button variant="ghost" className="w-full text-foreground">
                 {isAdmin ? <Shield className="w-4 h-4 mr-1" /> : <BookOpen className="w-4 h-4 mr-1" />}
                 {myEntryLabel}
               </Button>
@@ -200,7 +198,7 @@ export function Navbar() {
               </Button>
             ) : isAuthenticated ? (
               <>
-                <div className="px-2 text-sm text-gray-600">{displayName}님 로그인됨</div>
+                <div className="px-2 text-sm text-muted-foreground">{displayName}님 로그인됨</div>
                 <Button variant="outline" className="w-full border-brand-blue text-brand-blue" onClick={handleLogout}>
                   <LogOut className="w-4 h-4 mr-1" />
                   로그아웃
@@ -215,12 +213,9 @@ export function Navbar() {
               </Link>
             )}
             <Link href="/courses" onClick={() => setMobileOpen(false)}>
-              <Button
-                className="w-full font-semibold"
-                style={{ backgroundColor: 'var(--brand-orange)', color: 'white' }}
-              >
+              <BrandButton variant="primary" fullWidth>
                 수강 신청
-              </Button>
+              </BrandButton>
             </Link>
           </div>
         </div>

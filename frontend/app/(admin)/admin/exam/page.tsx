@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Users, Loader2, Pencil } from 'lucide-react';
+import { Plus, Users, Pencil } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { API_BASE } from '@/lib/api-base';
 
 const API = API_BASE;
@@ -172,52 +174,36 @@ export default function AdminExamPage() {
     } catch { /* ignore */ } finally { setSaving(false); }
   };
 
-  if (loading) return <div className="flex justify-center h-64 items-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>;
+  const columns: DataTableColumn<Session>[] = [
+    { key: 'qual', header: '자격명', cell: (s) => <span className="font-medium">{s.qualificationName}</span> },
+    { key: 'round', header: '회차', cell: (s) => <span className="text-muted-foreground">{s.roundName}</span>, className: 'w-28' },
+    { key: 'examAt', header: '시험일', cell: (s) => <span className="text-xs text-muted-foreground">{new Date(s.examAt).toLocaleDateString('ko-KR')}</span>, className: 'w-24', hideOnMobile: true },
+    { key: 'applyEnd', header: '접수마감', cell: (s) => <span className="text-xs text-muted-foreground">{s.applyEndAt ? new Date(s.applyEndAt).toLocaleDateString('ko-KR') : '-'}</span>, className: 'w-24', hideOnMobile: true },
+    { key: 'status', header: '상태', cell: (s) => { const si = sessionStatusInfo[s.status] ?? { label: s.status, variant: 'default' as const }; return <BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge>; }, className: 'w-20' },
+    { key: 'count', header: '접수자', cell: (s) => <Link href={`/admin/exam/${s.id}/applications`} className="flex items-center gap-1 text-xs font-semibold text-brand-blue"><Users className="w-3.5 h-3.5" /> {s._count?.applications ?? 0}명</Link>, className: 'w-20' },
+    { key: 'fee', header: '응시료', cell: (s) => <span className="text-muted-foreground">{s.fee.toLocaleString()}원</span>, className: 'w-24', hideOnMobile: true },
+    { key: 'actions', header: '관리', cell: (s) => <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>, className: 'w-12' },
+  ];
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>시험 회차 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">총 {sessions.length}개 회차</p>
-        </div>
-        <BrandButton variant="primary" size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" /> 회차 등록
-        </BrandButton>
-      </div>
+      <PageHeader
+        title="시험 회차 관리"
+        description={`총 ${sessions.length}개 회차`}
+        actions={
+          <BrandButton variant="primary" size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> 회차 등록
+          </BrandButton>
+        }
+      />
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>{['자격명', '회차', '시험일', '접수마감', '상태', '접수자', '응시료', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>)}</tr>
-          </thead>
-          <tbody className="divide-y">
-            {sessions.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-gray-400">시험 회차가 없습니다.</td></tr>
-            ) : sessions.map((s) => {
-              const si = sessionStatusInfo[s.status] ?? { label: s.status, variant: 'default' as const };
-              return (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-800">{s.qualificationName}</td>
-                  <td className="px-4 py-3 text-gray-600">{s.roundName}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{new Date(s.examAt).toLocaleDateString('ko-KR')}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{s.applyEndAt ? new Date(s.applyEndAt).toLocaleDateString('ko-KR') : '-'}</td>
-                  <td className="px-4 py-3"><BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge></td>
-                  <td className="px-4 py-3 text-center">
-                    <Link href={`/admin/exam/${s.id}/applications`} className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--brand-blue)' }}>
-                      <Users className="w-3.5 h-3.5" /> {s._count?.applications ?? 0}명
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{s.fee.toLocaleString()}원</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-gray-100"><Pencil className="w-3.5 h-3.5 text-gray-500" /></button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={sessions}
+        rowKey={(s) => s.id}
+        loading={loading}
+        empty={<p>시험 회차가 없습니다.</p>}
+      />
 
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -281,9 +267,9 @@ export default function AdminExamPage() {
                     <label className="block text-sm font-medium mb-1">유효 종료</label>
                     <input type="datetime-local" value={form.priceValidUntil} onChange={(e) => setForm((p) => ({ ...p, priceValidUntil: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                   </div>
-                  <div className="col-span-2 rounded-lg border bg-gray-50 px-3 py-2 text-sm">
+                  <div className="col-span-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
                     최종 응시료: <span className="font-semibold">{finalPreviewFee.toLocaleString()}원</span>
-                    <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       (정가 {basePriceNum.toLocaleString()} / 판매가 {salePriceNum.toLocaleString()} / 할인 {discountAmount.toLocaleString()})
                     </span>
                   </div>

@@ -129,7 +129,7 @@ function renderTitle(raw: string) {
         {parts.map((p, j) => {
           if (p.startsWith('**') && p.endsWith('**')) {
             return (
-              <span key={j} style={{ color: '#F5A023' }}>
+              <span key={j} className="text-brand-orange">
                 {p.slice(2, -2)}
               </span>
             );
@@ -185,7 +185,7 @@ export function HeroBanner() {
       />
       {/* 오버레이 */}
       <div
-        className="absolute inset-0 bg-gradient-to-r from-[#0A1A4A] via-[#0F2771] to-[#0A2A50]"
+        className="absolute inset-0 bg-hero-overlay"
         style={{ opacity: slide.overlayOpacity }}
       />
 
@@ -242,7 +242,7 @@ export function HeroBanner() {
                   <p className="text-white/80 text-sm leading-relaxed mb-4">
                     {slide.promoCard.description}
                   </p>
-                  <span className="inline-flex items-center gap-1 text-sm font-bold text-white group-hover:text-[#F5A023] transition-colors">
+                  <span className="inline-flex items-center gap-1 text-sm font-bold text-white group-hover:text-brand-orange transition-colors">
                     {slide.promoCard.ctaText}
                     <ArrowRight className="w-4 h-4" />
                   </span>

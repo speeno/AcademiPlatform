@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = { title: '이용약관', description: 'AcademiQ 서비스 이용약관입니다.' };
 
@@ -33,26 +34,26 @@ const sections = [
 export default function TermsPage() {
   return (
     <div>
-      <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-3xl font-extrabold mb-2" style={{ color: 'var(--brand-blue)' }}>이용약관</h1>
-          <p className="text-gray-500 text-sm">최종 업데이트: 2026년 1월 1일</p>
-        </div>
+      <section className="bg-hero-gradient py-14 border-b border-border">
+        <PageShell size="content" flush>
+          <h1 className="text-heading mb-2 text-brand-blue">이용약관</h1>
+          <p className="text-muted-foreground text-sm">최종 업데이트: 2026년 1월 1일</p>
+        </PageShell>
       </section>
 
       <section className="py-10">
-        <div className="max-w-4xl mx-auto px-4 grid lg:grid-cols-4 gap-8">
+        <PageShell size="content" flush>
+        <div className="grid lg:grid-cols-4 gap-8">
           {/* 목차 */}
           <aside className="lg:col-span-1">
-            <div className="sticky top-6 bg-white rounded-xl border p-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-3">목차</p>
+            <div className="sticky top-6 bg-card rounded-xl border border-border p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">목차</p>
               <ul className="space-y-1">
                 {sections.map((s) => (
                   <li key={s.title}>
                     <a
                       href={`#${s.title}`}
-                      className="text-xs text-gray-600 hover:text-blue-700 block py-0.5"
-                      style={{ color: 'var(--brand-blue)' }}
+                      className="text-xs text-brand-blue hover:text-brand-blue-dark block py-0.5"
                     >
                       {s.title}
                     </a>
@@ -66,14 +67,15 @@ export default function TermsPage() {
           <div className="lg:col-span-3 space-y-8">
             {sections.map((s) => (
               <section key={s.title} id={s.title}>
-                <h2 className="text-lg font-bold text-gray-900 mb-3">{s.title}</h2>
-                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap bg-white rounded-xl border p-5">
+                <h2 className="text-subheading text-foreground mb-3">{s.title}</h2>
+                <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap bg-card rounded-xl border border-border p-5">
                   {s.content}
                 </div>
               </section>
             ))}
           </div>
         </div>
+        </PageShell>
       </section>
     </div>
   );

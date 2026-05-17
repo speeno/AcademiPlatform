@@ -18,9 +18,9 @@ const sizeStyles = {
 
 const variantFill: Record<string, string> = {
   logo:   'bg-logo-gradient',
-  blue:   'bg-[var(--brand-blue)]',
-  orange: 'bg-[var(--brand-orange)]',
-  green:  'bg-[var(--brand-green)]',
+  blue:   'bg-brand-blue',
+  orange: 'bg-brand-orange',
+  green:  'bg-brand-green',
 };
 
 export function BrandProgress({
@@ -38,15 +38,15 @@ export function BrandProgress({
     <div className={cn('w-full', className)}>
       {(label || showPercent) && (
         <div className="flex justify-between items-center mb-1.5">
-          {label && <span className="text-xs font-medium text-gray-600">{label}</span>}
+          {label && <span className="text-xs font-medium text-muted-foreground">{label}</span>}
           {showPercent && (
-            <span className="text-xs font-semibold" style={{ color: 'var(--brand-blue)' }}>
+            <span className="text-xs font-semibold text-brand-blue" >
               {Math.round(percent)}%
             </span>
           )}
         </div>
       )}
-      <div className={cn('w-full rounded-full bg-gray-100 overflow-hidden', sizeStyles[size])}>
+      <div className={cn('w-full rounded-full bg-muted overflow-hidden', sizeStyles[size])}>
         <div
           className={cn('h-full rounded-full transition-all duration-500', variantFill[variant])}
           style={{ width: `${percent}%` }}

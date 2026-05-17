@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageShell } from '@/components/layout/PageShell';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { apiFetchWithAuth } from '@/lib/api-client';
 
 const roleLabel: Record<string, string> = { USER: '일반', INSTRUCTOR: '강사', OPERATOR: '운영자', SUPER_ADMIN: '최고관리자' };
@@ -46,17 +49,37 @@ export default function AdminUsersPage() {
     } catch { /* ignore */ } finally { setUpdating(null); }
   };
 
-  return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>회원 관리</h1>
-        <p className="text-sm text-gray-500 mt-1">총 {total}명</p>
-      </div>
+  const columns: DataTableColumn<User>[] = [
+    { key: 'name', header: '이름', cell: (u) => <span className="font-medium">{u.name}</span> },
+    { key: 'email', header: '이메일', cell: (u) => <span className="text-xs text-muted-foreground">{u.email}</span>, hideOnMobile: true },
+    { key: 'role', header: '역할', cell: (u) => <BrandBadge variant="blue" className="text-xs">{roleLabel[u.role] ?? u.role}</BrandBadge> },
+    { key: 'status', header: '상태', cell: (u) => <BrandBadge variant={statusVariant[u.status] ?? 'default'} className="text-xs">{statusLabel[u.status] ?? u.status}</BrandBadge> },
+    { key: 'enrollments', header: '수강', cell: (u) => <span className="text-center block">{u._count?.enrollments ?? 0}</span>, className: 'w-16', hideOnMobile: true },
+    { key: 'payments', header: '결제', cell: (u) => <span className="text-center block">{u._count?.payments ?? 0}</span>, className: 'w-16', hideOnMobile: true },
+    { key: 'createdAt', header: '가입일', cell: (u) => <span className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>, hideOnMobile: true },
+    {
+      key: 'actions', header: '관리', cell: (u) => (
+        <select
+          value={u.status}
+          disabled={updating === u.id}
+          onChange={(e) => handleStatusChange(u.id, e.target.value)}
+          className="text-xs border rounded px-2 py-1 bg-white"
+        >
+          <option value="ACTIVE">정상</option>
+          <option value="DORMANT">휴면</option>
+          <option value="SUSPENDED">정지</option>
+        </select>
+      ),
+    },
+  ];
 
-      {/* 필터 */}
+  return (
+    <PageShell size="full" flush>
+      <PageHeader title="회원 관리" description={`총 ${total}명`} />
+
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={q} onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && load()}
@@ -71,53 +94,21 @@ export default function AdminUsersPage() {
         <BrandButton variant="outline" size="sm" onClick={() => { setPage(1); load(); }}>검색</BrandButton>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>{['이름', '이메일', '역할', '상태', '수강', '결제', '가입일', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y">
-              {users.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12 text-gray-400">회원이 없습니다.</td></tr>
-              ) : users.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-800">{u.name}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{u.email}</td>
-                  <td className="px-4 py-3"><BrandBadge variant="blue" className="text-xs">{roleLabel[u.role] ?? u.role}</BrandBadge></td>
-                  <td className="px-4 py-3"><BrandBadge variant={statusVariant[u.status] ?? 'default'} className="text-xs">{statusLabel[u.status] ?? u.status}</BrandBadge></td>
-                  <td className="px-4 py-3 text-center text-gray-600">{u._count?.enrollments ?? 0}</td>
-                  <td className="px-4 py-3 text-center text-gray-600">{u._count?.payments ?? 0}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={u.status}
-                      disabled={updating === u.id}
-                      onChange={(e) => handleStatusChange(u.id, e.target.value)}
-                      className="text-xs border rounded px-2 py-1 bg-white"
-                    >
-                      <option value="ACTIVE">정상</option>
-                      <option value="DORMANT">휴면</option>
-                      <option value="SUSPENDED">정지</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DataTable
+        columns={columns}
+        rows={users}
+        rowKey={(u) => u.id}
+        loading={loading}
+        empty={<p>회원이 없습니다.</p>}
+      />
 
-      {/* 페이지네이션 */}
       {total > 20 && (
         <div className="flex items-center justify-center gap-3 mt-4">
           <BrandButton variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>이전</BrandButton>
-          <span className="text-sm text-gray-500">{page} / {Math.ceil(total / 20)}</span>
+          <span className="text-sm text-muted-foreground">{page} / {Math.ceil(total / 20)}</span>
           <BrandButton variant="outline" size="sm" disabled={page >= Math.ceil(total / 20)} onClick={() => setPage((p) => p + 1)}>다음</BrandButton>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

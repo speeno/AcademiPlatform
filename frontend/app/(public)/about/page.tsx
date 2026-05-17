@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, Award, BookOpen, Globe, TrendingUp, Users, Briefcase } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -71,20 +72,20 @@ export default function AboutPage() {
     <div>
       {/* 헤더 */}
       <section className="bg-hero-gradient py-16 border-b">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h1 className="text-4xl font-extrabold mb-4" style={{ color: 'var(--brand-blue)' }}>
-            AcademiQ <span style={{ color: 'var(--brand-orange)' }}>소개</span>
+        <PageShell size="content" flush className="text-center">
+          <h1 className="text-4xl font-extrabold mb-4 text-brand-blue">
+            AcademiQ <span className="text-brand-orange">소개</span>
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             ISO/IEC 17024 국제 표준 기반의 AI 자격 교육 플랫폼.<br />
             자격의 가치부터 활용까지, 모든 정보를 한 곳에서 확인하세요.
           </p>
-        </div>
+        </PageShell>
       </section>
 
       {/* 소개 메뉴 카드 */}
       <section className="py-16 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <PageShell flush>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {introMenuItems.map((item) => {
               const Icon = item.icon;
@@ -97,8 +98,8 @@ export default function AboutPage() {
                     >
                       <Icon className="w-6 h-6" style={{ color: item.color }} />
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed mb-4">{item.desc}</p>
+                    <h3 className="font-bold text-foreground mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.desc}</p>
                     <div className="flex items-center text-sm font-medium" style={{ color: item.color }}>
                       자세히 보기 <ArrowRight className="w-4 h-4 ml-1" />
                     </div>
@@ -107,16 +108,16 @@ export default function AboutPage() {
               );
             })}
           </div>
-        </div>
+        </PageShell>
       </section>
 
       {/* CTA */}
-      <section className="py-12 bg-gray-50 border-t">
-        <div className="max-w-2xl mx-auto text-center px-4">
-          <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--brand-blue)' }}>
+      <section className="py-12 bg-muted/30 border-t">
+        <PageShell size="narrow" flush className="text-center">
+          <h2 className="text-2xl font-bold mb-3 text-brand-blue">
             지금 바로 시작하세요
           </h2>
-          <p className="text-gray-500 mb-6">교육 신청이나 시험 접수에 대해 궁금한 점이 있으신가요?</p>
+          <p className="text-muted-foreground mb-6">교육 신청이나 시험 접수에 대해 궁금한 점이 있으신가요?</p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/courses">
               <BrandButton variant="primary">교육과정 보기 <ArrowRight className="w-4 h-4" /></BrandButton>
@@ -125,7 +126,7 @@ export default function AboutPage() {
               <BrandButton variant="outline">상담 문의</BrandButton>
             </Link>
           </div>
-        </div>
+        </PageShell>
       </section>
     </div>
   );

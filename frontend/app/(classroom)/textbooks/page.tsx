@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FileText, Loader2, BookOpen, ShoppingCart } from 'lucide-react';
+import { FileText, BookOpen, ShoppingCart } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { runPortOneCheckout } from '@/lib/payment';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
@@ -97,32 +99,16 @@ export default function TextbooksPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   return (
     <div className="space-y-10">
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>내 교재</h1>
-        <p className="text-sm text-gray-500 mt-1">접근 가능한 온라인 교재를 열람하세요.</p>
-        <p className="text-sm text-gray-500 mt-2">
-          교재를 별도로 구매하시려면{' '}
-          <Link href="/books" className="font-semibold hover:underline" style={{ color: 'var(--brand-blue)' }}>
-            주요 교재 구매
-          </Link>
-          에서 구매할 수 있습니다.
-        </p>
-      </div>
+      <PageHeader title="내 교재" description="접근 가능한 온라인 교재를 열람하세요." />
 
       <section className="rounded-2xl border bg-white p-6 sm:p-7">
-        <h2 className="text-lg font-extrabold" style={{ color: 'var(--brand-blue)' }}>기본 교육 패키지</h2>
-        <p className="text-sm text-gray-500 mt-1">패키지 보기에 포함되는 기본 학습 항목입니다.</p>
-        <ol className="mt-4 space-y-2 text-sm text-gray-700 list-decimal list-inside">
+        <h2 className="text-lg font-extrabold text-brand-blue" >기본 교육 패키지</h2>
+        <p className="text-sm text-muted-foreground mt-1">패키지 보기에 포함되는 기본 학습 항목입니다.</p>
+        <ol className="mt-4 space-y-2 text-sm text-foreground list-decimal list-inside">
           {BASIC_PACKAGE_TOPICS.map((topic) => (
             <li key={topic}>{topic}</li>
           ))}
@@ -131,9 +117,9 @@ export default function TextbooksPage() {
 
       {textbooks.length === 0 ? (
         <div className="text-center py-20">
-          <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500 mb-2">접근 가능한 교재가 없습니다.</p>
-          <p className="text-xs text-gray-400">강좌 수강 신청 시 교재가 자동으로 제공됩니다.</p>
+          <BookOpen className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-muted-foreground mb-2">접근 가능한 교재가 없습니다.</p>
+          <p className="text-xs text-muted-foreground">강좌 수강 신청 시 교재가 자동으로 제공됩니다.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -153,11 +139,11 @@ export default function TextbooksPage() {
                 <div className="p-4 flex flex-col flex-1">
                   <BrandCardTitle className="mb-1 line-clamp-2 text-sm">{book.title}</BrandCardTitle>
                   {book.description && (
-                    <p className="text-xs text-gray-400 line-clamp-2 mb-3">{book.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{book.description}</p>
                   )}
-                  <div className="mt-auto flex items-center justify-between text-xs text-gray-500">
+                  <div className="mt-auto flex items-center justify-between text-xs text-muted-foreground">
                     {book.totalPages && <span>{book.totalPages}페이지</span>}
-                    <span className="font-semibold" style={{ color: 'var(--brand-orange)' }}>
+                    <span className="font-semibold text-brand-orange" >
                       열람하기 →
                     </span>
                   </div>
@@ -170,27 +156,27 @@ export default function TextbooksPage() {
 
       <section>
         <div className="mb-4">
-          <h2 className="text-xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>교재 스토어</h2>
-          <p className="text-sm text-gray-500 mt-1">단독 구매 가능한 교재를 결제 후 즉시 열람할 수 있습니다.</p>
+          <h2 className="text-xl font-extrabold text-brand-blue" >교재 스토어</h2>
+          <p className="text-sm text-muted-foreground mt-1">단독 구매 가능한 교재를 결제 후 즉시 열람할 수 있습니다.</p>
         </div>
         {storeBooks.length === 0 ? (
-          <div className="text-sm text-gray-400 border rounded-xl p-6 bg-white">구매 가능한 교재가 없습니다.</div>
+          <div className="text-sm text-muted-foreground border rounded-xl p-6 bg-white">구매 가능한 교재가 없습니다.</div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {storeBooks.map((book) => (
               <BrandCard key={book.id} hoverable accent="sky" padding="none" className="overflow-hidden h-full flex flex-col">
-                <div className="h-44 bg-gray-100 flex items-center justify-center">
+                <div className="h-44 bg-muted flex items-center justify-center">
                   {book.coverImageUrl ? (
                     <Image src={book.coverImageUrl} alt={book.title} width={176} height={176} className="h-44 w-full object-cover" />
                   ) : (
-                    <FileText className="w-12 h-12 text-gray-300" />
+                    <FileText className="w-12 h-12 text-muted-foreground" />
                   )}
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
                   <BrandCardTitle className="mb-1 line-clamp-2 text-sm">{book.title}</BrandCardTitle>
-                  {book.description && <p className="text-xs text-gray-400 line-clamp-2 mb-3">{book.description}</p>}
+                  {book.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{book.description}</p>}
                   <div className="mt-auto space-y-3">
-                    <p className="text-sm font-semibold" style={{ color: 'var(--brand-orange)' }}>
+                    <p className="text-sm font-semibold text-brand-orange" >
                       {book.price.toLocaleString()}원
                     </p>
                     {book.hasAccess ? (

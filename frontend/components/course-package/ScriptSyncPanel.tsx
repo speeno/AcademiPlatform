@@ -41,7 +41,7 @@ export function ScriptSyncPanel({ blocks, currentTime, onSeek }: ScriptSyncPanel
   }, [activeIndex]);
 
   if (!blocks || blocks.length === 0) {
-    return <p className="text-xs text-gray-400 p-3">스크립트 정보가 없습니다.</p>;
+    return <p className="text-xs text-muted-foreground p-3">스크립트 정보가 없습니다.</p>;
   }
 
   return (
@@ -57,8 +57,8 @@ export function ScriptSyncPanel({ blocks, currentTime, onSeek }: ScriptSyncPanel
             onClick={() => onSeek(startTime)}
             className={`rounded-lg px-3 py-2 text-sm cursor-pointer transition-colors ${
               isActive
-                ? 'bg-blue-50 border-l-4 border-blue-500 text-gray-900'
-                : 'hover:bg-gray-50 text-gray-600'
+                ? 'bg-blue-50 border-l-4 border-blue-500 text-foreground'
+                : 'hover:bg-muted/30 text-muted-foreground'
             }`}
           >
             <p className="leading-relaxed">

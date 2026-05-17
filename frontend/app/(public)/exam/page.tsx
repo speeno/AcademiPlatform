@@ -4,6 +4,7 @@ import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { ExamApplyButton } from './ExamApplyButton';
 import { ExamPageAuthRefresh } from './ExamPageAuthRefresh';
+import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
@@ -119,18 +120,18 @@ export default async function ExamPage() {
     <>
       <ExamPageAuthRefresh />
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-5xl mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>
+        <PageShell flush>
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-brand-blue">
             시험 접수
           </h1>
-          <p className="text-gray-600">AI 자격 시험 일정을 확인하고 온라인으로 접수하세요.</p>
-        </div>
+          <p className="text-muted-foreground">AI 자격 시험 일정을 확인하고 온라인으로 접수하세요.</p>
+        </PageShell>
       </section>
 
       <section className="py-12 bg-white">
-        <div className="max-w-5xl mx-auto px-4">
+        <PageShell flush>
           {(!sessions || sessions.length === 0) ? (
-            <div className="text-center py-20 text-gray-400">
+            <div className="text-center py-20 text-muted-foreground">
               <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-40" />
               <p>현재 등록된 시험이 없습니다.</p>
             </div>
@@ -144,12 +145,12 @@ export default async function ExamPage() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-bold text-lg text-gray-900">{session.qualificationName}</h3>
+                          <h3 className="font-bold text-lg text-foreground">{session.qualificationName}</h3>
                           <BrandBadge variant="blue">{session.roundName}</BrandBadge>
                           <BrandBadge variant={statusInfo.variant}>{statusInfo.text}</BrandBadge>
                         </div>
 
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="w-4 h-4" />
                             시험일: {new Date(session.examAt).toLocaleDateString('ko-KR')}
@@ -164,7 +165,7 @@ export default async function ExamPage() {
                           </span>
                         </div>
 
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           접수 기간: {new Date(session.applyStartAt).toLocaleDateString('ko-KR')} ~{' '}
                           {new Date(session.applyEndAt).toLocaleDateString('ko-KR')}
                         </p>
@@ -173,8 +174,8 @@ export default async function ExamPage() {
                       <div className="flex flex-col items-end gap-2">
                         <PriceDisplay
                           price={Number(session.fee) || 0}
-                          className="text-lg font-extrabold"
-                          style={{ color: 'var(--brand-orange)' }}
+                          className="text-lg font-extrabold text-brand-orange"
+                          
                         />
                         <ExamApplyButton
                           sessionId={session.id}
@@ -188,31 +189,31 @@ export default async function ExamPage() {
               })}
             </div>
           )}
-        </div>
+        </PageShell>
       </section>
 
       {matchedQualifications.length > 0 && (
-        <section className="py-12 bg-gray-50 border-t">
-          <div className="max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-extrabold mb-8 text-center" style={{ color: 'var(--brand-blue)' }}>
+        <section className="py-12 bg-muted/30 border-t">
+          <PageShell flush>
+            <h2 className="text-2xl font-extrabold mb-8 text-center text-brand-blue" >
               자격 소개
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {matchedQualifications.map(({ name, info }) => (
                   <BrandCard key={name} padding="lg">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{info.subtitle}</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-2">{info.subtitle}</h3>
                     <div className="flex items-start gap-2 mb-4">
-                      <Briefcase className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand-orange)' }} />
+                      <Briefcase className="w-4 h-4 mt-0.5 flex-shrink-0 text-brand-orange"  />
                       <div>
-                        <p className="text-xs font-medium text-gray-500">업무 핵심</p>
-                        <p className="text-sm text-gray-800 font-medium">{info.coreWork}</p>
+                        <p className="text-xs font-medium text-muted-foreground">업무 핵심</p>
+                        <p className="text-sm text-foreground font-medium">{info.coreWork}</p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 mb-2">가능한 역할</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">가능한 역할</p>
                       <ul className="space-y-1.5">
                         {info.roles.map((role) => (
-                          <li key={role} className="flex items-start gap-2 text-sm text-gray-700">
+                          <li key={role} className="flex items-start gap-2 text-sm text-foreground">
                             <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-green-500" />
                             {role}
                           </li>
@@ -222,7 +223,7 @@ export default async function ExamPage() {
                   </BrandCard>
               ))}
             </div>
-          </div>
+          </PageShell>
         </section>
       )}
     </>

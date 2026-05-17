@@ -319,14 +319,14 @@ export default function AdminTextbooksPage() {
     }
   };
 
-  if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">불러오는 중...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>교재 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">교재 등록, 메타데이터 수정, PDF 업로드를 처리합니다.</p>
+          <h1 className="text-heading text-brand-blue">교재 관리</h1>
+          <p className="text-sm text-muted-foreground mt-1">교재 등록, 메타데이터 수정, PDF 업로드를 처리합니다.</p>
         </div>
         <BrandButton size="sm" variant="outline" onClick={resetNew}>
           <Plus className="w-4 h-4 mr-1" />
@@ -337,7 +337,7 @@ export default function AdminTextbooksPage() {
       <div className="grid md:grid-cols-[320px_1fr] gap-4">
         <div className="bg-white rounded-xl border p-3 space-y-2 max-h-[70vh] overflow-auto">
           {items.length === 0 ? (
-            <p className="text-sm text-gray-500 px-2 py-3">등록된 교재가 없습니다.</p>
+            <p className="text-sm text-muted-foreground px-2 py-3">등록된 교재가 없습니다.</p>
           ) : (
             items.map((item) => (
               <button
@@ -345,11 +345,11 @@ export default function AdminTextbooksPage() {
                 type="button"
                 onClick={() => selectItem(item)}
                 className={`w-full text-left border rounded-lg p-3 transition ${
-                  selectedId === item.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                  selectedId === item.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-muted/30'
                 }`}
               >
-                <p className="text-sm font-semibold text-gray-900 line-clamp-1">{item.title}</p>
-                <p className="text-xs text-gray-500 mt-1">{item.status} | {item.price.toLocaleString()}원</p>
+                <p className="text-sm font-semibold text-foreground line-clamp-1">{item.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{item.status} | {item.price.toLocaleString()}원</p>
               </button>
             ))
           )}
@@ -368,7 +368,7 @@ export default function AdminTextbooksPage() {
             <input className="border rounded-lg px-3 py-2 text-sm" placeholder="스토리지 키(s3Key)" value={form.s3Key} onChange={(e) => updateForm('s3Key', e.target.value)} />
             <input className="border rounded-lg px-3 py-2 text-sm" placeholder="로컬 경로(localPath)" value={form.localPath} onChange={(e) => updateForm('localPath', e.target.value)} />
             <input className="border rounded-lg px-3 py-2 text-sm" type="number" placeholder="총 페이지 수" value={form.totalPages} onChange={(e) => updateForm('totalPages', e.target.value === '' ? '' : Number(e.target.value))} />
-            <label className="text-sm text-gray-700 flex items-center gap-2">
+            <label className="text-sm text-foreground flex items-center gap-2">
               <input type="checkbox" checked={form.isStandalone} onChange={(e) => updateForm('isStandalone', e.target.checked)} />
               단독 판매 교재
             </label>
@@ -379,15 +379,15 @@ export default function AdminTextbooksPage() {
           <div className="flex items-center gap-2">
             <label className="inline-flex items-center">
               <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleUploadPdf(e.target.files?.[0] ?? null)} />
-              <span className="inline-flex items-center px-3 py-2 border rounded-lg text-sm cursor-pointer hover:bg-gray-50">
+              <span className="inline-flex items-center px-3 py-2 border rounded-lg text-sm cursor-pointer hover:bg-muted/30">
                 <Upload className="w-4 h-4 mr-1" />
                 PDF 업로드
               </span>
             </label>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               {uploading ? '업로드 중...' : form.s3Key ? `업로드 키: ${form.s3Key}` : '업로드 후 s3Key가 자동 반영됩니다.'}
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               모드: {uploadMode === 's3' ? 'S3/R2' : uploadMode === 'local' ? 'LOCAL_PATH' : '미지정'}
             </span>
           </div>

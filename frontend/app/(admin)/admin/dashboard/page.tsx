@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import {
   Users, BookOpen, CreditCard, ClipboardList,
-  MessageSquare, TrendingUp, ArrowUpRight, Activity, Loader2,
+  MessageSquare, TrendingUp, ArrowUpRight, Activity,
 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { apiFetchWithAuth } from '@/lib/api-client';
 
 interface DashboardStats {
@@ -89,20 +91,17 @@ export default function AdminDashboard() {
     { type: '문의', content: `미응답 문의: ${stats?.openInquiries ?? 0}건`, time: '실시간 집계' },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex justify-center h-64 items-center">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>대시보드</h1>
-        <p className="text-sm text-gray-500 mt-1">{new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}</p>
-      </div>
+      <PageHeader
+        title="대시보드"
+        eyebrow="관리자"
+        description={new Date().toLocaleDateString('ko-KR', {
+          year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
+        })}
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         {statCards.map((card) => {
@@ -117,8 +116,8 @@ export default function AdminDashboard() {
                   <Icon className="w-4 h-4" style={{ color: card.color }} />
                 </div>
               </div>
-              <p className="text-lg font-extrabold text-gray-900">{card.value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
+              <p className="text-lg font-extrabold text-foreground">{card.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{card.label}</p>
             </BrandCard>
           );
         })}
@@ -127,8 +126,8 @@ export default function AdminDashboard() {
       <div className="grid lg:grid-cols-2 gap-6">
         <BrandCard padding="lg">
           <div className="flex items-center gap-2 mb-5">
-            <Activity className="w-4 h-4" style={{ color: 'var(--brand-blue)' }} />
-            <h2 className="font-bold text-gray-900">운영 현황</h2>
+            <Activity className="w-4 h-4 text-brand-blue" />
+            <h2 className="font-bold text-foreground">운영 현황</h2>
           </div>
           <div className="space-y-3">
             {recentActivities.map((activity, i) => (
@@ -137,8 +136,8 @@ export default function AdminDashboard() {
                   {activity.type}
                 </BrandBadge>
                 <div className="flex-1 min-w-0">
-                  <p className="text-gray-700 leading-snug">{activity.content}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{activity.time}</p>
+                  <p className="text-foreground leading-snug">{activity.content}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
                 </div>
               </div>
             ))}
@@ -147,8 +146,8 @@ export default function AdminDashboard() {
 
         <BrandCard padding="lg">
           <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="w-4 h-4" style={{ color: 'var(--brand-blue)' }} />
-            <h2 className="font-bold text-gray-900">LMS/CMS 바로가기</h2>
+            <TrendingUp className="w-4 h-4 text-brand-blue" />
+            <h2 className="font-bold text-foreground">LMS/CMS 바로가기</h2>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[

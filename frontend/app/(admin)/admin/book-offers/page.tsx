@@ -106,14 +106,14 @@ export default function AdminBookOffersPage() {
     }
   };
 
-  if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">불러오는 중...</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>북이오 구매 링크 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">공개 `/books` 페이지에 노출할 교재 링크를 관리합니다.</p>
+          <h1 className="text-2xl font-extrabold text-brand-blue" >북이오 구매 링크 관리</h1>
+          <p className="text-sm text-muted-foreground mt-1">공개 `/books` 페이지에 노출할 교재 링크를 관리합니다.</p>
         </div>
         <BrandButton variant="primary" size="sm" onClick={addOffer}>
           <Plus className="w-4 h-4 mr-1" />
@@ -148,7 +148,7 @@ export default function AdminBookOffersPage() {
             next[idx] = { ...next[idx], purchaseUrl: e.target.value };
             setOffers(next);
           }} />
-          <label className="text-sm text-gray-700 flex items-center gap-2">
+          <label className="text-sm text-foreground flex items-center gap-2">
             <input type="checkbox" checked={offer.isActive !== false} onChange={(e) => {
               const next = [...offers];
               next[idx] = { ...next[idx], isActive: e.target.checked };

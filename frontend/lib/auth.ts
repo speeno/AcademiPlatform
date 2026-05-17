@@ -43,10 +43,25 @@ export function subscribeAuthState(listener: () => void): () => void {
   };
 }
 
+function authCookieSuffix(): string {
+  if (typeof window === 'undefined') return '';
+  return window.location.protocol === 'https:' ? '; Secure' : '';
+}
+
+function writeAuthCookie(name: string, value: string, maxAgeSeconds: number) {
+  const suffix = authCookieSuffix();
+  document.cookie = `${name}=${value}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax${suffix}`;
+}
+
+function clearAuthCookie(name: string) {
+  const suffix = authCookieSuffix();
+  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax${suffix}`;
+}
+
 export function setAccessToken(token: string) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TOKEN_KEY, token);
-  document.cookie = `${TOKEN_KEY}=${token}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+  writeAuthCookie(TOKEN_KEY, token, 60 * 60 * 24 * 7);
   notifyAuthChanged();
 }
 
@@ -60,7 +75,7 @@ export function clearAccessToken() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
-  document.cookie = `${TOKEN_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
+  clearAuthCookie(TOKEN_KEY);
   notifyAuthChanged();
 }
 
@@ -130,5 +145,19 @@ export function getPostLoginRedirect(next: string | null | undefined, role?: str
   if (role === 'SUPER_ADMIN' || role === 'OPERATOR') {
     return '/admin/dashboard';
   }
-  return '/classroom';
+  if (role === 'INSTRUCTOR') {
+    return '/classroom/instructor/cms';
+  }
+  // 일반 회원: 마이페이지(기본). 강의실은 사이드바·수강 CTA에서 이동
+  return '/mypage';
+}
+
+/**
+ * 로그인·회원가입 직후 이동.
+ * router.push만 쓰면 middleware가 accessToken 쿠키를 못 읽어 /login 으로 되돌아갈 수 있어
+ * 전체 페이지 이동으로 쿠키·미들웨어를 확실히 맞춘다.
+ */
+export function applyPostLoginNavigation(path: string) {
+  if (typeof window === 'undefined') return;
+  window.location.assign(path);
 }

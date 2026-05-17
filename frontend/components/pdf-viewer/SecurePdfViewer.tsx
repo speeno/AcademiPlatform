@@ -155,8 +155,8 @@ export function SecurePdfViewer({
 
   return (
     <div ref={wrapperRef} className="bg-white border rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between border-b px-3 py-2 bg-gray-50">
-        <div className="text-xs text-gray-500">
+      <div className="flex items-center justify-between border-b px-3 py-2 bg-muted/30">
+        <div className="text-xs text-muted-foreground">
           AcademiQ 보안 PDF 뷰어
         </div>
         <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export function SecurePdfViewer({
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </BrandButton>
-          <span className="text-xs text-gray-500 min-w-10 text-center">{Math.round(scale * 100)}%</span>
+          <span className="text-xs text-muted-foreground min-w-10 text-center">{Math.round(scale * 100)}%</span>
           <BrandButton
             size="sm"
             variant="outline"
@@ -183,7 +183,7 @@ export function SecurePdfViewer({
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </BrandButton>
-          <span className="text-xs text-gray-600 min-w-16 text-center">
+          <span className="text-xs text-muted-foreground min-w-16 text-center">
             {numPages > 0 ? `${pageNo} / ${numPages}` : '- / -'}
           </span>
           <BrandButton
@@ -197,21 +197,21 @@ export function SecurePdfViewer({
         </div>
       </div>
 
-      <div className={`${heightClassName} overflow-auto bg-gray-100 flex items-start justify-center p-4 relative`}>
+      <div className={`${heightClassName} overflow-auto bg-muted flex items-start justify-center p-4 relative`}>
         <canvas
           ref={canvasRef}
           className={`shadow-md bg-white select-none ${loading || !!error ? 'opacity-0' : 'opacity-100'}`}
         />
 
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 bg-gray-100/80">
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground bg-muted/80">
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
             PDF 렌더링 중...
           </div>
         )}
 
         {!loading && error && (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-red-500 bg-gray-100/80 px-4 text-center">
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-red-500 bg-muted/80 px-4 text-center">
             PDF를 불러오지 못했습니다: {error}
           </div>
         )}

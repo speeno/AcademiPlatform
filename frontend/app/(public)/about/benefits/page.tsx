@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { TrendingUp, Globe, Award, Briefcase, Users, Star } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = { title: '자격 취득 이점', description: 'AcademiQ AI 자격증 취득 시 얻을 수 있는 이점을 안내합니다.' };
 
@@ -17,29 +18,29 @@ export default function BenefitsPage() {
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-5xl mx-auto px-4">
-          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--brand-orange)' }}>자격 취득 이점</p>
-          <h1 className="text-3xl font-extrabold mb-3" style={{ color: 'var(--brand-blue)' }}>왜 AcademiQ 자격이어야 하나요?</h1>
-          <p className="text-gray-600 max-w-2xl">ISO/IEC 17024 기반 AI 자격은 단순한 수료증이 아닙니다. 국제적으로 통용되는 역량 증명입니다.</p>
-        </div>
+        <PageShell flush>
+          <p className="text-sm font-semibold mb-2 text-brand-orange">자격 취득 이점</p>
+          <h1 className="text-3xl font-extrabold mb-3 text-brand-blue">왜 AcademiQ 자격이어야 하나요?</h1>
+          <p className="text-muted-foreground max-w-2xl">ISO/IEC 17024 기반 AI 자격은 단순한 수료증이 아닙니다. 국제적으로 통용되는 역량 증명입니다.</p>
+        </PageShell>
       </section>
 
       <section className="py-14">
-        <div className="max-w-5xl mx-auto px-4">
+        <PageShell flush>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {benefits.map(({ icon: Icon, accent, title, desc }) => (
               <BrandCard key={title} accent={accent} padding="lg" className="flex gap-4">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--brand-blue-subtle)' }}>
-                  <Icon className="w-5 h-5" style={{ color: 'var(--brand-blue)' }} />
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-brand-blue-subtle">
+                  <Icon className="w-5 h-5 text-brand-blue" />
                 </div>
                 <div>
                   <BrandCardTitle className="mb-2">{title}</BrandCardTitle>
-                  <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
                 </div>
               </BrandCard>
             ))}
           </div>
-        </div>
+        </PageShell>
       </section>
     </div>
   );

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { LogoHorizontal } from './Logo';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, MapPin } from 'lucide-react';
 
 const footerLinks = {
   소개: [
@@ -33,7 +33,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-brand-blue-dark text-white/85">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* 브랜드 */}
@@ -41,15 +41,11 @@ export function Footer() {
             <div className="mb-3">
               <LogoHorizontal height={45} />
             </div>
-            <p className="text-sm italic mb-4" style={{ color: 'var(--brand-sky)' }}>Learn · Certify · Succeed</p>
-            <div className="space-y-2 text-sm text-gray-400">
+            <p className="text-sm italic mb-4 text-brand-sky">Learn · Certify · Succeed</p>
+            <div className="space-y-2 text-sm text-white/70">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 shrink-0" />
                 <span>academiq2026@gmail.com</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 shrink-0" />
-                <span>010-4710-2203</span>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
@@ -67,7 +63,7 @@ export function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
+                      className="text-sm text-white/70 hover:text-white transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -79,18 +75,18 @@ export function Footer() {
         </div>
 
         {/* 로고 그라디언트 구분선 */}
-        <div className="mt-10 mb-6 h-px bg-logo-gradient opacity-30" />
+        <div className="mt-10 mb-6 h-px bg-logo-gradient opacity-40" />
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-gray-500">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-white/60">
           <div className="text-center md:text-left">
             <p>© 2026 AcademiQ. All rights reserved.</p>
-            <p className="mt-1 text-[11px] text-gray-500">
+            <p className="mt-1 text-[11px]">
               맨도롱북스 | 사업자등록번호: 706-99-02056 | 대표자: 전미헌
             </p>
           </div>
           <div className="flex gap-4">
-            <Link href="/terms" className="hover:text-gray-300 transition-colors">이용약관</Link>
-            <Link href="/privacy" className="hover:text-gray-300 transition-colors">개인정보처리방침</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">이용약관</Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">개인정보처리방침</Link>
           </div>
         </div>
       </div>

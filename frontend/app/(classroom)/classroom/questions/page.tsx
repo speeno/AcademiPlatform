@@ -154,13 +154,13 @@ export default function ClassroomQuestionsPage() {
     }
   };
 
-  if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">불러오는 중...</div>;
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>내 질문</h1>
-        <p className="text-sm text-gray-500 mt-1">수강 과목의 담당 강사에게 질문하고 답변을 확인하세요.</p>
+        <h1 className="text-heading text-brand-blue">내 질문</h1>
+        <p className="text-sm text-muted-foreground mt-1">수강 과목의 담당 강사에게 질문하고 답변을 확인하세요.</p>
       </div>
 
       <div className="bg-white border rounded-xl p-4 space-y-3">
@@ -212,27 +212,27 @@ export default function ClassroomQuestionsPage() {
       </div>
 
       <div className="bg-white border rounded-xl p-4 space-y-2">
-        <h2 className="font-semibold text-gray-800">질문 내역</h2>
+        <h2 className="font-semibold text-foreground">질문 내역</h2>
         {questions.length === 0 ? (
-          <p className="text-sm text-gray-500">등록된 질문이 없습니다.</p>
+          <p className="text-sm text-muted-foreground">등록된 질문이 없습니다.</p>
         ) : (
           questions.map((question) => (
             <div key={question.id} className="border rounded-lg px-3 py-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <p className="font-medium text-sm text-gray-900">{question.title}</p>
-                <span className="text-xs text-gray-500">{question.status}</span>
+                <p className="font-medium text-sm text-foreground">{question.title}</p>
+                <span className="text-xs text-muted-foreground">{question.status}</span>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {question.course.title} | 담당 강사: {question.assignedInstructor.name} | {new Date(question.createdAt).toLocaleString('ko-KR')}
               </p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{question.content}</p>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{question.content}</p>
               <div className="space-y-1">
                 {question.answers.length === 0 ? (
-                  <p className="text-xs text-gray-400">아직 답변이 없습니다.</p>
+                  <p className="text-xs text-muted-foreground">아직 답변이 없습니다.</p>
                 ) : (
                   question.answers.map((answer) => (
-                    <div key={answer.id} className="bg-gray-50 border rounded px-2 py-2 text-sm">
-                      <p className="text-xs text-gray-500 mb-1">
+                    <div key={answer.id} className="bg-muted/30 border rounded px-2 py-2 text-sm">
+                      <p className="text-xs text-muted-foreground mb-1">
                         {answer.user.name} ({answer.user.role}) | {new Date(answer.createdAt).toLocaleString('ko-KR')}
                       </p>
                       <p className="whitespace-pre-wrap">{answer.content}</p>

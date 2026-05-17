@@ -207,6 +207,48 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* ── 타이포그래피 위계 (4단)
+     PageHeader/Section 등 공통 컴포넌트가 사용. 페이지에서도 그대로 사용 가능. */
+  .text-display {
+    font-size: 2.25rem;        /* text-4xl */
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+  @media (min-width: 768px) {
+    .text-display {
+      font-size: 3rem;         /* md:text-5xl */
+    }
+  }
+
+  .text-heading {
+    font-size: 1.5rem;         /* text-2xl */
+    line-height: 1.25;
+    font-weight: 700;
+  }
+  @media (min-width: 768px) {
+    .text-heading {
+      font-size: 1.875rem;     /* md:text-3xl */
+    }
+  }
+
+  .text-subheading {
+    font-size: 1.25rem;        /* text-xl */
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  .text-body {
+    font-size: 1rem;
+    line-height: 1.625;
+  }
+
+  .text-caption {
+    font-size: 0.875rem;       /* text-sm */
+    line-height: 1.5;
+    color: var(--muted-foreground);
+  }
 }
 
 /* ─── 기본 스타일 ──────────────────────────────────────────────────────── */
@@ -258,4 +300,14 @@
 
 .bg-join-gradient {
   background: linear-gradient(90deg, #5AB85C 0%, #F5A023 100%);
+}
+
+/* Hero 배너 어두운 오버레이 — 배경 이미지 가독성 향상 */
+.bg-hero-overlay {
+  background: linear-gradient(
+    to right,
+    #0A1A4A 0%,
+    #0F2771 50%,
+    #0A2A50 100%
+  );
 }

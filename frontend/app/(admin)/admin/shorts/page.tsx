@@ -131,14 +131,14 @@ export default function AdminShortsPage() {
     setItems(next);
   };
 
-  if (loading) return <div className="text-sm text-gray-500">불러오는 중...</div>;
+  if (loading) return <div className="text-sm text-muted-foreground">불러오는 중...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>홍보영상 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">갤러리 페이지 및 메인/교육과정 페이지에 노출할 홍보 영상을 관리합니다.</p>
+          <h1 className="text-heading text-brand-blue">홍보영상 관리</h1>
+          <p className="text-sm text-muted-foreground mt-1">갤러리 페이지 및 메인/교육과정 페이지에 노출할 홍보 영상을 관리합니다.</p>
         </div>
         <BrandButton variant="primary" size="sm" onClick={addItem}>
           <Plus className="w-4 h-4 mr-1" />
@@ -150,7 +150,7 @@ export default function AdminShortsPage() {
         <div key={item.id} className="bg-white rounded-xl border p-4 space-y-3">
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">형태</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">형태</label>
               <select
                 className="w-full border rounded-lg px-3 py-2 text-sm"
                 value={item.type}
@@ -161,7 +161,7 @@ export default function AdminShortsPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">영상 ID</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">영상 ID</label>
               <input
                 className="w-full border rounded-lg px-3 py-2 text-sm"
                 placeholder={item.type === 'youtube' ? '예: 5KU6PXCfLtI' : '예: reel ID'}
@@ -171,7 +171,7 @@ export default function AdminShortsPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">제목</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">제목</label>
             <input
               className="w-full border rounded-lg px-3 py-2 text-sm"
               placeholder="영상 제목"
@@ -181,8 +181,8 @@ export default function AdminShortsPage() {
           </div>
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">
-                썸네일 URL {item.type === 'youtube' && <span className="text-gray-400">(비워두면 자동)</span>}
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                썸네일 URL {item.type === 'youtube' && <span className="text-muted-foreground">(비워두면 자동)</span>}
               </label>
               <input
                 className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -192,8 +192,8 @@ export default function AdminShortsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">
-                링크 URL {item.type === 'youtube' && <span className="text-gray-400">(비워두면 자동)</span>}
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                링크 URL {item.type === 'youtube' && <span className="text-muted-foreground">(비워두면 자동)</span>}
               </label>
               <input
                 className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -204,7 +204,7 @@ export default function AdminShortsPage() {
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <label className="text-sm text-gray-700 flex items-center gap-2">
+            <label className="text-sm text-foreground flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={item.isActive !== false}
@@ -225,18 +225,18 @@ export default function AdminShortsPage() {
       ))}
 
       {items.length === 0 && (
-        <div className="text-center text-gray-400 py-10 bg-white rounded-xl border">
+        <div className="text-center text-muted-foreground py-10 bg-white rounded-xl border">
           등록된 홍보영상이 없습니다. 위 "영상 추가" 버튼을 눌러 추가하세요.
         </div>
       )}
 
       <div className="bg-white rounded-xl border p-5 space-y-4">
         <div className="flex items-center gap-2 mb-2">
-          <Settings className="w-4 h-4" style={{ color: 'var(--brand-blue)' }} />
-          <h2 className="text-lg font-bold text-gray-900">노출 위치 설정</h2>
+          <Settings className="w-4 h-4 text-brand-blue"  />
+          <h2 className="text-lg font-bold text-foreground">노출 위치 설정</h2>
         </div>
         <div className="space-y-3">
-          <label className="flex items-center gap-3 text-sm text-gray-700">
+          <label className="flex items-center gap-3 text-sm text-foreground">
             <input
               type="checkbox"
               checked={display.showOnMain}
@@ -244,7 +244,7 @@ export default function AdminShortsPage() {
             />
             메인 페이지에 노출
           </label>
-          <label className="flex items-center gap-3 text-sm text-gray-700">
+          <label className="flex items-center gap-3 text-sm text-foreground">
             <input
               type="checkbox"
               checked={display.showOnCourseDetail}
@@ -253,7 +253,7 @@ export default function AdminShortsPage() {
             교육과정 상세 페이지에 노출
           </label>
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700">메인 페이지 최대 노출 수</label>
+            <label className="text-sm text-foreground">메인 페이지 최대 노출 수</label>
             <input
               type="number"
               min={1}

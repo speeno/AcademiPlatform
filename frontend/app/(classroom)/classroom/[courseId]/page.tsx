@@ -8,6 +8,7 @@ import {
   PlayCircle, FileText, ChevronDown, CheckCircle2, Circle,
   Loader2, BookOpen, Award, ExternalLink,
 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/page-loader';
 import { BrandProgress } from '@/components/ui/brand-progress';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { SecurePdfViewer } from '@/components/pdf-viewer/SecurePdfViewer';
@@ -82,13 +83,13 @@ const lessonTypeIcon = (type: string, completed: boolean) => {
   if (completed) return <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />;
   const icons: Record<string, React.ReactNode> = {
     VIDEO_YOUTUBE: <PlayCircle className="w-4 h-4 text-red-400 flex-shrink-0" />,
-    VIDEO_UPLOAD:  <PlayCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--brand-blue)' }} />,
+    VIDEO_UPLOAD:  <PlayCircle className="w-4 h-4 flex-shrink-0 text-brand-blue"  />,
     DOCUMENT:      <FileText className="w-4 h-4 text-amber-500 flex-shrink-0" />,
-    TEXT:          <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />,
+    TEXT:          <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />,
     LIVE_LINK:     <ExternalLink className="w-4 h-4 text-green-500 flex-shrink-0" />,
     QUIZ:          <Award className="w-4 h-4 text-purple-400 flex-shrink-0" />,
   };
-  return icons[type] ?? <Circle className="w-4 h-4 text-gray-300 flex-shrink-0" />;
+  return icons[type] ?? <Circle className="w-4 h-4 text-muted-foreground flex-shrink-0" />;
 };
 
 export default function CoursePlayerPage() {
@@ -182,13 +183,7 @@ export default function CoursePlayerPage() {
     } catch { /* ignore */ }
   }, [selectedLesson, authHeader]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
 
   if (!data) return null;
 
@@ -202,7 +197,7 @@ export default function CoursePlayerPage() {
       {/* 좌측 커리큘럼 사이드바 */}
       <aside className="w-72 bg-white border-r overflow-y-auto flex-shrink-0">
         <div className="p-4 border-b">
-          <h2 className="font-bold text-sm text-gray-800 line-clamp-2">{course.title}</h2>
+          <h2 className="font-bold text-sm text-foreground line-clamp-2">{course.title}</h2>
           <BrandProgress
             value={enrollment.progressRate}
             showPercent
@@ -215,10 +210,10 @@ export default function CoursePlayerPage() {
         <nav className="p-2">
           {course.modules.map((module, mIdx) => (
             <details key={module.id} open={mIdx === 0} className="mb-1">
-              <summary className="flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-gray-50 select-none text-sm font-semibold text-gray-700">
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+              <summary className="flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-muted/30 select-none text-sm font-semibold text-foreground">
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 <span className="flex-1 line-clamp-1">{mIdx + 1}. {module.title}</span>
-                <span className="text-xs font-normal text-gray-400">{module.lessons.length}강</span>
+                <span className="text-xs font-normal text-muted-foreground">{module.lessons.length}강</span>
               </summary>
               <ul className="pl-4 mt-0.5 space-y-0.5">
                 {module.lessons.map((lesson, lIdx) => {
@@ -230,10 +225,9 @@ export default function CoursePlayerPage() {
                         onClick={() => setSelectedLesson(lesson)}
                         className={`w-full flex items-start gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
                           isActive
-                            ? 'text-white font-semibold'
-                            : 'text-gray-600 hover:bg-gray-50'
+                            ? 'text-white font-semibold bg-brand-blue'
+                            : 'text-muted-foreground hover:bg-muted/30'
                         }`}
-                        style={isActive ? { backgroundColor: 'var(--brand-blue)' } : {}}
                       >
                         {lessonTypeIcon(lesson.lessonType, prog?.isCompleted ?? false)}
                         <span className="flex-1 line-clamp-2">
@@ -250,7 +244,7 @@ export default function CoursePlayerPage() {
       </aside>
 
       {/* 우측 콘텐츠 영역 */}
-      <main className="flex-1 overflow-y-auto bg-gray-950">
+      <main className="flex-1 overflow-y-auto bg-brand-blue-dark">
         {selectedLesson ? (
           <div>
             {/* 콘텐츠 뷰어 */}
@@ -314,7 +308,7 @@ export default function CoursePlayerPage() {
                 ) : cmsAssetUrl ? (
                   <iframe title="lesson-document-content" src={cmsAssetUrl} className="w-full h-[70vh] bg-white" />
                 ) : (
-                  <div className="aspect-video flex items-center justify-center text-gray-400">
+                  <div className="aspect-video flex items-center justify-center text-muted-foreground">
                     문서 에셋이 등록되지 않았습니다.
                   </div>
                 )
@@ -325,7 +319,7 @@ export default function CoursePlayerPage() {
                   onProgress={handleProgress}
                 />
               ) : (
-                <div className="aspect-video flex flex-col items-center justify-center text-gray-400">
+                <div className="aspect-video flex flex-col items-center justify-center text-muted-foreground">
                   {selectedLesson.lessonType === 'VIDEO_UPLOAD' ? (
                     <><Loader2 className="w-8 h-8 animate-spin mb-3" /><p className="text-sm">스트리밍 준비 중...</p></>
                   ) : (
@@ -339,7 +333,7 @@ export default function CoursePlayerPage() {
             <div className="p-6 bg-white">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">{selectedLesson.title}</h1>
+                  <h1 className="text-xl font-bold text-foreground">{selectedLesson.title}</h1>
                   <div className="flex items-center gap-2 mt-2">
                     <BrandBadge variant="default">
                       {selectedLesson.lessonType.replace('_', ' ')}
@@ -363,7 +357,7 @@ export default function CoursePlayerPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-muted-foreground">
             <div className="text-center">
               <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-30" />
               <p>좌측 커리큘럼에서 강의를 선택해 주세요.</p>

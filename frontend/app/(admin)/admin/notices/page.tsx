@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Pin } from 'lucide-react';
+import { Plus, Pencil, Trash2, Pin } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
@@ -98,57 +100,40 @@ export default function AdminNoticesPage() {
     } catch { toast.error('삭제 중 오류가 발생했습니다.'); }
   };
 
-  if (loading) return <div className="flex justify-center h-64 items-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--brand-blue)' }} /></div>;
+  const columns: DataTableColumn<Notice>[] = [
+    { key: 'title', header: '제목', cell: (n) => <span className="font-medium line-clamp-1">{n.title}</span> },
+    { key: 'pinned', header: '고정', cell: (n) => n.isPinned ? <Pin className="w-4 h-4 text-brand-orange" /> : null, className: 'w-12' },
+    { key: 'published', header: '게시', cell: (n) => <BrandBadge variant={n.isPublished ? 'green' : 'default'} className="text-xs">{n.isPublished ? '게시 중' : '비공개'}</BrandBadge>, className: 'w-24' },
+    { key: 'createdAt', header: '등록일', cell: (n) => <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleDateString('ko-KR')}</span>, className: 'w-28', hideOnMobile: true },
+    {
+      key: 'actions', header: '관리', cell: (n) => (
+        <div className="flex gap-2">
+          <button onClick={() => openEdit(n)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
+          <button onClick={() => handleDelete(n.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+        </div>
+      ), className: 'w-20',
+    },
+  ];
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold" style={{ color: 'var(--brand-blue)' }}>공지사항 관리</h1>
-          <p className="text-sm text-gray-500 mt-1">총 {notices.length}건</p>
-        </div>
-        <BrandButton variant="primary" size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" /> 공지 등록
-        </BrandButton>
-      </div>
+      <PageHeader
+        title="공지사항 관리"
+        description={`총 ${notices.length}건`}
+        actions={
+          <BrandButton variant="primary" size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> 공지 등록
+          </BrandButton>
+        }
+      />
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              {['제목', '고정', '게시', '등록일', '관리'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {notices.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-12 text-gray-400">공지사항이 없습니다.</td></tr>
-            ) : notices.map((n) => (
-              <tr key={n.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <span className="font-medium text-gray-800 line-clamp-1">{n.title}</span>
-                </td>
-                <td className="px-4 py-3">
-                  {n.isPinned && <Pin className="w-4 h-4" style={{ color: 'var(--brand-orange)' }} />}
-                </td>
-                <td className="px-4 py-3">
-                  <BrandBadge variant={n.isPublished ? 'green' : 'default'} className="text-xs">
-                    {n.isPublished ? '게시 중' : '비공개'}
-                  </BrandBadge>
-                </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{new Date(n.createdAt).toLocaleDateString('ko-KR')}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button onClick={() => openEdit(n)} className="p-1.5 rounded hover:bg-gray-100"><Pencil className="w-3.5 h-3.5 text-gray-500" /></button>
-                    <button onClick={() => handleDelete(n.id)} className="p-1.5 rounded hover:bg-red-50"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        rows={notices}
+        rowKey={(n) => n.id}
+        loading={loading}
+        empty={<p>공지사항이 없습니다.</p>}
+      />
 
       {modal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

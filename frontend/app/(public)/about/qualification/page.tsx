@@ -3,6 +3,7 @@ import { Globe, Shield, Award, BookOpen, ArrowRight, CheckCircle2 } from 'lucide
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
+import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -21,27 +22,28 @@ export default function QualificationPage() {
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
+        <PageShell size="content" flush>
+          <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
             <Link href="/about" className="hover:text-brand-blue">소개</Link>
             <span>/</span>
-            <span style={{ color: 'var(--brand-blue)' }}>ISO/IEC 17024 자격 개요</span>
+            <span className="text-brand-blue" >ISO/IEC 17024 자격 개요</span>
           </div>
           <BrandBadge variant="blue" dot className="mb-3">국제 표준 인증</BrandBadge>
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-4" style={{ color: 'var(--brand-blue)' }}>
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-4 text-brand-blue" >
             ISO/IEC 17024<br />자격 개요
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl">
+          <p className="text-lg text-muted-foreground max-w-2xl">
             세계가 인정하는 국제 표준 ISO/IEC 17024 기반의 공신력 있는 AI 분야 개인 자격 인증입니다.
           </p>
-        </div>
+        </PageShell>
       </section>
 
       <section className="py-14 bg-white">
-        <div className="max-w-4xl mx-auto px-4 space-y-10">
+        <PageShell size="content" flush>
+        <div className="space-y-10">
           {/* 자격 개요 */}
           <div>
-            <h2 className="text-2xl font-bold mb-5" style={{ color: 'var(--brand-blue)' }}>자격 개요</h2>
+            <h2 className="text-2xl font-bold mb-5 text-brand-blue" >자격 개요</h2>
             <div className="grid md:grid-cols-3 gap-5">
               {[
                 { icon: Globe, title: '국제 표준', desc: 'ISO/IEC 17024는 개인 자격 인증 기관에 대한 국제 표준으로, 전 세계 170여 개국에서 통용됩니다.' },
@@ -52,10 +54,10 @@ export default function QualificationPage() {
                 return (
                   <BrandCard key={item.title} accent="blue" padding="md">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 bg-brand-blue-subtle">
-                      <Icon className="w-5 h-5" style={{ color: 'var(--brand-blue)' }} />
+                      <Icon className="w-5 h-5 text-brand-blue"  />
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-500">{item.desc}</p>
+                    <h3 className="font-bold text-foreground mb-1">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground">{item.desc}</p>
                   </BrandCard>
                 );
               })}
@@ -64,34 +66,35 @@ export default function QualificationPage() {
 
           {/* 자격 종류 */}
           <div>
-            <h2 className="text-2xl font-bold mb-5" style={{ color: 'var(--brand-blue)' }}>자격 종류</h2>
+            <h2 className="text-2xl font-bold mb-5 text-brand-blue" >자격 종류</h2>
             <div className="space-y-3">
               {qualifications.map((q) => (
                 <div key={q.name + q.level} className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-brand-sky transition-colors">
-                  <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" style={{ color: 'var(--brand-orange)' }} />
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0 text-brand-orange"  />
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-gray-900">{q.name}</span>
+                      <span className="font-semibold text-foreground">{q.name}</span>
                       <BrandBadge variant="orange">{q.level}</BrandBadge>
                     </div>
-                    <p className="text-sm text-gray-500">{q.desc}</p>
+                    <p className="text-sm text-muted-foreground">{q.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+        </PageShell>
       </section>
 
       {/* CTA */}
-      <section className="py-10 bg-gray-50 border-t">
-        <div className="max-w-2xl mx-auto text-center px-4">
+      <section className="py-10 bg-muted/30 border-t">
+        <PageShell size="narrow" flush className="text-center">
           <Link href="/courses">
             <BrandButton variant="primary" size="lg">
               교육과정 보기 <ArrowRight className="w-4 h-4" />
             </BrandButton>
           </Link>
-        </div>
+        </PageShell>
       </section>
     </div>
   );
