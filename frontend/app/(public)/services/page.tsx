@@ -9,6 +9,8 @@ import {
   ClipboardCheck,
   Workflow,
   Sparkles,
+  Globe,
+  Video,
 } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
@@ -18,7 +20,7 @@ import { Section } from '@/components/layout/Section';
 export const metadata: Metadata = {
   title: '핵심 서비스',
   description:
-    '기업 교육, 개인 실무 교육, AI 컨설팅·도입, 라이브·콘텐츠까지. AcademiQ의 네 가지 핵심 서비스를 한 페이지에서 확인하세요.',
+    '기업 교육, 개인 실무 교육, AI 컨설팅·도입, 라이브·콘텐츠, AI 홈페이지·영상 제작까지. AcademiQ 핵심 서비스를 한 페이지에서 확인하세요.',
 };
 
 const services = [
@@ -82,6 +84,36 @@ const services = [
     href: '/live',
     cta: '라이브·콘텐츠 보기',
   },
+  {
+    icon: Globe,
+    accent: 'blue' as const,
+    iconBg: 'bg-brand-blue-subtle',
+    iconColor: 'text-brand-blue',
+    title: 'AI 홈페이지',
+    summary: 'AI 기반 홈페이지 제작·운영 상담. 브랜드에 맞는 웹사이트를 기획·제작합니다.',
+    bullets: [
+      '브랜드 맞춤 기획·디자인',
+      'AI 콘텐츠·운영 자동화',
+      '문의 폼으로 1:1 상담',
+    ],
+    href: '/services/ai-website',
+    cta: 'AI 홈페이지 상담',
+  },
+  {
+    icon: Video,
+    accent: 'orange' as const,
+    iconBg: 'bg-brand-orange-subtle',
+    iconColor: 'text-brand-orange',
+    title: '영상 제작 상담',
+    summary: '홍보·교육·마케팅 영상 기획부터 제작까지, 목적에 맞는 영상을 상담합니다.',
+    bullets: [
+      '기획·촬영·편집·자막',
+      '숏폼·교육·홍보 영상',
+      '문의 폼으로 1:1 상담',
+    ],
+    href: '/services/video-production',
+    cta: '영상 제작 상담',
+  },
 ];
 
 const process = [
@@ -122,7 +154,7 @@ export default function ServicesPage() {
       <Section spacing="lg" className="bg-white">
         <PageShell flush>
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold mb-3 text-brand-blue">4가지 핵심 서비스</h2>
+            <h2 className="text-3xl font-extrabold mb-3 text-brand-blue">핵심 서비스</h2>
             <p className="text-muted-foreground">
               조직과 개인의 단계에 맞는 학습·실행·성과 경로를 제공합니다
             </p>

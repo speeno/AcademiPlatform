@@ -4,7 +4,7 @@ import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = {
   title: '대표 강사 소개',
-  description: 'AcademiQ 대표 강사 이현길, 남동선의 소개와 주요 약력입니다.',
+  description: 'AcademiQ 대표 강사 이현길, 남동선, 이경민의 소개와 주요 약력입니다.',
 };
 
 const instructors = [
@@ -41,6 +41,26 @@ const instructors = [
       '전)서일대학교 미디어출판학과 겸임교수',
       'PDF Association DocRM LWG Co-Chair',
       '전)한국출판문화학회 홍보이사',
+      '광운대학교 대학원 컴퓨터공학 석사',
+      '연세대학교 대학원 박사과정 (이수)',
+    ],
+  },
+  {
+    name: '이경민',
+    summary: [
+      '이경민은 주식회사 쇼팜 대표이사로서 기업 경영을 이끌며, ISO/IEC 17024 AI 부문 인공지능 교육지도사로서 인공지능 교육과 실무 적용 사례를 만들어 가고 있다.',
+      'AI 기반 분석 도구를 활용한 텍타일 AI 뷰티 테스터로 AI와 뷰티 산업의 접점을 연구하고, 스위스 그로바나(Grovana) 시계 앰버서더로 활동하고 있다.',
+      '아울러 N사 플레이스 상위 1% 리뷰어, 쇼핑 베스트 리뷰어, K-리뷰어로서 다양한 플랫폼에서 소비자 경험을 공유하고 있다.',
+      '이러한 활동을 통해 AI 활용이 일상과 업무에 가져오는 변화와 실제 생활·비즈니스 현장에서 생산성과 창의성을 확장하는 방법을 강의와 실전 사례로 전달하고 있다.',
+    ],
+    careers: [
+      '현) ISO/IEC 17024 국제표준 AI 부문 인공지능 교육지도사 자격 보유',
+      '현) 텍타일 AI 기반 뷰티 테스터',
+      '현) 스위스 그로바나(Grovana) 시계 앰버서더',
+      '현) N사 플레이스 상위 1% 리뷰어',
+      '현) N사 쇼핑 베스트 리뷰어',
+      '현) K-리뷰어',
+      '현) 주식회사 쇼팜 대표이사',
     ],
   },
 ];
@@ -50,18 +70,22 @@ interface BookOffer {
   title: string;
 }
 
+const BOOK_BLOG_MASTER_ID = 'book-blog-master';
+
+const LEE_HYUN_GIL_BOOKS: BookOffer[] = [
+  { id: 'book-ai-intro-1', title: 'AI 전문가 국제자격증 과정 AI 실습 인문서 1 『AI, 낯설지만 필요한 이야기』 (공저)' },
+  { id: 'book-ai-intro-2', title: 'AI 전문가 국제자격증 과정 AI 실습 인문서 2 『AI, 무엇을 알고 활용해야 하는가』 (공저)' },
+  { id: 'book-creator', title: 'AI ISO/IEC 17024 국제자격증 『크리에이터 과정』' },
+  { id: 'book-prompt-engineer', title: 'AI ISO/IEC 17024 국제자격증 『프롬프트 엔지니어 과정』' },
+  { id: BOOK_BLOG_MASTER_ID, title: '마케팅 실무 도서 『네이버 블로그 마스터』' },
+  { id: 'book-ai-package-12', title: 'AI 패키지 1. AI와 짧은 동행 12' },
+];
+
 const INSTRUCTOR_BOOKS: Record<string, BookOffer[]> = {
-  이현길: [
-    { id: 'book-ai-intro-1', title: 'AI 전문가 국제자격증 과정 AI 실습 인문서 1 『AI, 낯설지만 필요한 이야기』 (공저)' },
-    { id: 'book-ai-intro-2', title: 'AI 전문가 국제자격증 과정 AI 실습 인문서 2 『AI, 무엇을 알고 활용해야 하는가』 (공저)' },
-    { id: 'book-creator', title: 'AI ISO/IEC 17024 국제자격증 『크리에이터 과정』' },
-    { id: 'book-prompt-engineer', title: 'AI ISO/IEC 17024 국제자격증 『프롬프트 엔지니어 과정』' },
-    { id: 'book-blog-master', title: '마케팅 실무 도서 『네이버 블로그 마스터』' },
-    { id: 'book-ai-package-12', title: 'AI 패키지 1. AI와 짧은 동행 12' },
-  ],
-  남동선: [
-    { id: 'book-intro-2', title: 'IQCS 국제 AI 실습 입문 2 - AI, 낯설지만 필요한 이야기' },
-    { id: 'book-intro-1', title: 'IQCS 국제 AI 실습 입문 1 - AI, 낯설지만 필요한 이야기' },
+  이현길: LEE_HYUN_GIL_BOOKS,
+  남동선: LEE_HYUN_GIL_BOOKS.filter((book) => book.id !== BOOK_BLOG_MASTER_ID),
+  이경민: [
+    { id: 'book-lee-kyungmin-ai-package-12', title: 'AI 패키지 1. AI와 짧은 동행 12' },
   ],
 };
 

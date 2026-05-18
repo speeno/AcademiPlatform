@@ -1,14 +1,16 @@
 import type { Metadata } from 'next';
-import { TrendingUp, Globe, Award, Briefcase, Users, Star } from 'lucide-react';
+import { TrendingUp, Globe, Award, Briefcase, Users, Star, CheckCircle2 } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { PageShell } from '@/components/layout/PageShell';
+import { BrandBadge } from '@/components/ui/brand-badge';
+import { ISO_QUALIFICATIONS, ISO_STANDARDS_ORGS } from '@/lib/iso-qualifications';
 
 export const metadata: Metadata = { title: '자격 취득 이점', description: 'AcademiQ AI 자격증 취득 시 얻을 수 있는 이점을 안내합니다.' };
 
 const benefits = [
   { icon: Globe, accent: 'blue' as const, title: '국제적 공신력', desc: 'ISO/IEC 17024 국제 표준에 따라 인증된 자격으로, 글로벌 무대에서 역량을 증명할 수 있습니다.' },
   { icon: TrendingUp, accent: 'orange' as const, title: '경력 차별화', desc: 'AI 분야 전문성을 공식적으로 인증받아 취업 및 승진에서 경쟁 우위를 확보하세요.' },
-  { icon: Award, accent: 'sky' as const, title: '정부 인정 자격', desc: '국내 공인 자격 기관의 검증을 거친 자격으로 기업 및 기관에서 공식적으로 인정받습니다.' },
+  { icon: Award, accent: 'sky' as const, title: '국제표준화기구', desc: 'ISO·IEC·SCC·IQCS 등 국제 표준 체계를 통해 검증된 자격으로, 전 세계적으로 통용되는 공신력을 갖춥니다.' },
   { icon: Briefcase, accent: 'green' as const, title: '취업/이직 우대', desc: '주요 IT 기업 및 공공기관에서 AI 자격 보유자에게 가산점 및 우대 혜택을 제공합니다.' },
   { icon: Users, accent: 'blue' as const, title: '전문가 네트워크', desc: '자격 취득 후 전국 AI 전문가 네트워크에 참여하여 정보를 공유하고 협업 기회를 넓히세요.' },
   { icon: Star, accent: 'orange' as const, title: '지속적 역량 개발', desc: '자격 유지 및 갱신 과정을 통해 빠르게 변화하는 AI 트렌드에 지속적으로 대응할 수 있습니다.' },
@@ -39,6 +41,50 @@ export default function BenefitsPage() {
                 </div>
               </BrandCard>
             ))}
+          </div>
+
+          <div className="mt-14">
+            <h2 className="text-2xl font-bold mb-6 text-brand-blue">국제 표준화 기구</h2>
+            <div className="space-y-3">
+              {ISO_STANDARDS_ORGS.map((org) => (
+                <details
+                  key={org.abbr}
+                  className="bg-white border border-border rounded-xl group overflow-hidden shadow-sm"
+                >
+                  <summary className="flex items-start justify-between gap-3 px-5 py-4 cursor-pointer select-none hover:bg-muted/30 list-none [&::-webkit-details-marker]:hidden">
+                    <div>
+                      <span className="font-bold text-brand-blue mr-2">{org.abbr}</span>
+                      <span className="font-medium text-foreground">{org.title}</span>
+                      <p className="text-xs text-muted-foreground mt-1">{org.fullName}</p>
+                    </div>
+                  </summary>
+                  <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed border-t bg-muted/20">
+                    <p className="pt-4">{org.desc}</p>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-14">
+            <h2 className="text-2xl font-bold mb-5 text-brand-blue">자격증 종류</h2>
+            <div className="space-y-3">
+              {ISO_QUALIFICATIONS.map((q) => (
+                <div
+                  key={q.name}
+                  className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-brand-sky transition-colors"
+                >
+                  <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0 text-brand-orange" />
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="font-semibold text-foreground">{q.name}</span>
+                      <BrandBadge variant="orange">{q.subtitle}</BrandBadge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{q.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </PageShell>
       </section>

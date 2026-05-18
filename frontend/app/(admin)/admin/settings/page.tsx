@@ -11,7 +11,7 @@ const SETTING_META: Record<string, { label: string; type: string; placeholder: s
   site_name:          { label: '사이트 이름', type: 'text', placeholder: 'AcademiQ' },
   site_contact_email: { label: '대표 이메일', type: 'email', placeholder: 'academiq2026@gmail.com' },
   site_contact_phone: { label: '대표 전화번호', type: 'text', placeholder: '대표 전화번호' },
-  site_address:       { label: '주소', type: 'text', placeholder: '성사동 롯데캐슬스카이엘 107-2301' },
+  site_address:       { label: '주소', type: 'text', placeholder: '' },
   max_concurrent_sessions: { label: '최대 동시 재생 세션 수', type: 'number', placeholder: '1' },
   ses_from_email:     { label: 'SES 발신 이메일', type: 'email', placeholder: 'noreply@academiq.co.kr' },
 };

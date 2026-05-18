@@ -14,7 +14,7 @@ const introMenuItems = [
   {
     href: '/about/qualification',
     icon: Award,
-    title: 'ISO/IEC 17024 자격 개요',
+    title: 'ISO/IEC 17024 자격증 개요',
     desc: '국제 표준 기반의 AI 개인 자격 인증 체계와 공신력을 확인하세요.',
     color: 'var(--brand-blue)',
     bg: 'var(--brand-blue-subtle)',

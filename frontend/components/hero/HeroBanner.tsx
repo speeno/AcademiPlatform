@@ -93,7 +93,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     subtitle:
       '실무 역량을 쌓은 뒤, 필요 시 ISO/IEC 17024 기반 AI 자격으로 공신력을 더할 수 있습니다.\n교육·시험 접수도 같은 플랫폼에서 이어집니다.',
     primaryButton: { text: '교육과정 보기', href: '/courses' },
-    secondaryButton: { text: '시험 접수 바로가기', href: '/exam' },
+    secondaryButton: { text: '자격증시험 온라인 접수', href: '/exam' },
     promoCard: {
       image: '/covers/ai-iso-creator.png',
       title: 'AI ISO Creator 과정',

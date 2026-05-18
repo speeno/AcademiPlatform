@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { HeroBanner } from '@/components/hero/HeroBanner';
 import { API_BASE } from '@/lib/api-base';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
+import { BUSY_MODERN_MARKETING_COPY } from '@/lib/marketing-copy';
 
 export const metadata: Metadata = {
   title: 'AcademiQ — 실무 AI 교육·컨설팅',
@@ -59,6 +60,18 @@ const coreServices = [
     desc: '설명회·라이브 세션과 AI Tip 영상으로 최신 실무 인사이트를 제공합니다.',
     href: '/live',
     accent: 'green' as const,
+  },
+  {
+    title: 'AI 홈페이지',
+    desc: 'AI 기반 홈페이지 제작·운영 상담. 브랜드에 맞는 웹사이트를 설계합니다.',
+    href: '/services/ai-website',
+    accent: 'blue' as const,
+  },
+  {
+    title: '영상 제작 상담',
+    desc: '홍보·교육·마케팅 영상 기획부터 제작까지, 목적에 맞는 영상을 상담합니다.',
+    href: '/services/video-production',
+    accent: 'orange' as const,
   },
 ];
 
@@ -164,6 +177,24 @@ export default async function HomePage() {
               </BrandCard>
             ))}
           </div>
+
+          <BrandCard accent="orange" padding="lg" className="mt-8">
+            <p className="text-sm font-semibold text-brand-orange mb-2">{BUSY_MODERN_MARKETING_COPY.eyebrow}</p>
+            <h3 className="text-2xl font-extrabold text-brand-blue mb-3">
+              {BUSY_MODERN_MARKETING_COPY.title}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+              {BUSY_MODERN_MARKETING_COPY.description}
+            </p>
+            <ul className="space-y-2 text-sm text-foreground">
+              {BUSY_MODERN_MARKETING_COPY.points.map((point) => (
+                <li key={point} className="flex items-start gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-brand-orange shrink-0" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </BrandCard>
         </div>
       </section>
 
@@ -183,7 +214,7 @@ export default async function HomePage() {
               전체 서비스 보기 <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </header>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {coreServices.map((service) => (
               <Link key={service.title} href={service.href} className="block h-full">
                 <BrandCard
@@ -325,6 +356,15 @@ export default async function HomePage() {
                 className="min-h-11 border-2 border-white text-white bg-transparent hover:bg-white/10 hover:text-white focus-visible:ring-white"
               >
                 교육과정 보기
+              </BrandButton>
+            </Link>
+            <Link href="/exam">
+              <BrandButton
+                size="lg"
+                variant="outline"
+                className="min-h-11 border-2 border-white text-white bg-transparent hover:bg-white/10 hover:text-white focus-visible:ring-white"
+              >
+                자격증시험 온라인 접수
               </BrandButton>
             </Link>
           </div>

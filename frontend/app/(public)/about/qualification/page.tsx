@@ -1,22 +1,17 @@
 import Link from 'next/link';
-import { Globe, Shield, Award, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Globe, Shield, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PageShell } from '@/components/layout/PageShell';
+import { ISO_QUALIFICATIONS } from '@/lib/iso-qualifications';
+import { BUSY_MODERN_MARKETING_COPY } from '@/lib/marketing-copy';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ISO/IEC 17024 자격 개요',
+  title: 'ISO/IEC 17024 자격증 개요',
   description: 'ISO/IEC 17024 국제 표준 기반 AI 개인 자격 인증 체계와 공신력을 확인하세요.',
 };
-
-const qualifications = [
-  { name: 'AI 활용 전문가', level: '1급', desc: '생성형 AI를 업무 및 실생활에 효과적으로 활용' },
-  { name: 'AI 활용 전문가', level: '2급', desc: '기초 AI 도구 활용 및 프롬프트 엔지니어링' },
-  { name: 'AI 교육 지도사', level: '1급', desc: 'AI 교육 과정 설계 및 강의 역량 인증' },
-  { name: 'AI 콘텐츠 전문가', level: '1급', desc: 'AI 기반 콘텐츠 기획·제작·운영' },
-];
 
 export default function QualificationPage() {
   return (
@@ -26,15 +21,38 @@ export default function QualificationPage() {
           <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
             <Link href="/about" className="hover:text-brand-blue">소개</Link>
             <span>/</span>
-            <span className="text-brand-blue" >ISO/IEC 17024 자격 개요</span>
+            <span className="text-brand-blue" >ISO/IEC 17024 자격증 개요</span>
           </div>
           <BrandBadge variant="blue" dot className="mb-3">국제 표준 인증</BrandBadge>
           <h1 className="text-3xl md:text-4xl font-extrabold mb-4 text-brand-blue" >
-            ISO/IEC 17024<br />자격 개요
+            ISO/IEC 17024<br />자격증 개요
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl">
             세계가 인정하는 국제 표준 ISO/IEC 17024 기반의 공신력 있는 AI 분야 개인 자격 인증입니다.
           </p>
+        </PageShell>
+      </section>
+
+      <section className="py-10 bg-white border-b">
+        <PageShell size="content" flush>
+          <BrandCard accent="orange" padding="lg">
+            <p className="text-sm font-semibold text-brand-orange mb-2">
+              {BUSY_MODERN_MARKETING_COPY.eyebrow}
+            </p>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-brand-blue mb-3">
+              {BUSY_MODERN_MARKETING_COPY.title}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+              {BUSY_MODERN_MARKETING_COPY.description}
+            </p>
+            <div className="grid gap-3 md:grid-cols-3">
+              {BUSY_MODERN_MARKETING_COPY.points.map((point) => (
+                <div key={point} className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground">
+                  {point}
+                </div>
+              ))}
+            </div>
+          </BrandCard>
         </PageShell>
       </section>
 
@@ -43,7 +61,7 @@ export default function QualificationPage() {
         <div className="space-y-10">
           {/* 자격 개요 */}
           <div>
-            <h2 className="text-2xl font-bold mb-5 text-brand-blue" >자격 개요</h2>
+            <h2 className="text-2xl font-bold mb-5 text-brand-blue" >자격증 개요</h2>
             <div className="grid md:grid-cols-3 gap-5">
               {[
                 { icon: Globe, title: '국제 표준', desc: 'ISO/IEC 17024는 개인 자격 인증 기관에 대한 국제 표준으로, 전 세계 170여 개국에서 통용됩니다.' },
@@ -66,15 +84,15 @@ export default function QualificationPage() {
 
           {/* 자격 종류 */}
           <div>
-            <h2 className="text-2xl font-bold mb-5 text-brand-blue" >자격 종류</h2>
+            <h2 className="text-2xl font-bold mb-5 text-brand-blue" >자격증 종류</h2>
             <div className="space-y-3">
-              {qualifications.map((q) => (
-                <div key={q.name + q.level} className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-brand-sky transition-colors">
+              {ISO_QUALIFICATIONS.map((q) => (
+                <div key={q.name} className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-brand-sky transition-colors">
                   <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0 text-brand-orange"  />
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="font-semibold text-foreground">{q.name}</span>
-                      <BrandBadge variant="orange">{q.level}</BrandBadge>
+                      <BrandBadge variant="orange">{q.subtitle}</BrandBadge>
                     </div>
                     <p className="text-sm text-muted-foreground">{q.desc}</p>
                   </div>

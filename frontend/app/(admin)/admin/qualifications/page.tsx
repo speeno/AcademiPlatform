@@ -142,7 +142,7 @@ export default function AdminQualificationsPage() {
             자격 소개 관리
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            시험 접수 페이지에 표시되는 자격 소개 항목을 관리합니다.
+            시험 접수 페이지에 표시되는 자격 소개 항목을 관리합니다. subtitle·keywords는 공개 `qualification_intros`와 시험 회차 자격명과 함께 유지하세요.
           </p>
         </div>
         <BrandButton variant="primary" size="sm" onClick={addItem}>

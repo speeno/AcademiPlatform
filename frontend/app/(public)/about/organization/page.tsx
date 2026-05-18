@@ -72,7 +72,6 @@ export default function OrganizationPage() {
           {/* 주소 */}
           <div className="bg-white rounded-2xl border p-6 text-sm text-muted-foreground space-y-2">
             <h3 className="font-bold text-foreground mb-3">연락처</h3>
-            <p>📍 성사동 롯데캐슬스카이엘 107-2301</p>
             <p>✉️ academiq2026@gmail.com</p>
             <p>🕒 운영시간: 평일 09:00 ~ 18:00 (주말·공휴일 휴무)</p>
           </div>

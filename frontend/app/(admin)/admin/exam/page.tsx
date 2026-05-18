@@ -189,7 +189,7 @@ export default function AdminExamPage() {
     <div>
       <PageHeader
         title="시험 회차 관리"
-        description={`총 ${sessions.length}개 회차`}
+        description={`총 ${sessions.length}개 회차 · 공개 자격 소개(\`/admin/qualifications\`)와 시험 회차 자격명을 함께 맞춰주세요.`}
         actions={
           <BrandButton variant="primary" size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-1" /> 회차 등록
@@ -211,7 +211,7 @@ export default function AdminExamPage() {
             <h2 className="text-lg font-bold mb-5">{editing ? '회차 수정' : '회차 등록'}</h2>
             <div className="space-y-4">
               {[
-                { label: '자격명', key: 'qualificationName', type: 'text', placeholder: 'AI 활용 전문가 1급' },
+                { label: '자격명', key: 'qualificationName', type: 'text', placeholder: 'AI 크리에이터' },
                 { label: '회차명', key: 'roundName', type: 'text', placeholder: '2026-1회차' },
                 { label: '시험 일시', key: 'examAt', type: 'datetime-local', placeholder: '' },
                 { label: '접수 시작', key: 'applyStartAt', type: 'datetime-local', placeholder: '' },

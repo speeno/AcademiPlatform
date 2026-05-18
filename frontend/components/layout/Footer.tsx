@@ -1,17 +1,19 @@
 import Link from 'next/link';
 import { LogoHorizontal } from './Logo';
-import { Mail, MapPin } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 const footerLinks = {
   서비스: [
     { label: '핵심 서비스 한눈에', href: '/services' },
     { label: '기업 교육', href: '/services/corporate' },
     { label: 'AI 컨설팅·도입', href: '/services/consulting' },
+    { label: 'AI 홈페이지', href: '/services/ai-website' },
+    { label: '영상 제작 상담', href: '/services/video-production' },
     { label: '교육과정 보기', href: '/courses' },
     { label: '라이브·콘텐츠', href: '/live' },
   ],
   소개: [
-    { label: 'ISO/IEC 17024 자격 개요', href: '/about/qualification' },
+    { label: 'ISO/IEC 17024 자격증 개요', href: '/about/qualification' },
     { label: '자격 취득 이점', href: '/about/benefits' },
     { label: '활용 분야', href: '/about/fields' },
     { label: '기관 소개', href: '/about/organization' },
@@ -26,7 +28,7 @@ const footerLinks = {
   ],
   시험접수: [
     { label: '시험 안내', href: '/about/exam' },
-    { label: '시험 일정', href: '/exam' },
+    { label: '자격증시험 온라인 접수', href: '/exam' },
     { label: '마이페이지', href: '/mypage' },
   ],
   고객지원: [
@@ -60,10 +62,6 @@ export function Footer() {
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span className="break-all">academiq2026@gmail.com</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 mt-0.5" />
-                <span>성사동 롯데캐슬스카이엘 107-2301</span>
               </div>
             </div>
           </div>
