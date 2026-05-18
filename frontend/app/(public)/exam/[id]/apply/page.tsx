@@ -7,7 +7,13 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { buildAuthHeader, getAccessToken, redirectToLogin } from '@/lib/auth';
+import {
+  buildAuthHeader,
+  ensureAuthCookieSync,
+  forceLogoutToLogin,
+  getAccessToken,
+  verifyAuthSession,
+} from '@/lib/auth';
 import {
   getMemberDepositAccount,
   type ReferrerGroup,
@@ -48,13 +54,32 @@ export default function ExamApplyPage() {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    let active = true;
     const applyPath = `/exam/${sessionId}/apply`;
-    if (!getAccessToken()) {
-      redirectToLogin(router, applyPath);
-      return;
-    }
-    setAuthReady(true);
-  }, [router, sessionId]);
+
+    const boot = async () => {
+      ensureAuthCookieSync();
+      if (!getAccessToken()) {
+        forceLogoutToLogin(applyPath);
+        return;
+      }
+
+      const session = await verifyAuthSession();
+      if (!active) return;
+
+      if (!session.valid) {
+        forceLogoutToLogin(applyPath);
+        return;
+      }
+
+      setAuthReady(true);
+    };
+
+    void boot();
+    return () => {
+      active = false;
+    };
+  }, [sessionId]);
 
   useEffect(() => {
     if (!authReady) return;

@@ -15,7 +15,6 @@ interface ExamApplyButtonProps {
 export function ExamApplyButton({ sessionId, isOpen, statusLabel }: ExamApplyButtonProps) {
   const router = useRouter();
   const isLoggedIn = useAuthState() === true;
-
   const applyPath = `/exam/${sessionId}/apply`;
 
   const handleClick = () => {
