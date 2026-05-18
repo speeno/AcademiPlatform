@@ -7,34 +7,13 @@ import type { Metadata } from 'next';
 import { HeroBanner } from '@/components/hero/HeroBanner';
 import { API_BASE } from '@/lib/api-base';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
-import { BUSY_MODERN_MARKETING_COPY } from '@/lib/marketing-copy';
+import { MarketingHighlight } from '@/components/marketing/MarketingHighlight';
 
 export const metadata: Metadata = {
   title: 'AcademiQ — 실무 AI 교육·컨설팅',
   description:
     '기업·개인을 위한 실무형 AI 교육, 컨설팅, 업무 자동화. 학습부터 현장 적용·자격 경로까지 AcademiQ에서 시작하세요.',
 };
-
-const features = [
-  {
-    iconSrc: '/icons/icon-edu.svg',
-    title: '실무 중심 교육',
-    desc: '직무·업종에 맞춘 AI 커리큘럼. 영상·PDF·라이브 강의로 배운 내용을 현장에 바로 적용합니다.',
-    accent: 'none' as const,
-  },
-  {
-    iconSrc: '/icons/icon-cert.svg',
-    title: 'ISO/IEC 17024 공신력 경로',
-    desc: '국제 표준 기반 자격·시험 접수. 실무 교육과 병행해 선택할 수 있는 공신력 경로입니다.',
-    accent: 'green' as const,
-  },
-  {
-    iconSrc: '/icons/icon-video.svg',
-    title: '성과와 자동화',
-    desc: '업무 프로세스 개선·자동화 설계를 함께 다룹니다. 생산성 향상을 목표로 학습과 실행을 연결합니다.',
-    accent: 'none' as const,
-  },
-];
 
 const coreServices = [
   {
@@ -160,43 +139,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="py-20 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold mb-3 text-brand-blue">왜 AcademiQ인가요?</h2>
-            <p className="text-muted-foreground">실무 교육·컨설팅·자동화를 한곳에서, 성과까지 이어지는 플랫폼</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {features.map((f) => (
-              <BrandCard key={f.title} accent={f.accent} padding="lg">
-                <div className="mb-4">
-                  <Image src={f.iconSrc} alt={f.title} width={56} height={56} className="object-contain" />
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-foreground">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </BrandCard>
-            ))}
-          </div>
-
-          <BrandCard accent="orange" padding="lg" className="mt-8">
-            <p className="text-sm font-semibold text-brand-orange mb-2">{BUSY_MODERN_MARKETING_COPY.eyebrow}</p>
-            <h3 className="text-2xl font-extrabold text-brand-blue mb-3">
-              {BUSY_MODERN_MARKETING_COPY.title}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-              {BUSY_MODERN_MARKETING_COPY.description}
-            </p>
-            <ul className="space-y-2 text-sm text-foreground">
-              {BUSY_MODERN_MARKETING_COPY.points.map((point) => (
-                <li key={point} className="flex items-start gap-2">
-                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-brand-orange shrink-0" />
-                  <span>{point}</span>
-                </li>
-              ))}
-            </ul>
-          </BrandCard>
-        </div>
-      </section>
+      <MarketingHighlight />
 
       <section className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

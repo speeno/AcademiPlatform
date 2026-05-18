@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Users, ClipboardList, Briefcase, CheckCircle2, Info } from 'lucide-react';
+import { Calendar, MapPin, Users, ClipboardList, Briefcase, CheckCircle2 } from 'lucide-react';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
@@ -126,22 +126,6 @@ export default async function ExamPage() {
             시험 접수
           </h1>
           <p className="text-muted-foreground">AI 자격 시험 일정을 확인하고 온라인으로 접수하세요.</p>
-        </PageShell>
-      </section>
-
-      <section className="py-6 bg-white border-b">
-        <PageShell flush>
-          <BrandCard accent="blue" padding="md" className="flex items-start gap-3">
-            <Info className="mt-0.5 h-5 w-5 shrink-0 text-brand-blue" />
-            <div className="space-y-2">
-              <p className="font-semibold text-foreground">어드민 동기화 안내</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                시험 접수 페이지의 자격 소개는 공개 설정 `qualification_intros`를 사용합니다. 자격명이나 설명을 바꾼 뒤에는
-                <span className="font-medium text-foreground"> `/admin/qualifications`</span> 에서 subtitle·keywords를,
-                <span className="font-medium text-foreground"> `/admin/exam`</span> 에서 시험 회차 자격명을 함께 맞춰주세요.
-              </p>
-            </div>
-          </BrandCard>
         </PageShell>
       </section>
 
