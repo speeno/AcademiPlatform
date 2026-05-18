@@ -55,11 +55,11 @@ export function SidebarShell({
 
   const closeMobile = () => setMobileOpen(false);
   const sidebarStyle: CSSProperties = {
-    transform: isDesktop || mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+    left: isDesktop || mobileOpen ? 0 : '-100%',
   };
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen overflow-x-hidden bg-muted/30">
       <button
         type="button"
         aria-label="메뉴 닫기"
@@ -75,8 +75,7 @@ export function SidebarShell({
         {...sidebarProps}
         className={cn(
           'fixed inset-y-0 left-0 z-50 lg:static lg:z-auto',
-          'transition-transform duration-300 ease-in-out',
-          'will-change-transform',
+          'transition-all duration-300 ease-in-out',
         )}
         style={sidebarStyle}
       />
