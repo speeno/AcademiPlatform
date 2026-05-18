@@ -13,7 +13,7 @@ import { BrandProgress } from '@/components/ui/brand-progress';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { SecurePdfViewer } from '@/components/pdf-viewer/SecurePdfViewer';
 import { API_BASE } from '@/lib/api-base';
-import { buildAuthHeader } from '@/lib/auth';
+import { buildAuthHeader, forceLogoutToLogin, getAccessToken } from '@/lib/auth';
 
 const VideoPlayer = dynamic(
   () => import('@/components/player/VideoPlayer').then((m) => ({ default: m.VideoPlayer })),
@@ -109,8 +109,11 @@ export default function CoursePlayerPage() {
 
   useEffect(() => {
     const load = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) { router.push('/login'); return; }
+      const token = getAccessToken();
+      if (!token) {
+        forceLogoutToLogin(`/classroom/${courseId}`);
+        return;
+      }
       try {
         const res = await fetch(`${API}/lms/courses/${courseId}`, {
           headers: buildAuthHeader(false),

@@ -123,12 +123,14 @@ export function Navbar() {
 
           {/* 우측 버튼 그룹 */}
           <div className="hidden lg:flex items-center gap-2">
-            <Link href={myEntryHref}>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand-blue">
-                {isAdmin ? <Shield className="w-4 h-4 mr-1" /> : <BookOpen className="w-4 h-4 mr-1" />}
-                {myEntryLabel}
-              </Button>
-            </Link>
+            {isAuthenticated && (
+              <Link href={myEntryHref}>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand-blue">
+                  {isAdmin ? <Shield className="w-4 h-4 mr-1" /> : <BookOpen className="w-4 h-4 mr-1" />}
+                  {myEntryLabel}
+                </Button>
+              </Link>
+            )}
             {authLoading ? (
               <Button
                 variant="outline"
@@ -194,12 +196,14 @@ export function Navbar() {
             </Link>
           ))}
           <div className="pt-3 border-t border-border flex flex-col gap-2">
-            <Link href={myEntryHref} onClick={() => setMobileOpen(false)}>
-              <Button variant="ghost" className="w-full text-foreground">
-                {isAdmin ? <Shield className="w-4 h-4 mr-1" /> : <BookOpen className="w-4 h-4 mr-1" />}
-                {myEntryLabel}
-              </Button>
-            </Link>
+            {isAuthenticated && (
+              <Link href={myEntryHref} onClick={() => setMobileOpen(false)}>
+                <Button variant="ghost" className="w-full text-foreground">
+                  {isAdmin ? <Shield className="w-4 h-4 mr-1" /> : <BookOpen className="w-4 h-4 mr-1" />}
+                  {myEntryLabel}
+                </Button>
+              </Link>
+            )}
             {authLoading ? (
               <Button variant="outline" disabled className="w-full border-brand-blue text-brand-blue">
                 확인중...

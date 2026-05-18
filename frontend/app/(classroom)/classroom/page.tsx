@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { BookOpen, Clock, ArrowRight } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 import { BrandCard } from '@/components/ui/brand-card';
 import { BrandProgress } from '@/components/ui/brand-progress';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { buildAuthHeader, getAccessToken, redirectToLogin } from '@/lib/auth';
+import { apiFetchWithAuth } from '@/lib/api-client';
+import { buildAuthHeader } from '@/lib/auth';
 
 interface Enrollment {
   id: string;
@@ -26,20 +26,16 @@ interface Enrollment {
 }
 
 export default function ClassroomPage() {
-  const router = useRouter();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEnrollments = async () => {
       try {
-        const token = getAccessToken();
-        if (!token) {
-          redirectToLogin(router, '/classroom');
-          return;
-        }
-        const headers = buildAuthHeader(false);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/lms/classroom`, { headers });
+        const res = await apiFetchWithAuth('/lms/classroom', {
+          headers: buildAuthHeader(false),
+          credentials: 'include',
+        });
         if (res.ok) {
           const data = await res.json();
           setEnrollments(data);
@@ -51,7 +47,7 @@ export default function ClassroomPage() {
       }
     };
     fetchEnrollments();
-  }, [router]);
+  }, []);
 
   if (loading) return <PageLoader />;
 

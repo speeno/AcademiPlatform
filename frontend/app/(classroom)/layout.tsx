@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   BookOpen, ClipboardList, CreditCard, User, Library, MessageSquare, FileText,
 } from 'lucide-react';
 import { SidebarShell } from '@/components/layout/SidebarShell';
 import { type SidebarNavItem } from '@/components/layout/AppSidebar';
-import { API_BASE } from '@/lib/api-base';
-import { buildAuthHeader, ensureAuthCookieSync } from '@/lib/auth';
+import { PageLoader } from '@/components/ui/page-loader';
+import { ensureAuthCookieSync, forceLogoutToLogin, verifyAuthSession } from '@/lib/auth';
 
 const baseNavItems: SidebarNavItem[] = [
   { href: '/classroom', icon: BookOpen, label: '내 강의실', matchPrefix: true },
@@ -27,37 +28,33 @@ const instructorNavItems: SidebarNavItem[] = [
 ];
 
 export default function ClassroomLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [authReady, setAuthReady] = useState(false);
   const [role, setRole] = useState<string>('');
 
   useEffect(() => {
-    ensureAuthCookieSync();
     let active = true;
-    const loadMe = async () => {
-      try {
-        const headers = buildAuthHeader(false);
-        if (!headers.Authorization) return;
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          headers,
-          credentials: 'include',
-        });
-        if (!active) return;
-        if (!res.ok) {
-          console.warn('[classroom] /auth/me failed:', res.status);
-          return;
-        }
-        const me = await res.json().catch(() => ({}));
-        if (!active) return;
-        setRole(typeof me?.role === 'string' ? me.role : '');
-      } catch (err) {
-        if (!active) return;
-        console.warn('[classroom] /auth/me error:', err);
+    setAuthReady(false);
+
+    const boot = async () => {
+      ensureAuthCookieSync();
+      const session = await verifyAuthSession();
+      if (!active) return;
+
+      if (!session.valid) {
+        forceLogoutToLogin(pathname);
+        return;
       }
+
+      setRole(session.role ?? '');
+      setAuthReady(true);
     };
-    loadMe();
+
+    boot();
     return () => {
       active = false;
     };
-  }, []);
+  }, [pathname]);
 
   const navItems = useMemo(() => {
     const canSeeInstructorMenu =
@@ -66,6 +63,10 @@ export default function ClassroomLayout({ children }: { children: React.ReactNod
       ? [...baseNavItems.slice(0, 2), ...instructorNavItems, ...baseNavItems.slice(2)]
       : baseNavItems;
   }, [role]);
+
+  if (!authReady) {
+    return <PageLoader />;
+  }
 
   return (
     <SidebarShell
