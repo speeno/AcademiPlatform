@@ -6,3 +6,5 @@ export { PageShell } from './PageShell';
 export { Section } from './Section';
 export { AppSidebar } from './AppSidebar';
 export type { SidebarNavGroup, SidebarNavItem, SidebarVariant } from './AppSidebar';
+export { SidebarShell } from './SidebarShell';
+export type { SidebarShellProps } from './SidebarShell';

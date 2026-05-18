@@ -5,9 +5,10 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   BookOpen, ClipboardList, CreditCard, User, Library, MessageSquare, FileText,
 } from 'lucide-react';
-import { AppSidebar, type SidebarNavItem } from '@/components/layout/AppSidebar';
+import { SidebarShell } from '@/components/layout/SidebarShell';
+import { type SidebarNavItem } from '@/components/layout/AppSidebar';
 import { API_BASE } from '@/lib/api-base';
-import { buildAuthHeader } from '@/lib/auth';
+import { buildAuthHeader, ensureAuthCookieSync } from '@/lib/auth';
 
 const baseNavItems: SidebarNavItem[] = [
   { href: '/classroom', icon: BookOpen, label: '내 강의실', matchPrefix: true },
@@ -29,6 +30,7 @@ export default function ClassroomLayout({ children }: { children: React.ReactNod
   const [role, setRole] = useState<string>('');
 
   useEffect(() => {
+    ensureAuthCookieSync();
     let active = true;
     const loadMe = async () => {
       try {
@@ -66,21 +68,21 @@ export default function ClassroomLayout({ children }: { children: React.ReactNod
   }, [role]);
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <AppSidebar
-        variant="light"
-        eyebrow="마이페이지"
-        groups={[{ items: navItems }]}
-        footer={
+    <SidebarShell
+      mobileTitle="마이페이지"
+      sidebarProps={{
+        variant: 'light',
+        eyebrow: '마이페이지',
+        groups: [{ items: navItems }],
+        footer: (
           <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">
             ← 홈으로
           </Link>
-        }
-      />
-
-      <main className="flex-1 overflow-auto p-6 md:p-8">
-        {children}
-      </main>
-    </div>
+        ),
+      }}
+      mainClassName="p-6 md:p-8"
+    >
+      {children}
+    </SidebarShell>
   );
 }

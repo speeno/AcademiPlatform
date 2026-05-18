@@ -6,7 +6,8 @@ import {
   CreditCard, Bell, Settings, FileText, HelpCircle,
   MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award, BarChart3,
 } from 'lucide-react';
-import { AppSidebar, type SidebarNavGroup } from '@/components/layout/AppSidebar';
+import { SidebarShell } from '@/components/layout/SidebarShell';
+import { type SidebarNavGroup } from '@/components/layout/AppSidebar';
 
 const navGroups: SidebarNavGroup[] = [
   {
@@ -63,25 +64,22 @@ const navGroups: SidebarNavGroup[] = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <AppSidebar
-        variant="dark"
-        eyebrow="관리자"
-        homeHref="/admin/dashboard"
-        groups={navGroups}
-        width="md"
-        footer={
+    <SidebarShell
+      mobileTitle="관리자"
+      sidebarProps={{
+        variant: 'dark',
+        eyebrow: '관리자',
+        homeHref: '/admin/dashboard',
+        groups: navGroups,
+        width: 'md',
+        footer: (
           <Link href="/" className="text-xs text-white/60 hover:text-white">
             ← 사이트로 돌아가기
           </Link>
-        }
-      />
-
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 md:p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+        ),
+      }}
+    >
+      <div className="p-6 md:p-8">{children}</div>
+    </SidebarShell>
   );
 }

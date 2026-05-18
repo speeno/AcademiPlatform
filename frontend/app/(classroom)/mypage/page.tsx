@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { User, Mail, Phone, Shield, Save, ExternalLink, Pencil } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
+import { apiFetchWithAuth } from '@/lib/api-client';
+import { ensureAuthCookieSync, forceLogoutToLogin, getAccessToken } from '@/lib/auth';
 import { toast } from 'sonner';
 
 const roleLabel: Record<string, string> = {
@@ -36,7 +36,6 @@ interface MyVoucher {
 }
 
 export default function MyPagePage() {
-  const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -57,18 +56,27 @@ export default function MyPagePage() {
         const data = await meRes.json();
         setMe(data);
         setProfileForm({ name: data.name ?? '', phone: data.phone ?? '' });
-      } else router.push('/login');
+      } else {
+        forceLogoutToLogin('/mypage');
+        return;
+      }
       if (voucherRes.ok) {
         setVouchers(await voucherRes.json());
       }
-    } catch { router.push('/login'); }
-  }, [router]);
+    } catch {
+      forceLogoutToLogin('/mypage');
+    }
+  }, []);
 
   useEffect(() => {
+    ensureAuthCookieSync();
     const token = getAccessToken();
-    if (!token) { router.push('/login'); return; }
+    if (!token) {
+      forceLogoutToLogin('/mypage');
+      return;
+    }
     loadMe().finally(() => setLoading(false));
-  }, [loadMe, router]);
+  }, [loadMe]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,15 +2,26 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
+/**
+ * AcademiQ 브랜드 로고.
+ *
+ * 보류 (Deferred): Connected Q 리파인 — 브랜드 SVG 에셋 작업 선행 필요.
+ * 진행 절차는 `frontend/docs/design-system.md` §7-1 참조.
+ * 에셋 교체 시 본 파일에서는 각 컴포넌트의 `src` 경로(`/logo/logo-*.png`)
+ * 와 `sizeMap` 종횡비만 조정하면 되며, 사용처(Navbar/Footer/Auth)는
+ * 그대로 유지된다.
+ */
+
 /* ── Logo (Navbar, 사이드바) ──────────────────────────────── */
 interface LogoProps {
   variant?: 'full' | 'wordmark' | 'symbol';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
   href?: string;
 }
 
 const sizeMap = {
+  xs: { width: 120, height: 22 },
   sm: { width: 161, height: 30 },
   md: { width: 268, height: 60 },
   lg: { width: 269, height: 50 },

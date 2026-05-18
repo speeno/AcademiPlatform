@@ -259,8 +259,35 @@ import { DataTable } from '@/components/ui/data-table';
 
 ---
 
+## 7-1. 보류 (Deferred) 항목
+
+### Connected Q 로고 리파인 (3차)
+
+홈페이지 개선 검토([`.cursor/plans/홈페이지_가이드_검토_*.plan.md`](.cursor/plans/) §F)에서 도출된 **3차 보류** 작업입니다. 코드 변경 전 브랜드 에셋 작업이 선행되어야 하므로 의도적으로 분리되어 있습니다.
+
+#### 선행 조건 (에셋 작업)
+
+- [ ] 신규 Connected Q 심볼 SVG 디자인 (현재 `/public/logo/logo-mark-v3.png` 대체 후보)
+- [ ] Wordmark·Horizontal 변형 재출력 (`logo-main-v4.png`, `logo-horizontal-v3.png` 계열)
+- [ ] 가이드라인: 안전 영역·최소 크기·단색/역상 변형 정의
+
+#### 코드 변경 시작 지점
+
+- [`frontend/components/layout/Logo.tsx`](../components/layout/Logo.tsx) — `Logo` / `LogoHorizontal` / `LogoFull` 3개 컴포넌트의 `src` 경로 (현재 `/logo/logo-*.png`)
+  - PNG → SVG 전환 시 `<Image unoptimized>` 제거 가능 여부 검토 (SVG는 Next/Image 최적화에서 그대로 통과)
+  - `sizeMap` 의 픽셀 치수는 새 에셋 종횡비에 맞춰 재조정
+- 그라디언트 토큰(`--gradient-logo`, [`globals.css`](../app/globals.css))은 **5색 유지** — 현 브랜드 정책과 일치
+- Navbar/Footer/Auth 레이아웃에서 사용처가 이미 컴포넌트화되어 있어 **추가 호출처 수정 불필요**
+
+#### 진행 트리거
+
+브랜드 팀에서 SVG 자산이 [`frontend/public/logo/`](../public/logo/)에 추가된 이후 — `Logo.tsx` `src` 1줄 단위 PR로 점진 교체.
+
+---
+
 ## 8. 변경 이력
 
 | 날짜 | 내용 |
 |------|------|
 | 2026-05-17 | Phase 0~5 — Harness 디자인 3에이전트·2스킬, design-system 코어, AppSidebar/DataTable, Loader/h1/error 패턴 일괄 토큰화, 빌드 통과 |
+| 2026-05-18 | 홈페이지 가이드 검토 적용 (Phase 2): `/services` 허브 + `/services/corporate`·`/services/consulting` 서브페이지, Navbar/Footer 서비스 IA 반영. Connected Q 로고 리파인은 §7-1로 보류 명시 |

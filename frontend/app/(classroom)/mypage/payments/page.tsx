@@ -6,7 +6,8 @@ import { CreditCard } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
+import { apiFetchWithAuth } from '@/lib/api-client';
+import { ensureAuthCookieSync, forceLogoutToLogin, getAccessToken } from '@/lib/auth';
 
 const targetTypeLabel: Record<string, string> = {
   ENROLLMENT:       '수강 신청',
@@ -39,8 +40,12 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     const fetch_ = async () => {
+      ensureAuthCookieSync();
       const token = getAccessToken();
-      if (!token) { router.push('/login'); return; }
+      if (!token) {
+        forceLogoutToLogin('/mypage/payments');
+        return;
+      }
       try {
         const res = await apiFetchWithAuth('/payments/my');
         if (res.ok) setPayments(await res.json());

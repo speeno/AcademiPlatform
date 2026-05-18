@@ -3,6 +3,13 @@ import { LogoHorizontal } from './Logo';
 import { Mail, MapPin } from 'lucide-react';
 
 const footerLinks = {
+  서비스: [
+    { label: '핵심 서비스 한눈에', href: '/services' },
+    { label: '기업 교육', href: '/services/corporate' },
+    { label: 'AI 컨설팅·도입', href: '/services/consulting' },
+    { label: '교육과정 보기', href: '/courses' },
+    { label: '라이브·콘텐츠', href: '/live' },
+  ],
   소개: [
     { label: 'ISO/IEC 17024 자격 개요', href: '/about/qualification' },
     { label: '자격 취득 이점', href: '/about/benefits' },
@@ -13,7 +20,6 @@ const footerLinks = {
   교육과정: [
     { label: '과정 목록', href: '/courses' },
     { label: '수강 신청', href: '/courses#enroll' },
-    { label: '라이브/설명회', href: '/live' },
     { label: 'AI Tip 영상', href: '/shorts' },
     { label: '온라인 교재', href: '/textbooks' },
     { label: '교재 별도 구매', href: '/books' },
@@ -34,36 +40,44 @@ const footerLinks = {
 export function Footer() {
   return (
     <footer className="bg-brand-blue-dark text-white/85">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* 브랜드 */}
-          <div className="lg:col-span-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8">
+          {/* 브랜드 — 모바일에서도 표시 */}
+          <div className="md:col-span-3 lg:col-span-1">
             <div className="mb-3">
-              <LogoHorizontal height={45} />
+              <LogoHorizontal
+                height={32}
+                className="!h-8 sm:!h-[38px] lg:!h-[45px] w-auto"
+              />
             </div>
-            <p className="text-sm italic mb-4 text-brand-sky">Learn · Certify · Succeed</p>
-            <div className="space-y-2 text-sm text-white/70">
+            <p className="text-xs sm:text-sm text-white/80 mb-2 leading-relaxed">
+              기업·개인을 위한 실무형 AI 교육·컨설팅 플랫폼입니다.
+            </p>
+            <p className="text-xs sm:text-sm italic mb-3 sm:mb-4 text-brand-sky">
+              Learn · Certify · Succeed
+            </p>
+            <div className="space-y-2 text-xs sm:text-sm text-white/70">
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 shrink-0" />
-                <span>academiq2026@gmail.com</span>
+                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="break-all">academiq2026@gmail.com</span>
               </div>
               <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 shrink-0 mt-0.5" />
+                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 mt-0.5" />
                 <span>성사동 롯데캐슬스카이엘 107-2301</span>
               </div>
             </div>
           </div>
 
-          {/* 링크 그룹 */}
+          {/* 링크 그룹 — md 이상(태블릿·데스크톱)에서만 표시 */}
           {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
-              <h4 className="text-sm font-semibold text-white mb-3">{category}</h4>
-              <ul className="space-y-2">
+            <div key={category} className="hidden md:block">
+              <h4 className="text-xs sm:text-sm font-semibold text-white mb-2">{category}</h4>
+              <ul className="space-y-1.5 sm:space-y-2">
                 {links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-white/70 hover:text-white transition-colors"
+                      className="text-xs sm:text-sm text-white/70 hover:text-white transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -75,18 +89,22 @@ export function Footer() {
         </div>
 
         {/* 로고 그라디언트 구분선 */}
-        <div className="mt-10 mb-6 h-px bg-logo-gradient opacity-40" />
+        <div className="mt-4 md:mt-6 sm:mt-8 lg:mt-10 mb-4 sm:mb-6 h-px bg-logo-gradient opacity-40" />
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-white/60">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3 text-[10px] sm:text-xs text-white/60">
           <div className="text-center md:text-left">
             <p>© 2026 AcademiQ. All rights reserved.</p>
-            <p className="mt-1 text-[11px]">
+            <p className="mt-1">
               맨도롱북스 | 사업자등록번호: 706-99-02056 | 대표자: 전미헌
             </p>
           </div>
           <div className="flex gap-4">
-            <Link href="/terms" className="hover:text-white transition-colors">이용약관</Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">개인정보처리방침</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">
+              이용약관
+            </Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">
+              개인정보처리방침
+            </Link>
           </div>
         </div>
       </div>

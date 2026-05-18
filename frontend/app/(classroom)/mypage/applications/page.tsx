@@ -8,7 +8,8 @@ import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
 import { ApplicationDepositSummary } from '@/components/exam/ApplicationDepositSummary';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { apiFetchWithAuth, getAccessToken } from '@/lib/api-client';
+import { apiFetchWithAuth } from '@/lib/api-client';
+import { ensureAuthCookieSync, forceLogoutToLogin, getAccessToken } from '@/lib/auth';
 import type { DepositAccountInfo } from '@/lib/referrer';
 
 const statusLabel: Record<string, { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
@@ -43,14 +44,15 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     const fetch_ = async () => {
+      ensureAuthCookieSync();
       if (!getAccessToken()) {
-        router.push('/login');
+        forceLogoutToLogin('/mypage/applications');
         return;
       }
       try {
         const res = await apiFetchWithAuth('/exam/my/applications');
         if (res.status === 401) {
-          router.push('/login');
+          forceLogoutToLogin('/mypage/applications');
           return;
         }
         if (!res.ok) {

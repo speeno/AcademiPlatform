@@ -8,11 +8,10 @@ import { BrandCard } from '@/components/ui/brand-card';
 import { Input } from '@/components/ui/input';
 import {
   applyPostLoginNavigation,
-  buildAuthHeader,
   getPostLoginRedirect,
-  isLoggedIn,
   setAccessToken,
   setRefreshToken,
+  verifyAuthSession,
 } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
 import { toast } from 'sonner';
@@ -23,23 +22,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isLoggedIn()) return;
     let cancelled = false;
     (async () => {
+      const session = await verifyAuthSession();
+      if (!session.valid || cancelled) return;
+
       const next = new URLSearchParams(window.location.search).get('next');
-      let role: string | undefined;
-      try {
-        const res = await fetch(`${API_BASE}/auth/me`, { headers: buildAuthHeader(false) });
-        if (res.ok) {
-          const me = await res.json();
-          role = me?.role;
-        }
-      } catch {
-        /* ignore */
-      }
-      if (!cancelled) {
-        applyPostLoginNavigation(getPostLoginRedirect(next, role));
-      }
+      applyPostLoginNavigation(getPostLoginRedirect(next, session.role));
     })();
     return () => {
       cancelled = true;

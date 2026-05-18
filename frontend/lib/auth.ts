@@ -26,6 +26,75 @@ export function isLoggedIn(): boolean {
   return !!getAccessToken();
 }
 
+/** middleware가 읽는 accessToken 쿠키 존재 여부 */
+export function hasAccessTokenCookie(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.cookie.split(';').some((part) => {
+    const trimmed = part.trim();
+    if (!trimmed.startsWith(`${TOKEN_KEY}=`)) return false;
+    const value = trimmed.slice(TOKEN_KEY.length + 1);
+    return value.length > 0;
+  });
+}
+
+/** localStorage 토큰 → 쿠키 동기화 (모바일·Safari에서 쿠키만 유실된 경우) */
+export function ensureAuthCookieSync(): void {
+  const token = getAccessToken();
+  if (!token) return;
+  if (!hasAccessTokenCookie()) {
+    setAccessToken(token);
+  }
+}
+
+export type AuthSessionResult =
+  | { valid: true; role?: string }
+  | { valid: false };
+
+/** 쿠키 동기화 후 /auth/me 검증. 실패 시 토큰 정리 */
+export async function verifyAuthSession(): Promise<AuthSessionResult> {
+  const token = getAccessToken();
+  if (!token) return { valid: false };
+
+  ensureAuthCookieSync();
+
+  const fetchMe = () =>
+    fetch(`${API_BASE}/auth/me`, {
+      headers: buildAuthHeader(false),
+      credentials: 'include',
+    });
+
+  let res = await fetchMe();
+  if (res.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) {
+      clearAccessToken();
+      return { valid: false };
+    }
+    ensureAuthCookieSync();
+    res = await fetchMe();
+  }
+
+  if (!res.ok) {
+    clearAccessToken();
+    return { valid: false };
+  }
+
+  const me = await res.json().catch(() => ({}));
+  return { valid: true, role: typeof me?.role === 'string' ? me.role : undefined };
+}
+
+/** 세션 무효 시 토큰 삭제 후 로그인으로 전체 이동 (리다이렉트 루프 방지) */
+export function forceLogoutToLogin(nextPath?: string) {
+  clearAccessToken();
+  if (typeof window === 'undefined') return;
+  const safeNext =
+    nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') && !nextPath.includes('://')
+      ? nextPath
+      : undefined;
+  const url = safeNext ? `/login?next=${encodeURIComponent(safeNext)}` : '/login';
+  window.location.assign(url);
+}
+
 /** 로그인/로그아웃 등 토큰 변경 시 UI 동기화용 구독 */
 export function subscribeAuthState(listener: () => void): () => void {
   if (typeof window === 'undefined') return () => {};

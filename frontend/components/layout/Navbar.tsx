@@ -10,6 +10,7 @@ import { buildAuthHeader, clearAccessToken, subscribeAuthState } from '@/lib/aut
 import { API_BASE } from '@/lib/api-base';
 
 const navItems = [
+  { label: '서비스', href: '/services' },
   { label: '소개', href: '/about' },
   { label: '교육과정', href: '/courses' },
   { label: '시험접수', href: '/exam' },
@@ -96,12 +97,19 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-14 sm:h-16 items-center justify-between">
           {/* 로고 */}
-          <Logo size="md" />
+          <div className="flex items-center shrink-0">
+            <div className="lg:hidden">
+              <Logo size="xs" />
+            </div>
+            <div className="hidden lg:block">
+              <Logo size="md" />
+            </div>
+          </div>
 
           {/* PC 네비게이션 */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -114,7 +122,7 @@ export function Navbar() {
           </nav>
 
           {/* 우측 버튼 그룹 */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             <Link href={myEntryHref}>
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand-blue">
                 {isAdmin ? <Shield className="w-4 h-4 mr-1" /> : <BookOpen className="w-4 h-4 mr-1" />}
@@ -160,7 +168,7 @@ export function Navbar() {
 
           {/* 모바일 햄버거 */}
           <button
-            className="md:hidden p-2 rounded-md text-muted-foreground"
+            className="lg:hidden p-2 rounded-md text-muted-foreground"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="메뉴 열기/닫기"
           >
@@ -174,7 +182,7 @@ export function Navbar() {
 
       {/* 모바일 메뉴 */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background px-4 py-3 space-y-1">
+        <div className="lg:hidden border-t border-border bg-background px-4 py-3 space-y-1 max-h-[70vh] overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}

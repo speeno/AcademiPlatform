@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Logo } from './Logo';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +34,9 @@ interface AppSidebarProps {
   footer?: ReactNode;
   /** 너비 — 기본 56 (14rem). Admin 등 항목이 많을 때 60(15rem) */
   width?: 'sm' | 'md';
+  /** 메뉴 항목 클릭 시 호출되는 콜백 (모바일 drawer 닫기 등에 사용) */
+  onNavigate?: () => void;
+  style?: CSSProperties;
   className?: string;
 }
 
@@ -57,6 +60,8 @@ export function AppSidebar({
   groups,
   footer,
   width = 'sm',
+  onNavigate,
+  style,
   className,
 }: AppSidebarProps) {
   const pathname = usePathname() ?? '';
@@ -97,8 +102,12 @@ export function AppSidebar({
     return item.matchPrefix ? pathname.startsWith(item.href) : pathname === item.href;
   };
 
+  const handleNavigate = () => {
+    onNavigate?.();
+  };
+
   return (
-    <aside className={containerClasses}>
+    <aside className={containerClasses} style={style}>
       <div className={cn('p-4 border-b', dividerClasses)}>
         <Logo size="sm" href={homeHref} />
         {eyebrow ? <p className={cn('text-xs mt-1 ml-0.5', eyebrowClasses)}>{eyebrow}</p> : null}
@@ -115,6 +124,7 @@ export function AppSidebar({
                   key={item.href}
                   href={item.href}
                   className={cn(linkBaseClasses, isActive(item) && linkActiveClasses)}
+                  onClick={handleNavigate}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
                   {item.label}
