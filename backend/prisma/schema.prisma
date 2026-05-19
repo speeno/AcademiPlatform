@@ -650,6 +650,10 @@ model ExamApplication {
   userId          String?
   status          ExamApplicationStatus @default(TEMP_SAVED)
   formJson        Json
+  idPhoto         Bytes?
+  idPhotoMimeType String?
+  idPhotoFileName String?
+  idPhotoSize     Int?
   referrerCode    String?
   paymentId       String?
   paymentStatus   PaymentStatus         @default(PENDING)

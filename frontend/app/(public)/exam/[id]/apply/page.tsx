@@ -10,12 +10,16 @@ import { toast } from 'sonner';
 import {
   buildAuthHeader,
   ensureAuthCookieSync,
+  fetchWithAuth,
   forceLogoutToLogin,
   getAccessToken,
   verifyAuthSession,
 } from '@/lib/auth';
 import {
+  findReferrerMemberByCode,
+  flattenReferrerOptions,
   getMemberDepositAccount,
+  parseReferrerGroups,
   type ReferrerGroup,
 } from '@/lib/referrer';
 import {
@@ -36,6 +40,9 @@ const FORM_FIELDS = [
   { key: 'experience', label: 'AI 관련 경력 (년)', required: false, type: 'number', placeholder: '0' },
 ];
 
+const MAX_ID_PHOTO_BYTES = 10 * 1024 * 1024;
+const ALLOWED_ID_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
 export default function ExamApplyPage() {
   const router = useRouter();
   const params = useParams();
@@ -49,8 +56,8 @@ export default function ExamApplyPage() {
   const [sessionLoading, setSessionLoading] = useState(true);
 
   const [referrerGroups, setReferrerGroups] = useState<ReferrerGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [selectedMemberCode, setSelectedMemberCode] = useState('');
+  const [idPhotoFile, setIdPhotoFile] = useState<File | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
@@ -87,9 +94,17 @@ export default function ExamApplyPage() {
     const fetchSession = async () => {
       setSessionLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/exam/sessions/${sessionId}`);
+        const res = await fetchWithAuth(`${API_BASE}/exam/sessions/${sessionId}`, {
+          credentials: 'include',
+        });
         if (!res.ok) return;
         const data = await res.json();
+        const fee =
+          typeof data.displayFee === 'number'
+            ? data.displayFee
+            : typeof data.fee === 'number'
+              ? data.fee
+              : null;
         setSessionInfo({
           qualificationName: data.qualificationName ?? '시험',
           roundName: data.roundName ?? '',
@@ -97,7 +112,7 @@ export default function ExamApplyPage() {
           place: data.place,
           applyStartAt: data.applyStartAt,
           applyEndAt: data.applyEndAt,
-          fee: Number(data.fee) || 0,
+          fee,
         });
       } catch {
       } finally {
@@ -110,8 +125,7 @@ export default function ExamApplyPage() {
         const res = await fetch(`${API_BASE}/settings/public/referrer_groups`);
         if (!res.ok) return;
         const data = await res.json();
-        const groups = Array.isArray(data?.value) ? data.value : [];
-        setReferrerGroups(groups.filter((g: ReferrerGroup) => g.isActive !== false));
+        setReferrerGroups(parseReferrerGroups(data?.value));
       } catch {}
     };
 
@@ -119,16 +133,39 @@ export default function ExamApplyPage() {
     fetchReferrerGroups();
   }, [sessionId, authReady]);
 
-  const selectedGroup = referrerGroups.find((g) => g.id === selectedGroupId);
-  const selectedMember = selectedGroup?.members.find((m) => m.code === selectedMemberCode);
+  const referrerOptions = flattenReferrerOptions(referrerGroups);
+  const selectedMember = findReferrerMemberByCode(referrerGroups, selectedMemberCode);
   const depositAccount = getMemberDepositAccount(selectedMember);
 
   const handleFormChange = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleIdPhotoChange = (file: File | null) => {
+    if (!file) {
+      setIdPhotoFile(null);
+      return;
+    }
+
+    if (!ALLOWED_ID_PHOTO_TYPES.has(file.type)) {
+      toast.error('증명사진은 JPG, PNG, WEBP 파일만 업로드할 수 있습니다.');
+      return;
+    }
+
+    if (file.size > MAX_ID_PHOTO_BYTES) {
+      toast.error('증명사진은 10MB 이하만 업로드할 수 있습니다.');
+      return;
+    }
+
+    setIdPhotoFile(file);
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!idPhotoFile) {
+      toast.error('증명사진을 업로드해주세요.');
+      return;
+    }
     if (!agreedTerms) {
       toast.error('개인정보 수집 및 이용에 동의해주세요.');
       return;
@@ -137,6 +174,12 @@ export default function ExamApplyPage() {
   };
 
   const handleSubmitApplication = async () => {
+    if (!idPhotoFile) {
+      toast.error('증명사진을 업로드해주세요.');
+      setStep('form');
+      return;
+    }
+
     setLoading(true);
     try {
       const body = {
@@ -149,13 +192,18 @@ export default function ExamApplyPage() {
           ...(depositAccount.sourceLabel ? { sourceLabel: depositAccount.sourceLabel } : {}),
         },
       };
+
+      const payload = new FormData();
+      payload.append('formJson', JSON.stringify(body));
+      payload.append('idPhoto', idPhotoFile);
+
       const res = await fetch(`${API_BASE}/exam/sessions/${sessionId}/apply`, {
         method: 'POST',
-        headers: buildAuthHeader(),
-        body: JSON.stringify(body),
+        headers: buildAuthHeader(false),
+        body: payload,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? '접수에 실패했습니다.');
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message ?? '접수에 실패했습니다.');
       toast.success('시험 접수가 완료되었습니다.');
       setStep('complete');
     } catch (err) {
@@ -255,36 +303,44 @@ export default function ExamApplyPage() {
                 </div>
               ))}
 
-              {referrerGroups.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2.5 block">
+                  증명사진 <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => handleIdPhotoChange(e.target.files?.[0] ?? null)}
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP 파일 / 최대 10MB</p>
+                {idPhotoFile && (
+                  <p className="text-xs text-foreground mt-1">
+                    선택됨: {idPhotoFile.name} ({Math.ceil(idPhotoFile.size / 1024)}KB)
+                  </p>
+                )}
+              </div>
+
+              {referrerOptions.length > 0 && (
                 <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
                   <label className="text-sm font-medium text-foreground block">
                     신청 계기 <span className="text-muted-foreground font-normal">(선택사항)</span>
                   </label>
                   <select
                     className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
-                    value={selectedGroupId}
-                    onChange={(e) => {
-                      setSelectedGroupId(e.target.value);
-                      setSelectedMemberCode('');
-                    }}
+                    value={selectedMemberCode}
+                    onChange={(e) => setSelectedMemberCode(e.target.value)}
                   >
                     <option value="">없음</option>
-                    {referrerGroups.map((g) => (
-                      <option key={g.id} value={g.id}>{g.groupName}</option>
+                    {referrerOptions.map((option) => (
+                      <option key={option.code} value={option.code}>
+                        {option.label}
+                      </option>
                     ))}
                   </select>
-                  {selectedGroup && selectedGroup.members.length > 0 && (
-                    <select
-                      className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
-                      value={selectedMemberCode}
-                      onChange={(e) => setSelectedMemberCode(e.target.value)}
-                    >
-                      <option value="">선택하세요</option>
-                      {selectedGroup.members.map((m) => (
-                        <option key={m.code} value={m.code}>{m.label}</option>
-                      ))}
-                    </select>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    담당자를 선택하면 해당 계좌로 입금 안내가 표시됩니다.
+                  </p>
                 </div>
               )}
 
@@ -322,12 +378,20 @@ export default function ExamApplyPage() {
                   <span className="text-muted-foreground">이메일</span>
                   <span className="font-medium">{formData.email}</span>
                 </div>
-                {selectedMember && (
+                {selectedMemberCode && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">신청 계기</span>
-                    <span className="font-medium">{selectedMember.label}</span>
+                    <span className="font-medium">
+                      {referrerOptions.find((option) => option.code === selectedMemberCode)?.label
+                        ?? selectedMember?.label
+                        ?? selectedMemberCode}
+                    </span>
                   </div>
                 )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">증명사진</span>
+                  <span className="font-medium">{idPhotoFile?.name ?? '-'}</span>
+                </div>
               </div>
 
               <div className="flex gap-3">

@@ -1,7 +1,9 @@
 import {
-  Body, Controller, Get, Param, Patch, Post, Query,
+  Body, Controller, Get, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ExamApplicationStatus, ExamSessionStatus, UserRole } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ExamService } from './exam.service';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -29,14 +31,20 @@ export class ExamController {
     return this.examService.findSessionById(id, user?.id);
   }
 
-  @Public()
   @Post('sessions/:id/apply')
+  @UseInterceptors(FileInterceptor('idPhoto', { limits: { fileSize: 10 * 1024 * 1024 } }))
   createApplication(
     @Param('id') sessionId: string,
-    @CurrentUser() user: any,
-    @Body() formJson: object,
+    @CurrentUser() user: { id?: string } | undefined,
+    @Body() body: Record<string, unknown>,
+    @Body('formJson') formJsonRaw: string | undefined,
+    @UploadedFile()
+    file:
+      | { originalname?: string; mimetype?: string; buffer?: Buffer; size?: number }
+      | undefined,
   ) {
-    return this.examService.createApplication(sessionId, user?.id ?? null, formJson);
+    const payload = formJsonRaw ?? body;
+    return this.examService.createApplication(sessionId, user?.id ?? null, payload, file);
   }
 
   @Get('my/applications')
@@ -89,5 +97,24 @@ export class ExamController {
     @Body('status') status: ExamApplicationStatus,
   ) {
     return this.examService.updateApplicationStatus(id, status);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/applications/:id/id-photo')
+  async downloadApplicationIdPhoto(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const file = await this.examService.getApplicationIdPhoto(id);
+    const encodedFileName = encodeURIComponent(file.fileName);
+
+    res.set({
+      'Content-Type': file.mimeType,
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodedFileName}`,
+      'Content-Length': file.size,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.send(file.buffer);
   }
 }

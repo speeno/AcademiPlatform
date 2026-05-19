@@ -24,6 +24,8 @@ interface Application {
   appliedAt: string;
   referrerCode?: string | null;
   formJson?: Record<string, any>;
+  hasIdPhoto?: boolean;
+  idPhotoFileName?: string | null;
   user: { name: string; email: string; phone: string | null } | null;
   payment: { amount: number; paymentStatus: string } | null;
 }
@@ -46,6 +48,7 @@ export default function ExamApplicationsPage() {
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -69,6 +72,28 @@ export default function ExamApplicationsPage() {
     } catch { /* ignore */ } finally { setUpdatingId(null); }
   };
 
+  const handleDownloadIdPhoto = async (app: Application) => {
+    setDownloadingId(app.id);
+    try {
+      const res = await fetch(`${API_BASE}/exam/admin/applications/${app.id}/id-photo`, {
+        headers: buildAuthHeader(false),
+      });
+      if (!res.ok) throw new Error('증명사진 다운로드에 실패했습니다.');
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = app.idPhotoFileName || `application-${app.id}-id-photo`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // ignore
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
@@ -86,11 +111,11 @@ export default function ExamApplicationsPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 border-b">
-            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '상태', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}</tr>
+            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '증명사진', '상태', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y">
             {apps.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">접수자가 없습니다.</td></tr>
+              <tr><td colSpan={9} className="text-center py-12 text-muted-foreground">접수자가 없습니다.</td></tr>
             ) : apps.map((a) => {
               const si = statusInfo[a.status] ?? { label: a.status, variant: 'default' as const };
               return (
@@ -101,6 +126,20 @@ export default function ExamApplicationsPage() {
                   <td className="px-4 py-3 text-muted-foreground text-xs">{(a.formJson?.occupation as string) || '-'}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">{a.referrerCode || '-'}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(a.appliedAt).toLocaleDateString('ko-KR')}</td>
+                  <td className="px-4 py-3">
+                    {a.hasIdPhoto ? (
+                      <BrandButton
+                        variant="outline"
+                        size="sm"
+                        loading={downloadingId === a.id}
+                        onClick={() => handleDownloadIdPhoto(a)}
+                      >
+                        다운로드
+                      </BrandButton>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3"><BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge></td>
                   <td className="px-4 py-3">
                     <select

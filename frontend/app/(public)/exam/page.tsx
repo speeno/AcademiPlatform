@@ -173,8 +173,16 @@ export default async function ExamPage() {
                       </div>
 
                       <div className="flex flex-col items-end gap-2">
+                        {/*
+                          공개 목록은 백엔드에서 계산한 displayFee를 우선 사용해
+                          legacy fee 오염값(예: 8천만 원) 노출을 방지한다.
+                        */}
                         <PriceDisplay
-                          price={Number(session.fee) || 0}
+                          price={typeof session.displayFee === 'number'
+                            ? session.displayFee
+                            : typeof session.fee === 'number'
+                              ? session.fee
+                              : null}
                           className="text-lg font-extrabold text-brand-orange"
                           
                         />

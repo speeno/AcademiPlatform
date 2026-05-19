@@ -97,7 +97,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 sm:h-16 items-center justify-between">
+        <div className="flex h-14 sm:h-16 items-center gap-3">
           {/* 로고 */}
           <div className="flex items-center shrink-0">
             <div className="lg:hidden">
@@ -109,12 +109,12 @@ export function Navbar() {
           </div>
 
           {/* PC 네비게이션 */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-0.5">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle transition-colors"
+                className="shrink-0 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-brand-blue-subtle hover:text-brand-blue xl:px-3 xl:text-sm"
               >
                 {item.label}
               </Link>
@@ -122,7 +122,7 @@ export function Navbar() {
           </nav>
 
           {/* 우측 버튼 그룹 */}
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="hidden shrink-0 lg:flex items-center gap-2">
             {isAuthenticated && (
               <Link href={myEntryHref}>
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand-blue">
@@ -142,7 +142,9 @@ export function Navbar() {
               </Button>
             ) : isAuthenticated ? (
               <>
-                <span className="text-sm font-semibold text-foreground px-1">{displayName}님</span>
+                <span className="max-w-[7rem] truncate px-1 text-sm font-semibold text-foreground xl:max-w-[10rem]">
+                  {displayName}님
+                </span>
                 <Button
                   variant="outline"
                   size="sm"

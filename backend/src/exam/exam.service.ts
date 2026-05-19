@@ -2,15 +2,36 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ExamApplicationStatus, ExamSessionStatus, PaymentStatus } from '@prisma/client';
-import { maskPriceFields } from '../common/pricing/public-price-policy';
+import {
+  maskPriceFields,
+  shouldExposePrices,
+} from '../common/pricing/public-price-policy';
+import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
+
+const MAX_ID_PHOTO_BYTES = 10 * 1024 * 1024;
+const ALLOWED_ID_PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const DEFAULT_DEPOSIT_ACCOUNT = {
   bank: '농협은행',
   account: '302-0608-9280-11',
   holder: '이현길',
+};
+
+function sanitizeUploadedFileName(rawName: string | undefined): string {
+  const trimmed = (rawName ?? '').trim();
+  if (!trimmed) return '';
+  return trimmed.replace(/[^\w.-]/g, '_').slice(0, 255);
+}
+
+type UploadedExamIdPhoto = {
+  originalname?: string;
+  mimetype?: string;
+  buffer?: Buffer;
+  size?: number;
 };
 
 @Injectable()
@@ -42,7 +63,7 @@ export class ExamService {
     ]);
 
     return {
-      sessions: sessions.map((s) => maskPriceFields(s, viewerId)),
+      sessions: sessions.map((session) => this.toPublicSession(session, viewerId)),
       total,
       page,
       limit,
@@ -55,10 +76,94 @@ export class ExamService {
       include: { _count: { select: { applications: true } } },
     });
     if (!session) throw new NotFoundException('시험 회차를 찾을 수 없습니다.');
-    return maskPriceFields(session, viewerId);
+    return this.toPublicSession(session, viewerId);
   }
 
-  async createApplication(sessionId: string, userId: string | null, formJson: object) {
+  private resolveSessionDisplayFee(session: {
+    fee: number;
+    basePrice: number;
+    salePrice: number | null;
+    discountType: any;
+    discountValue: number;
+    priceValidFrom: Date | null;
+    priceValidUntil: Date | null;
+    currency: string;
+    pricePolicyVersion: number;
+  }): number {
+    return calculatePricingSnapshot({
+      legacyPrice: session.fee,
+      basePrice: session.basePrice,
+      salePrice: session.salePrice,
+      discountType: session.discountType,
+      discountValue: session.discountValue,
+      validFrom: session.priceValidFrom,
+      validUntil: session.priceValidUntil,
+      currency: session.currency,
+      policyVersion: session.pricePolicyVersion,
+    }).finalAmount;
+  }
+
+  private toPublicSession<T extends {
+    fee: number;
+    basePrice: number;
+    salePrice: number | null;
+    discountType: any;
+    discountValue: number;
+    priceValidFrom: Date | null;
+    priceValidUntil: Date | null;
+    currency: string;
+    pricePolicyVersion: number;
+  }>(session: T, viewerId?: string) {
+    const displayFee = this.resolveSessionDisplayFee(session);
+    const withDisplay = { ...session, fee: displayFee, displayFee };
+
+    if (!shouldExposePrices(viewerId)) {
+      const masked = maskPriceFields(withDisplay, viewerId);
+      return { ...masked, displayFee: null };
+    }
+
+    return withDisplay;
+  }
+
+  async createApplication(
+    sessionId: string,
+    userId: string | null,
+    formJsonRaw: unknown,
+    idPhoto: UploadedExamIdPhoto | undefined,
+  ) {
+    if (!userId) throw new UnauthorizedException('로그인이 필요합니다.');
+
+    let formJson: Record<string, unknown>;
+    if (typeof formJsonRaw === 'string') {
+      try {
+        const parsed = JSON.parse(formJsonRaw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          throw new Error('invalid');
+        }
+        formJson = parsed as Record<string, unknown>;
+      } catch {
+        throw new BadRequestException('접수 정보 형식이 올바르지 않습니다.');
+      }
+    } else if (formJsonRaw && typeof formJsonRaw === 'object' && !Array.isArray(formJsonRaw)) {
+      formJson = formJsonRaw as Record<string, unknown>;
+    } else {
+      throw new BadRequestException('접수 정보가 누락되었습니다.');
+    }
+
+    if (!idPhoto?.buffer || idPhoto.buffer.length === 0) {
+      throw new BadRequestException('증명사진을 업로드해주세요.');
+    }
+
+    const normalizedMimeType = idPhoto.mimetype?.toLowerCase();
+    if (!normalizedMimeType || !ALLOWED_ID_PHOTO_MIME_TYPES.has(normalizedMimeType)) {
+      throw new BadRequestException('증명사진은 JPG, PNG, WEBP 형식만 업로드할 수 있습니다.');
+    }
+
+    const idPhotoSize = idPhoto.size ?? idPhoto.buffer.length;
+    if (idPhotoSize > MAX_ID_PHOTO_BYTES) {
+      throw new BadRequestException('증명사진은 10MB 이하만 업로드할 수 있습니다.');
+    }
+
     const session = await this.findSessionById(sessionId, userId ?? undefined);
 
     if (session.status !== ExamSessionStatus.OPEN) {
@@ -95,15 +200,33 @@ export class ExamService {
 
     const form = formJson as any;
     const referrerCode = typeof form?.referrerCode === 'string' ? form.referrerCode || null : null;
+    const fileName = sanitizeUploadedFileName(idPhoto.originalname);
+    const idPhotoFileName = fileName.length > 0 ? fileName : `exam-id-photo-${Date.now()}.jpg`;
 
     return this.prisma.examApplication.create({
       data: {
         examSessionId: sessionId,
         userId,
         formJson: formJson as any,
+        idPhoto: idPhoto.buffer,
+        idPhotoMimeType: normalizedMimeType,
+        idPhotoFileName,
+        idPhotoSize,
         referrerCode,
         status: ExamApplicationStatus.APPLIED,
         paymentStatus: PaymentStatus.PAID,
+      },
+      select: {
+        id: true,
+        examSessionId: true,
+        userId: true,
+        status: true,
+        formJson: true,
+        referrerCode: true,
+        paymentId: true,
+        paymentStatus: true,
+        appliedAt: true,
+        updatedAt: true,
       },
     });
   }
@@ -124,9 +247,23 @@ export class ExamService {
       fee: true,
     } as const;
 
+    const applicationSelect = {
+      id: true,
+      examSessionId: true,
+      userId: true,
+      status: true,
+      formJson: true,
+      referrerCode: true,
+      paymentId: true,
+      paymentStatus: true,
+      appliedAt: true,
+      updatedAt: true,
+      examSession: { select: sessionSelect },
+    } as const;
+
     const linked = await this.prisma.examApplication.findMany({
       where: { userId },
-      include: { examSession: { select: sessionSelect } },
+      select: applicationSelect,
       orderBy: { appliedAt: 'desc' },
     });
 
@@ -138,7 +275,7 @@ export class ExamService {
           equals: user.email,
         },
       },
-      include: { examSession: { select: sessionSelect } },
+      select: applicationSelect,
       orderBy: { appliedAt: 'desc' },
     });
 
@@ -286,13 +423,52 @@ export class ExamService {
         skip,
         take: limit,
         orderBy: { appliedAt: 'asc' },
-        include: {
+        select: {
+          id: true,
+          status: true,
+          appliedAt: true,
+          referrerCode: true,
+          formJson: true,
+          idPhotoFileName: true,
+          idPhotoMimeType: true,
+          idPhotoSize: true,
           user: { select: { id: true, name: true, email: true, phone: true } },
         },
       }),
       this.prisma.examApplication.count({ where: { examSessionId: sessionId } }),
     ]);
-    return { applications, total, page, limit };
+    return {
+      applications: applications.map((application) => ({
+        ...application,
+        hasIdPhoto: (application.idPhotoSize ?? 0) > 0,
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getApplicationIdPhoto(id: string) {
+    const application = await this.prisma.examApplication.findUnique({
+      where: { id },
+      select: {
+        idPhoto: true,
+        idPhotoFileName: true,
+        idPhotoMimeType: true,
+        idPhotoSize: true,
+      },
+    });
+
+    if (!application?.idPhoto || !application.idPhotoMimeType || !application.idPhotoFileName) {
+      throw new NotFoundException('증명사진을 찾을 수 없습니다.');
+    }
+
+    return {
+      buffer: Buffer.from(application.idPhoto),
+      mimeType: application.idPhotoMimeType,
+      fileName: application.idPhotoFileName,
+      size: application.idPhotoSize ?? application.idPhoto.length,
+    };
   }
 
   async updateApplicationStatus(id: string, status: ExamApplicationStatus) {

@@ -11,7 +11,7 @@ export interface ExamSessionSummaryData {
   place?: string | null;
   applyStartAt: string;
   applyEndAt: string;
-  fee: number;
+  fee: number | null;
 }
 
 function formatDate(value: string) {
