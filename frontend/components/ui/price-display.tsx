@@ -42,8 +42,11 @@ export function PriceDisplay({
   }
 
   return (
-    <span className={className} style={style}>
-      {price === 0 ? '무료' : `${price.toLocaleString()}원`}
+    <span
+      className={className}
+      style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', ...style }}
+    >
+      {price === 0 ? '무료' : `${price.toLocaleString('ko-KR')}원`}
     </span>
   );
 }

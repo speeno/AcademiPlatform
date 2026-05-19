@@ -33,6 +33,7 @@ interface Application {
     examAt: string;
     place: string | null;
     fee: number;
+    displayFee?: number | null;
   } | null;
 }
 
@@ -110,7 +111,9 @@ export default function ApplicationsPage() {
                     <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
                       <span>시험일: {app.examSession?.examAt ? new Date(app.examSession.examAt).toLocaleDateString('ko-KR') : '-'}</span>
                       {app.examSession?.place && <span>장소: {app.examSession.place}</span>}
-                      <span>응시료: {Number(app.examSession?.fee ?? 0).toLocaleString()}원</span>
+                      <span>응시료: {Number(
+                        app.examSession?.displayFee ?? app.examSession?.fee ?? 0,
+                      ).toLocaleString('ko-KR')}원</span>
                       <span>접수일: {new Date(app.appliedAt).toLocaleDateString('ko-KR')}</span>
                     </div>
                     {app.depositAccount && (

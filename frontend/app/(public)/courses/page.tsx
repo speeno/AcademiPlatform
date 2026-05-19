@@ -19,22 +19,27 @@ export const metadata: Metadata = {
   description: 'AI 자격 취득을 위한 교육과정 목록입니다.',
 };
 
-async function getCourses() {
+async function getCourses(): Promise<{ courses: any[]; total: number; loadError: boolean }> {
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/courses?limit=12`,
       { next: { revalidate: 60 }, headers: await getServerAuthHeaders() },
       8000,
     );
-    if (!res.ok) return { courses: [], total: 0 };
-    return res.json();
+    if (!res.ok) return { courses: [], total: 0, loadError: true };
+    const data = await res.json();
+    return {
+      courses: Array.isArray(data?.courses) ? data.courses : [],
+      total: typeof data?.total === 'number' ? data.total : 0,
+      loadError: false,
+    };
   } catch {
-    return { courses: [], total: 0 };
+    return { courses: [], total: 0, loadError: true };
   }
 }
 
 export default async function CoursesPage() {
-  const { courses } = await getCourses();
+  const { courses, loadError } = await getCourses();
 
   return (
     <>
@@ -53,7 +58,12 @@ export default async function CoursesPage() {
       <section className="py-12 bg-white">
         <div className="max-w-5xl mx-auto px-4">
           {/* 과정 목록 */}
-          {courses.length === 0 ? (
+          {loadError ? (
+            <div className="rounded-xl border bg-white p-10 text-center text-muted-foreground">
+              <p className="text-foreground font-medium">교육과정 정보를 일시적으로 불러올 수 없습니다.</p>
+              <p className="text-sm mt-1">잠시 후 새로고침해 주세요.</p>
+            </div>
+          ) : courses.length === 0 ? (
             <div className="rounded-xl border bg-white p-10 text-center text-muted-foreground">
               현재 공개된 교육과정이 없습니다.
             </div>

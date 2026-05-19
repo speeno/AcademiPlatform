@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Menu, X, BookOpen, LogIn, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,12 +22,26 @@ const navItems = [
 ];
 
 export function Navbar() {
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const original = document.body.style.overflow;
+    document.body.style.overflow = mobileOpen ? 'hidden' : original;
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, [mobileOpen]);
 
   useEffect(() => {
     let active = true;
@@ -170,11 +185,13 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* 모바일 햄버거 */}
+          {/* 모바일 햄버거 — lg 미만에서 PC 영역이 숨겨지므로 ml-auto로 우측 정렬 */}
           <button
-            className="lg:hidden p-2 rounded-md text-muted-foreground"
+            className="ml-auto lg:hidden p-2 rounded-md text-muted-foreground hover:bg-brand-blue-subtle hover:text-brand-blue"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="메뉴 열기/닫기"
+            aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav-panel"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -186,7 +203,10 @@ export function Navbar() {
 
       {/* 모바일 메뉴 */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-border bg-background px-4 py-3 space-y-1 max-h-[70vh] overflow-y-auto">
+        <div
+          id="mobile-nav-panel"
+          className="lg:hidden border-t border-border bg-background px-4 py-3 space-y-1 max-h-[70vh] overflow-y-auto"
+        >
           {navItems.map((item) => (
             <Link
               key={item.href}

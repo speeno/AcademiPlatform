@@ -250,6 +250,14 @@ export class ExamService {
       examAt: true,
       place: true,
       fee: true,
+      basePrice: true,
+      salePrice: true,
+      discountType: true,
+      discountValue: true,
+      priceValidFrom: true,
+      priceValidUntil: true,
+      currency: true,
+      pricePolicyVersion: true,
     } as const;
 
     const applicationSelect = {
@@ -301,10 +309,17 @@ export class ExamService {
       });
 
     const groups = await this.loadReferrerGroups();
-    return applications.map((app) => ({
-      ...app,
-      depositAccount: this.resolveDepositAccount(app.formJson, app.referrerCode, groups),
-    }));
+    return applications.map((app) => {
+      const session = app.examSession;
+      const displayFee = session ? this.resolveSessionDisplayFee(session) : null;
+      return {
+        ...app,
+        examSession: session
+          ? { ...session, fee: displayFee ?? session.fee, displayFee }
+          : session,
+        depositAccount: this.resolveDepositAccount(app.formJson, app.referrerCode, groups),
+      };
+    });
   }
 
   private async loadReferrerGroups(): Promise<any[]> {

@@ -67,17 +67,18 @@ const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'blue' |
   CANCELLED: { text: '취소',     variant: 'red' },
 };
 
-async function getExamSessions() {
+async function getExamSessions(): Promise<{ sessions: any[]; loadError: boolean }> {
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/exam/sessions`,
       { next: { revalidate: 60 }, headers: await getServerAuthHeaders() },
       8000,
     );
-    if (!res.ok) return { sessions: [] };
-    return res.json();
+    if (!res.ok) return { sessions: [], loadError: true };
+    const data = await res.json();
+    return { sessions: Array.isArray(data?.sessions) ? data.sessions : [], loadError: false };
   } catch {
-    return { sessions: [] };
+    return { sessions: [], loadError: true };
   }
 }
 
@@ -105,7 +106,7 @@ function findQualInfo(qualifications: QualificationEntry[], name: string): Quali
 }
 
 export default async function ExamPage() {
-  const [{ sessions }, qualifications] = await Promise.all([
+  const [{ sessions, loadError }, qualifications] = await Promise.all([
     getExamSessions(),
     getQualificationIntros(),
   ]);
@@ -131,7 +132,13 @@ export default async function ExamPage() {
 
       <section className="py-12 bg-white">
         <PageShell flush>
-          {(!sessions || sessions.length === 0) ? (
+          {loadError ? (
+            <div className="text-center py-20 text-muted-foreground">
+              <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              <p className="text-foreground font-medium">시험 정보를 일시적으로 불러올 수 없습니다.</p>
+              <p className="text-sm mt-1">잠시 후 새로고침해 주세요.</p>
+            </div>
+          ) : sessions.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-40" />
               <p>현재 등록된 시험이 없습니다.</p>
@@ -172,7 +179,7 @@ export default async function ExamPage() {
                         </p>
                       </div>
 
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-col items-end gap-2 shrink-0">
                         {/*
                           공개 목록은 백엔드에서 계산한 displayFee를 우선 사용해
                           legacy fee 오염값(예: 8천만 원) 노출을 방지한다.
@@ -184,7 +191,6 @@ export default async function ExamPage() {
                               ? session.fee
                               : null}
                           className="text-lg font-extrabold text-brand-orange"
-                          
                         />
                         <ExamApplyButton
                           sessionId={session.id}
