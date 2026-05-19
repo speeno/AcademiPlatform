@@ -27,6 +27,11 @@ function sanitizeUploadedFileName(rawName: string | undefined): string {
   return trimmed.replace(/[^\w.-]/g, '_').slice(0, 255);
 }
 
+/** Prisma Bytes 필드는 Uint8Array<ArrayBuffer>만 허용 (Node Buffer의 ArrayBufferLike 불일치 방지) */
+function toPrismaBytes(buffer: Buffer): Uint8Array<ArrayBuffer> {
+  return new Uint8Array(Buffer.from(buffer)) as Uint8Array<ArrayBuffer>;
+}
+
 type UploadedExamIdPhoto = {
   originalname?: string;
   mimetype?: string;
@@ -208,7 +213,7 @@ export class ExamService {
         examSessionId: sessionId,
         userId,
         formJson: formJson as any,
-        idPhoto: idPhoto.buffer,
+        idPhoto: toPrismaBytes(idPhoto.buffer),
         idPhotoMimeType: normalizedMimeType,
         idPhotoFileName,
         idPhotoSize,
