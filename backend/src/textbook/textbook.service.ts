@@ -29,6 +29,11 @@ import {
   ResolvedStorageConfig,
   resolveStorageConfig,
 } from '../common/storage/storage-config';
+import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
+import {
+  maskPriceFields,
+  shouldExposePrices,
+} from '../common/pricing/public-price-policy';
 
 const VIEWER_TOKEN_TTL = 15 * 60; // 15분
 const WATERMARK_CACHE = new Map<string, { buffer: Buffer; expiredAt: Date }>();
@@ -142,6 +147,73 @@ export class TextbookService {
     return books.map((book) => ({ ...book, hasAccess: ownedSet.has(book.id) }));
   }
 
+  /**
+   * 공개 스토어 목록.
+   * - 비로그인: `displayFee`/가격 필드는 마스킹(null)되어 «로그인 후 확인» UI 처리.
+   * - 로그인: `displayFee = calculatePricingSnapshot.finalAmount` 노출 + `hasAccess` 계산.
+   * - `findStore`(인증 필수)와 동일한 정책 스냅샷을 공유해 결제·UI·관리자 화면 간 가격 일관성을 유지한다.
+   */
+  async findStorePublic(viewerId?: string) {
+    const books = await this.prisma.textbook.findMany({
+      where: { status: TextbookStatus.PUBLISHED, isStandalone: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        coverImageUrl: true,
+        totalPages: true,
+        price: true,
+        currency: true,
+        basePrice: true,
+        salePrice: true,
+        discountType: true,
+        discountValue: true,
+        priceValidFrom: true,
+        priceValidUntil: true,
+        pricePolicyVersion: true,
+        isStandalone: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const ownedSet = viewerId
+      ? new Set(
+          (
+            await this.prisma.textbookAccess.findMany({
+              where: { userId: viewerId, revokedAt: null },
+              select: { textbookId: true },
+            })
+          ).map((a) => a.textbookId),
+        )
+      : new Set<string>();
+
+    return books.map((book) => {
+      const displayFee = calculatePricingSnapshot({
+        legacyPrice: book.price,
+        basePrice: book.basePrice,
+        salePrice: book.salePrice,
+        discountType: book.discountType,
+        discountValue: book.discountValue,
+        validFrom: book.priceValidFrom,
+        validUntil: book.priceValidUntil,
+        currency: book.currency,
+        policyVersion: book.pricePolicyVersion,
+      }).finalAmount;
+
+      const baseEntry = {
+        ...book,
+        displayFee,
+        hasAccess: ownedSet.has(book.id),
+      };
+
+      if (!shouldExposePrices(viewerId)) {
+        const masked = maskPriceFields(baseEntry, viewerId);
+        return { ...masked, displayFee: null };
+      }
+      return baseEntry;
+    });
+  }
+
   async findById(textbookId: string) {
     const textbook = await this.prisma.textbook.findUnique({
       where: { id: textbookId, status: TextbookStatus.PUBLISHED },
@@ -157,6 +229,63 @@ export class TextbookService {
     });
     if (!textbook) throw new NotFoundException('교재를 찾을 수 없습니다.');
     return textbook;
+  }
+
+  /** 공개 스토어 상세 — 단독 구매 교재만, 가격·보유 여부는 findStorePublic과 동일 정책 */
+  async findByIdPublic(textbookId: string, viewerId?: string) {
+    const book = await this.prisma.textbook.findUnique({
+      where: {
+        id: textbookId,
+        status: TextbookStatus.PUBLISHED,
+        isStandalone: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        coverImageUrl: true,
+        totalPages: true,
+        price: true,
+        currency: true,
+        basePrice: true,
+        salePrice: true,
+        discountType: true,
+        discountValue: true,
+        priceValidFrom: true,
+        priceValidUntil: true,
+        pricePolicyVersion: true,
+        isStandalone: true,
+      },
+    });
+    if (!book || !book.isStandalone) {
+      throw new NotFoundException('교재를 찾을 수 없습니다.');
+    }
+
+    const hasAccess = viewerId
+      ? !!(await this.prisma.textbookAccess.findFirst({
+          where: { userId: viewerId, textbookId, revokedAt: null },
+          select: { id: true },
+        }))
+      : false;
+
+    const displayFee = calculatePricingSnapshot({
+      legacyPrice: book.price,
+      basePrice: book.basePrice,
+      salePrice: book.salePrice,
+      discountType: book.discountType,
+      discountValue: book.discountValue,
+      validFrom: book.priceValidFrom,
+      validUntil: book.priceValidUntil,
+      currency: book.currency,
+      policyVersion: book.pricePolicyVersion,
+    }).finalAmount;
+
+    const baseEntry = { ...book, displayFee, hasAccess };
+    if (!shouldExposePrices(viewerId)) {
+      const masked = maskPriceFields(baseEntry, viewerId);
+      return { ...masked, displayFee: null };
+    }
+    return baseEntry;
   }
 
   // 15분 뷰어 토큰 발급 — 접근 권한 검증

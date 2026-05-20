@@ -124,11 +124,11 @@ export default function MyPagePage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <p className="font-semibold text-foreground">교재를 별도로 구매하시나요?</p>
-            <p className="text-sm text-muted-foreground mt-1">주요 교재 구매 페이지에서 소장용 교재를 바로 구매할 수 있습니다.</p>
+            <p className="text-sm text-muted-foreground mt-1">교재 스토어에서 온라인 교재(즉시 열람)와 외부 판매처 교재를 한 번에 확인할 수 있습니다.</p>
           </div>
-          <Link href="/books">
+          <Link href="/store/textbooks">
             <BrandButton variant="outline" size="sm">
-              주요 교재 구매
+              교재 구매
               <ExternalLink className="w-3.5 h-3.5 ml-1" />
             </BrandButton>
           </Link>

@@ -15,6 +15,7 @@ import type { Response } from 'express';
 import { UserRole } from '@prisma/client';
 import { TextbookService } from './textbook.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -35,12 +36,34 @@ export class TextbookController {
     return this.textbookService.findStore(user.id);
   }
 
+  /**
+   * 공개 스토어 목록 (비로그인 접근 가능).
+   * - 비로그인: 가격 필드 마스킹(`displayFee = null`)
+   * - 로그인: `displayFee` + `hasAccess` 노출
+   * 인증된 사용자가 호출하면 `findStore`와 동일한 hasAccess 집합을 반환한다.
+   */
+  @Public()
+  @Get('store/public')
+  findStorePublic(@CurrentUser() user?: AuthenticatedUser) {
+    return this.textbookService.findStorePublic(user?.id);
+  }
+
   @Roles(UserRole.OPERATOR)
   @Get('admin')
   listAdminTextbooks() {
     return this.textbookService.listAdminTextbooks();
   }
 
+  @Public()
+  @Get(':id/public')
+  findByIdPublic(
+    @Param('id') id: string,
+    @CurrentUser() user?: AuthenticatedUser,
+  ) {
+    return this.textbookService.findByIdPublic(id, user?.id);
+  }
+
+  @Public()
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.textbookService.findById(id);

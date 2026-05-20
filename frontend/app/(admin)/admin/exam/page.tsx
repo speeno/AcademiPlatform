@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Plus, Users, Pencil } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
@@ -8,6 +8,7 @@ import { BrandBadge } from '@/components/ui/brand-badge';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { API_BASE } from '@/lib/api-base';
+import { calculatePricingSnapshot, type DiscountType } from '@/lib/pricing-snapshot';
 
 const API = API_BASE;
 
@@ -28,10 +29,11 @@ interface Session {
   applyEndAt: string;
   place: string | null;
   fee: number;
+  displayFee?: number | null;
   currency?: string;
   basePrice?: number;
   salePrice?: number | null;
-  discountType?: 'NONE' | 'PERCENT' | 'FIXED';
+  discountType?: DiscountType;
   discountValue?: number;
   priceValidFrom?: string | null;
   priceValidUntil?: string | null;
@@ -64,16 +66,34 @@ export default function AdminExamPage() {
     reason: '',
   });
   const [saving, setSaving] = useState(false);
-  const basePriceNum = Number(form.basePrice) || 0;
-  const salePriceNum = form.salePrice === '' ? basePriceNum : Number(form.salePrice || 0);
-  const discountValueNum = Number(form.discountValue || 0);
-  const discountAmount =
-    form.discountType === 'PERCENT'
-      ? Math.floor((salePriceNum * discountValueNum) / 100)
-      : form.discountType === 'FIXED'
-        ? discountValueNum
-        : 0;
-  const finalPreviewFee = Math.max(0, salePriceNum - discountAmount);
+
+  // 백엔드 `calculatePricingSnapshot`과 동일한 공식을 사용해 미리보기 산출.
+  // - legacyPrice 기준은 편집 중인 회차의 현재 fee(없으면 0)로, basePrice 0 대비 안전 폴백 보장
+  // - 저장 시 백엔드 pricing PATCH가 동일한 식으로 fee를 갱신하므로 화면-API-결제 금액이 정합한다
+  const previewSnapshot = useMemo(() => {
+    const basePrice = Number(form.basePrice) || 0;
+    const salePrice = form.salePrice === '' ? null : Number(form.salePrice);
+    const discountValue = Number(form.discountValue || 0);
+    const legacyPrice = editing?.fee ?? basePrice;
+    return calculatePricingSnapshot({
+      legacyPrice,
+      basePrice,
+      salePrice,
+      discountType: form.discountType as DiscountType,
+      discountValue,
+      validFrom: form.priceValidFrom ? new Date(form.priceValidFrom) : null,
+      validUntil: form.priceValidUntil ? new Date(form.priceValidUntil) : null,
+    });
+  }, [
+    form.basePrice,
+    form.salePrice,
+    form.discountType,
+    form.discountValue,
+    form.priceValidFrom,
+    form.priceValidUntil,
+    editing?.fee,
+  ]);
+  const finalPreviewFee = previewSnapshot.finalAmount;
 
   const authHeader = (): Record<string, string> => {
     const t = localStorage.getItem('accessToken');
@@ -139,6 +159,9 @@ export default function AdminExamPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // 회차 기본 정보만 저장한다. fee(legacy 가격)는 직후의 pricing PATCH가
+      // `calculatePricingSnapshot.finalAmount`로 단일 산정해 덮어쓰므로 여기서는 전송하지 않는다.
+      // (이중 PATCH로 인한 불일치 방지 — 관리자 미리보기/공개 displayFee/결제 금액 일치)
       const body = {
         qualificationName: form.qualificationName,
         roundName: form.roundName,
@@ -146,7 +169,6 @@ export default function AdminExamPage() {
         applyStartAt: form.applyStartAt,
         applyEndAt: form.applyEndAt,
         place: form.place || null,
-        fee: finalPreviewFee,
         capacity: form.capacity ? Number(form.capacity) : undefined,
         status: form.status,
       };
@@ -181,7 +203,7 @@ export default function AdminExamPage() {
     { key: 'applyEnd', header: '접수마감', cell: (s) => <span className="text-xs text-muted-foreground">{s.applyEndAt ? new Date(s.applyEndAt).toLocaleDateString('ko-KR') : '-'}</span>, className: 'w-24', hideOnMobile: true },
     { key: 'status', header: '상태', cell: (s) => { const si = sessionStatusInfo[s.status] ?? { label: s.status, variant: 'default' as const }; return <BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge>; }, className: 'w-20' },
     { key: 'count', header: '접수자', cell: (s) => <Link href={`/admin/exam/${s.id}/applications`} className="flex items-center gap-1 text-xs font-semibold text-brand-blue"><Users className="w-3.5 h-3.5" /> {s._count?.applications ?? 0}명</Link>, className: 'w-20' },
-    { key: 'fee', header: '응시료', cell: (s) => <span className="text-muted-foreground">{s.fee.toLocaleString()}원</span>, className: 'w-24', hideOnMobile: true },
+    { key: 'fee', header: '응시료', cell: (s) => <span className="text-muted-foreground tabular-nums">{(s.displayFee ?? s.fee).toLocaleString('ko-KR')}원</span>, className: 'w-24', hideOnMobile: true },
     { key: 'actions', header: '관리', cell: (s) => <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>, className: 'w-12' },
   ];
 
@@ -267,11 +289,18 @@ export default function AdminExamPage() {
                     <label className="block text-sm font-medium mb-1">유효 종료</label>
                     <input type="datetime-local" value={form.priceValidUntil} onChange={(e) => setForm((p) => ({ ...p, priceValidUntil: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                   </div>
-                  <div className="col-span-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
-                    최종 응시료: <span className="font-semibold">{finalPreviewFee.toLocaleString()}원</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      (정가 {basePriceNum.toLocaleString()} / 판매가 {salePriceNum.toLocaleString()} / 할인 {discountAmount.toLocaleString()})
-                    </span>
+                  <div className="col-span-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm space-y-1">
+                    <div>
+                      최종 응시료: <span className="font-semibold tabular-nums">{finalPreviewFee.toLocaleString('ko-KR')}원</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (정가 {previewSnapshot.baseAmount.toLocaleString('ko-KR')} / 적용가 {previewSnapshot.preDiscount.toLocaleString('ko-KR')} / 할인 {previewSnapshot.discountAmount.toLocaleString('ko-KR')})
+                      </span>
+                    </div>
+                    {!previewSnapshot.isInValidWindow && (
+                      <p className="text-[11px] text-orange-600">
+                        현재 시각이 유효기간 밖이라 할인/판매가 미적용 상태입니다. 저장 시 공개 화면과 결제 금액은 정가({previewSnapshot.baseAmount.toLocaleString('ko-KR')}원) 기준이 됩니다.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

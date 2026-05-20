@@ -409,7 +409,19 @@ export class ExamService {
       }),
       this.prisma.examSession.count({ where }),
     ]);
-    return { sessions, total, page, limit };
+
+    // 관리자 응답은 마스킹 없이 공개 화면/결제와 동일한 스냅샷 금액(displayFee)을 함께 노출한다.
+    // - fee: legacy 컬럼 raw 값(레거시 호환)
+    // - displayFee: calculatePricingSnapshot.finalAmount
+    return {
+      sessions: sessions.map((session) => ({
+        ...session,
+        displayFee: this.resolveSessionDisplayFee(session),
+      })),
+      total,
+      page,
+      limit,
+    };
   }
 
   async createSession(data: any) {

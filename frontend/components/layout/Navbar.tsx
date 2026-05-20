@@ -14,6 +14,7 @@ const navItems = [
   { label: '서비스', href: '/services' },
   { label: '소개', href: '/about' },
   { label: '교육과정', href: '/courses' },
+  { label: '교재 구매', href: '/store/textbooks' },
   { label: '시험접수', href: '/exam' },
   { label: '라이브/설명회', href: '/live' },
   { label: 'AI Tip 영상', href: '/shorts' },

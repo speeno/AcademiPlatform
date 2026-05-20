@@ -23,8 +23,8 @@ const footerLinks = {
     { label: '과정 목록', href: '/courses' },
     { label: '수강 신청', href: '/courses#enroll' },
     { label: 'AI Tip 영상', href: '/shorts' },
-    { label: '온라인 교재', href: '/textbooks' },
-    { label: '교재 별도 구매', href: '/books' },
+    { label: '교재 구매', href: '/store/textbooks' },
+    { label: '내 교재 열람', href: '/textbooks' },
   ],
   시험접수: [
     { label: '시험 안내', href: '/about/exam' },

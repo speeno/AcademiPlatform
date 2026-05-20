@@ -118,8 +118,18 @@ export default function ExamGuidePage() {
                 시험 접수 바로가기 <ArrowRight className="w-4 h-4" />
               </BrandButton>
             </Link>
+            <Link href="/store/textbooks">
+              <BrandButton variant="secondary" size="lg">
+                교재 구매하기
+              </BrandButton>
+            </Link>
+            <Link href="/mypage">
+              <BrandButton variant="outline" size="lg">
+                마이페이지(북티켓)
+              </BrandButton>
+            </Link>
             <Link href="/contact">
-              <BrandButton variant="outline">문의하기</BrandButton>
+              <BrandButton variant="ghost" size="lg">문의하기</BrandButton>
             </Link>
           </div>
         </PageShell>

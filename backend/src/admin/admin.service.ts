@@ -9,6 +9,7 @@ import {
   UserRole,
   UserStatus,
 } from '@prisma/client';
+import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
 
 @Injectable()
 export class AdminService {
@@ -586,12 +587,15 @@ export class AdminService {
     if (targetType === PriceTargetType.COURSE) {
       const current = await this.prisma.course.findUnique({ where: { id: targetId } });
       if (!current) throw new NotFoundException('강의를 찾을 수 없습니다.');
-      const next = this.applyPolicyToLegacyPrice(current.price, patch);
+      const { updateData, finalAmount } = this.buildPricingUpdate(
+        { ...current, legacyPrice: current.price },
+        patch,
+      );
       const updated = await this.prisma.course.update({
         where: { id: targetId },
         data: {
-          ...next,
-          price: next.legacyPrice,
+          ...updateData,
+          price: finalAmount,
           pricePolicyVersion: current.pricePolicyVersion + 1,
         },
       });
@@ -602,12 +606,15 @@ export class AdminService {
     if (targetType === PriceTargetType.EXAM_SESSION) {
       const current = await this.prisma.examSession.findUnique({ where: { id: targetId } });
       if (!current) throw new NotFoundException('시험 회차를 찾을 수 없습니다.');
-      const next = this.applyPolicyToLegacyPrice(current.fee, patch);
+      const { updateData, finalAmount } = this.buildPricingUpdate(
+        { ...current, legacyPrice: current.fee },
+        patch,
+      );
       const updated = await this.prisma.examSession.update({
         where: { id: targetId },
         data: {
-          ...next,
-          fee: next.legacyPrice,
+          ...updateData,
+          fee: finalAmount,
           pricePolicyVersion: current.pricePolicyVersion + 1,
         },
       });
@@ -617,12 +624,15 @@ export class AdminService {
 
     const current = await this.prisma.textbook.findUnique({ where: { id: targetId } });
     if (!current) throw new NotFoundException('교재를 찾을 수 없습니다.');
-    const next = this.applyPolicyToLegacyPrice(current.price, patch);
+    const { updateData, finalAmount } = this.buildPricingUpdate(
+      { ...current, legacyPrice: current.price },
+      patch,
+    );
     const updated = await this.prisma.textbook.update({
       where: { id: targetId },
       data: {
-        ...next,
-        price: next.legacyPrice,
+        ...updateData,
+        price: finalAmount,
         pricePolicyVersion: current.pricePolicyVersion + 1,
       },
     });
@@ -679,8 +689,23 @@ export class AdminService {
     return Object.keys(patch).length > 0 ? patch : null;
   }
 
-  private applyPolicyToLegacyPrice(
-    currentLegacyPrice: number,
+  /**
+   * 가격 정책 PATCH를 현재 엔티티에 병합하고 `calculatePricingSnapshot`으로 최종 금액을 산출한다.
+   * - Prisma update에 안전한 `updateData`와 legacy 가격 필드(price/fee)에 저장할 `finalAmount`를 분리해 반환한다.
+   * - 모든 가격 노출(공개 displayFee, 결제 검증, 관리자 미리보기)이 동일한 스냅샷 로직을 공유하도록 단일화한다.
+   */
+  private buildPricingUpdate(
+    current: {
+      currency: string;
+      basePrice: number;
+      salePrice: number | null;
+      discountType: DiscountType;
+      discountValue: number;
+      priceValidFrom: Date | null;
+      priceValidUntil: Date | null;
+      pricePolicyVersion: number;
+      legacyPrice: number;
+    },
     patch: {
       currency?: string;
       basePrice?: number;
@@ -691,25 +716,41 @@ export class AdminService {
       priceValidUntil?: Date | null;
     },
   ) {
-    const basePrice = patch.basePrice ?? currentLegacyPrice;
-    const salePrice = patch.salePrice ?? basePrice;
-    const discountType = patch.discountType ?? DiscountType.NONE;
-    const discountValue = patch.discountValue ?? 0;
-    let discountAmount = 0;
-    if (discountType === DiscountType.PERCENT) {
-      discountAmount = Math.floor((salePrice * discountValue) / 100);
-    } else if (discountType === DiscountType.FIXED) {
-      discountAmount = discountValue;
-    }
-    const finalPrice = Math.max(0, salePrice - discountAmount);
+    const merged = {
+      currency: patch.currency ?? current.currency,
+      basePrice: patch.basePrice ?? current.basePrice,
+      salePrice: 'salePrice' in patch ? (patch.salePrice ?? null) : current.salePrice,
+      discountType: patch.discountType ?? current.discountType,
+      discountValue: patch.discountValue ?? current.discountValue,
+      priceValidFrom:
+        'priceValidFrom' in patch ? (patch.priceValidFrom ?? null) : current.priceValidFrom,
+      priceValidUntil:
+        'priceValidUntil' in patch ? (patch.priceValidUntil ?? null) : current.priceValidUntil,
+    };
+
+    const snapshot = calculatePricingSnapshot({
+      legacyPrice: current.legacyPrice,
+      basePrice: merged.basePrice,
+      salePrice: merged.salePrice,
+      discountType: merged.discountType,
+      discountValue: merged.discountValue,
+      validFrom: merged.priceValidFrom,
+      validUntil: merged.priceValidUntil,
+      currency: merged.currency,
+      policyVersion: current.pricePolicyVersion,
+    });
 
     return {
-      ...patch,
-      basePrice,
-      salePrice,
-      discountType,
-      discountValue,
-      legacyPrice: finalPrice,
+      updateData: {
+        currency: merged.currency,
+        basePrice: merged.basePrice,
+        salePrice: merged.salePrice,
+        discountType: merged.discountType,
+        discountValue: merged.discountValue,
+        priceValidFrom: merged.priceValidFrom,
+        priceValidUntil: merged.priceValidUntil,
+      },
+      finalAmount: snapshot.finalAmount,
     };
   }
 
