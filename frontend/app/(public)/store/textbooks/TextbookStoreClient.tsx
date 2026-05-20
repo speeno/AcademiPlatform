@@ -13,6 +13,10 @@ import { runPortOneCheckout } from '@/lib/payment';
 import { apiFetchWithAuth } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+  ONLINE_TEXTBOOK_STORE_AVAILABLE,
+  ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
+} from '@/lib/online-textbook-store';
 
 export type StoreTextbook = TextbookStoreCardItem;
 
@@ -31,7 +35,11 @@ interface Props {
 }
 
 const TAB_LIST: { id: StoreTab; label: string; description: string }[] = [
-  { id: 'online', label: '온라인 교재', description: '결제 후 즉시 열람' },
+  {
+    id: 'online',
+    label: '온라인 교재',
+    description: ONLINE_TEXTBOOK_STORE_AVAILABLE ? '결제 후 즉시 열람' : ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
+  },
   { id: 'external', label: '외부 판매처 교재', description: '인쇄·소장용 별도 판매' },
 ];
 
@@ -57,6 +65,10 @@ export function TextbookStoreClient({
   };
 
   const handleOnlinePurchase = async (book: StoreTextbook) => {
+    if (!ONLINE_TEXTBOOK_STORE_AVAILABLE) {
+      toast.message(ONLINE_TEXTBOOK_UNAVAILABLE_LABEL);
+      return;
+    }
     if (book.hasAccess) return;
 
     if (isAuthed === false) {
@@ -168,7 +180,14 @@ function OnlineTextbookList({ books, loadError, buyingId, isAuthed, onPurchase }
   }
 
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <div className="space-y-4">
+      {!ONLINE_TEXTBOOK_STORE_AVAILABLE && (
+        <p className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+          온라인 교재 구매·열람 기능은 현재 {ONLINE_TEXTBOOK_UNAVAILABLE_LABEL}입니다. 외부 판매처 탭에서
+          인쇄·소장용 교재를 이용해 주세요.
+        </p>
+      )}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
       {books.map((book) => (
         <TextbookStoreCard
           key={book.id}
@@ -178,6 +197,7 @@ function OnlineTextbookList({ books, loadError, buyingId, isAuthed, onPurchase }
           onPurchase={onPurchase}
         />
       ))}
+      </div>
     </div>
   );
 }

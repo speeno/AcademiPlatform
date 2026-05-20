@@ -6,6 +6,10 @@ import { BookOpen, FileText, ShoppingCart } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PriceDisplay } from '@/components/ui/price-display';
+import {
+  ONLINE_TEXTBOOK_STORE_AVAILABLE,
+  ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
+} from '@/lib/online-textbook-store';
 
 export interface TextbookStoreCardItem {
   id: string;
@@ -62,7 +66,18 @@ export function TextbookStoreCard({
         )}
         <div className="mt-auto space-y-3">
           <PriceDisplay price={ctaPrice} className="text-sm font-semibold text-brand-orange" />
-          {book.hasAccess ? (
+          {!ONLINE_TEXTBOOK_STORE_AVAILABLE ? (
+            <>
+              <BrandButton variant="outline" size="sm" fullWidth disabled>
+                {ONLINE_TEXTBOOK_UNAVAILABLE_LABEL}
+              </BrandButton>
+              <Link href={detailHref}>
+                <BrandButton variant="ghost" size="sm" fullWidth>
+                  상세 보기
+                </BrandButton>
+              </Link>
+            </>
+          ) : book.hasAccess ? (
             <Link href={`/textbooks/${book.id}`}>
               <BrandButton variant="outline" size="sm" fullWidth>
                 <BookOpen className="w-3.5 h-3.5 mr-1" />

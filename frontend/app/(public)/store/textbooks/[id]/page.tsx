@@ -12,6 +12,10 @@ import { TextbookPurchaseButton } from '@/components/store/TextbookPurchaseButto
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
 import { getServerAuthHeaders } from '@/lib/server-api-fetch';
+import {
+  ONLINE_TEXTBOOK_STORE_AVAILABLE,
+  ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
+} from '@/lib/online-textbook-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -109,7 +113,11 @@ export default async function TextbookStoreDetailPage({ params }: PageProps) {
                   총 {book.totalPages.toLocaleString('ko-KR')}페이지
                 </p>
               )}
-              <p className="text-xs text-muted-foreground mb-2">결제 후 즉시 온라인 열람</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                {ONLINE_TEXTBOOK_STORE_AVAILABLE
+                  ? '결제 후 즉시 온라인 열람'
+                  : `온라인 교재 구매·열람은 현재 ${ONLINE_TEXTBOOK_UNAVAILABLE_LABEL}입니다.`}
+              </p>
               <PriceDisplay
                 price={ctaPrice}
                 className="text-2xl font-extrabold text-brand-orange mb-6"

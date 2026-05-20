@@ -9,6 +9,10 @@ import { useAuthState } from '@/lib/use-auth-state';
 import { apiFetchWithAuth } from '@/lib/api-client';
 import { runPortOneCheckout } from '@/lib/payment';
 import { toast } from 'sonner';
+import {
+  ONLINE_TEXTBOOK_STORE_AVAILABLE,
+  ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
+} from '@/lib/online-textbook-store';
 
 interface TextbookPurchaseButtonProps {
   textbookId: string;
@@ -31,6 +35,14 @@ export function TextbookPurchaseButton({
 
   const loginNext =
     nextPath ?? `/store/textbooks/${textbookId}`;
+
+  if (!ONLINE_TEXTBOOK_STORE_AVAILABLE) {
+    return (
+      <BrandButton variant="primary" size="lg" fullWidth disabled>
+        {ONLINE_TEXTBOOK_UNAVAILABLE_LABEL}
+      </BrandButton>
+    );
+  }
 
   if (hasAccess) {
     return (

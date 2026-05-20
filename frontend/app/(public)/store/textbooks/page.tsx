@@ -9,6 +9,10 @@ import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
 import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 import { TextbookStoreClient, type StoreTextbook, type BookOffer } from './TextbookStoreClient';
+import {
+  ONLINE_TEXTBOOK_STORE_AVAILABLE,
+  ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
+} from '@/lib/online-textbook-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +82,9 @@ export default async function TextbookStorePage({ searchParams }: PageProps) {
             AcademiQ 교재 스토어
           </h1>
           <p className="text-muted-foreground">
-            온라인 교재(즉시 열람)와 외부 판매처 교재(소장용)를 한 곳에서 확인하고 구매할 수 있습니다.
+            {ONLINE_TEXTBOOK_STORE_AVAILABLE
+              ? '온라인 교재(즉시 열람)와 외부 판매처 교재(소장용)를 한 곳에서 확인하고 구매할 수 있습니다.'
+              : `온라인 교재 구매·열람은 현재 ${ONLINE_TEXTBOOK_UNAVAILABLE_LABEL}입니다. 외부 판매처 교재(소장용)는 정상 이용 가능합니다.`}
           </p>
         </PageShell>
       </section>
