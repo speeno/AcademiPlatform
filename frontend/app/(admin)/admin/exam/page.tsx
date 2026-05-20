@@ -1,22 +1,26 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Users, Pencil } from 'lucide-react';
-import { BrandButton } from '@/components/ui/brand-button';
-import { BrandBadge } from '@/components/ui/brand-badge';
+import { Pencil, Plus, Users } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { BrandBadge } from '@/components/ui/brand-badge';
+import { BrandButton } from '@/components/ui/brand-button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { API_BASE } from '@/lib/api-base';
+import { buildAuthHeader } from '@/lib/auth';
 import { calculatePricingSnapshot, type DiscountType } from '@/lib/pricing-snapshot';
 
 const API = API_BASE;
 
-const sessionStatusInfo: Record<string, { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
+const sessionStatusInfo: Record<
+  string,
+  { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }
+> = {
   UPCOMING: { label: '예정', variant: 'default' },
   OPEN: { label: '접수 중', variant: 'green' },
   CLOSED: { label: '마감', variant: 'orange' },
-  CANCELLED:        { label: '취소', variant: 'red' },
+  CANCELLED: { label: '취소', variant: 'red' },
 };
 
 interface Session {
@@ -41,116 +45,98 @@ interface Session {
   _count: { applications: number };
 }
 
-export default function AdminExamPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(false);
-  const [editing, setEditing] = useState<Session | null>(null);
-  const [form, setForm] = useState({
+type SessionForm = {
+  qualificationName: string;
+  roundName: string;
+  examAt: string;
+  applyStartAt: string;
+  applyEndAt: string;
+  place: string;
+  capacity: string;
+  status: string;
+  currency: string;
+  basePrice: string;
+  reason: string;
+};
+
+function buildDefaultForm(): SessionForm {
+  return {
     qualificationName: '',
     roundName: '',
     examAt: '',
     applyStartAt: '',
     applyEndAt: '',
     place: '',
-    fee: '',
     capacity: '',
     status: 'UPCOMING',
     currency: 'KRW',
     basePrice: '',
-    salePrice: '',
-    discountType: 'NONE',
-    discountValue: '0',
-    priceValidFrom: '',
-    priceValidUntil: '',
     reason: '',
-  });
-  const [saving, setSaving] = useState(false);
-
-  // 백엔드 `calculatePricingSnapshot`과 동일한 공식을 사용해 미리보기 산출.
-  // - legacyPrice 기준은 편집 중인 회차의 현재 fee(없으면 0)로, basePrice 0 대비 안전 폴백 보장
-  // - 저장 시 백엔드 pricing PATCH가 동일한 식으로 fee를 갱신하므로 화면-API-결제 금액이 정합한다
-  const previewSnapshot = useMemo(() => {
-    const basePrice = Number(form.basePrice) || 0;
-    const salePrice = form.salePrice === '' ? null : Number(form.salePrice);
-    const discountValue = Number(form.discountValue || 0);
-    const legacyPrice = editing?.fee ?? basePrice;
-    return calculatePricingSnapshot({
-      legacyPrice,
-      basePrice,
-      salePrice,
-      discountType: form.discountType as DiscountType,
-      discountValue,
-      validFrom: form.priceValidFrom ? new Date(form.priceValidFrom) : null,
-      validUntil: form.priceValidUntil ? new Date(form.priceValidUntil) : null,
-    });
-  }, [
-    form.basePrice,
-    form.salePrice,
-    form.discountType,
-    form.discountValue,
-    form.priceValidFrom,
-    form.priceValidUntil,
-    editing?.fee,
-  ]);
-  const finalPreviewFee = previewSnapshot.finalAmount;
-
-  const authHeader = (): Record<string, string> => {
-    const t = localStorage.getItem('accessToken');
-    const h: Record<string, string> = { 'Content-Type': 'application/json' }; if (t) h['Authorization'] = `Bearer ${t}`; return h;
   };
+}
+
+export default function AdminExamPage() {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [editing, setEditing] = useState<Session | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<SessionForm>(buildDefaultForm());
+
+  // 단일 소스: 목록 금액(displayFee/final)을 편집값과 저장값으로 통일한다.
+  const finalPreviewFee = useMemo(() => {
+    const amount = Number(form.basePrice) || 0;
+    return calculatePricingSnapshot({
+      legacyPrice: amount,
+      basePrice: amount,
+      salePrice: null,
+      discountType: 'NONE',
+      discountValue: 0,
+      validFrom: null,
+      validUntil: null,
+    }).finalAmount;
+  }, [form.basePrice]);
 
   const load = async () => {
     try {
-      const res = await fetch(`${API}/exam/admin/sessions?limit=50`, { headers: authHeader() });
-      if (res.ok) { const d = await res.json(); setSessions(d.sessions ?? d); }
-    } catch { /* ignore */ } finally { setLoading(false); }
+      const res = await fetch(`${API}/exam/admin/sessions?limit=50`, {
+        headers: buildAuthHeader(false),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions ?? data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
-    setForm({
-      qualificationName: '',
-      roundName: '',
-      examAt: '',
-      applyStartAt: '',
-      applyEndAt: '',
-      place: '',
-      fee: '',
-      capacity: '',
-      status: 'UPCOMING',
-      currency: 'KRW',
-      basePrice: '',
-      salePrice: '',
-      discountType: 'NONE',
-      discountValue: '0',
-      priceValidFrom: '',
-      priceValidUntil: '',
-      reason: '',
-    });
+    setForm(buildDefaultForm());
     setModal(true);
   };
-  const openEdit = (s: Session) => {
-    setEditing(s);
+
+  const openEdit = (session: Session) => {
+    const unifiedAmount = session.displayFee ?? session.fee;
+    setEditing(session);
     setForm({
-      qualificationName: s.qualificationName,
-      roundName: s.roundName,
-      examAt: s.examAt.slice(0, 16),
-      applyStartAt: s.applyStartAt?.slice(0, 16) ?? '',
-      applyEndAt: s.applyEndAt?.slice(0, 16) ?? '',
-      place: s.place ?? '',
-      fee: '',
-      capacity: String(s.capacity ?? ''),
-      status: s.status,
-      currency: s.currency ?? 'KRW',
-      basePrice: String((s.basePrice && s.basePrice > 0) ? s.basePrice : s.fee),
-      salePrice: s.salePrice == null ? '' : String(s.salePrice),
-      discountType: s.discountType ?? 'NONE',
-      discountValue: String(s.discountValue ?? 0),
-      priceValidFrom: s.priceValidFrom?.slice(0, 16) ?? '',
-      priceValidUntil: s.priceValidUntil?.slice(0, 16) ?? '',
+      qualificationName: session.qualificationName,
+      roundName: session.roundName,
+      examAt: session.examAt.slice(0, 16),
+      applyStartAt: session.applyStartAt?.slice(0, 16) ?? '',
+      applyEndAt: session.applyEndAt?.slice(0, 16) ?? '',
+      place: session.place ?? '',
+      capacity: String(session.capacity ?? ''),
+      status: session.status,
+      currency: session.currency ?? 'KRW',
+      basePrice: String(unifiedAmount),
       reason: '',
     });
     setModal(true);
@@ -159,9 +145,7 @@ export default function AdminExamPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 회차 기본 정보만 저장한다. fee(legacy 가격)는 직후의 pricing PATCH가
-      // `calculatePricingSnapshot.finalAmount`로 단일 산정해 덮어쓰므로 여기서는 전송하지 않는다.
-      // (이중 PATCH로 인한 불일치 방지 — 관리자 미리보기/공개 displayFee/결제 금액 일치)
+      const unifiedAmount = Number(form.basePrice) || 0;
       const body = {
         qualificationName: form.qualificationName,
         roundName: form.roundName,
@@ -171,50 +155,143 @@ export default function AdminExamPage() {
         place: form.place || null,
         capacity: form.capacity ? Number(form.capacity) : undefined,
         status: form.status,
+        fee: unifiedAmount,
       };
-      const url = editing ? `${API}/exam/admin/sessions/${editing.id}` : `${API}/exam/admin/sessions`;
-      const res = await fetch(url, { method: editing ? 'PATCH' : 'POST', headers: authHeader(), body: JSON.stringify(body) });
-      if (res.ok) {
-        const saved = await res.json();
-        await fetch(`${API}/admin/pricing/EXAM_SESSION/${saved.id}`, {
-          method: 'PATCH',
-          headers: authHeader(),
-          body: JSON.stringify({
-            currency: form.currency,
-            basePrice: Number(form.basePrice) || 0,
-            salePrice: form.salePrice === '' ? null : Number(form.salePrice),
-            discountType: form.discountType,
-            discountValue: Number(form.discountValue || 0),
-            priceValidFrom: form.priceValidFrom || null,
-            priceValidUntil: form.priceValidUntil || null,
-            reason: form.reason || '시험 응시료 정책 변경',
-          }),
-        });
-        setModal(false);
-        load();
-      }
-    } catch { /* ignore */ } finally { setSaving(false); }
+
+      const url = editing
+        ? `${API}/exam/admin/sessions/${editing.id}`
+        : `${API}/exam/admin/sessions`;
+      const res = await fetch(url, {
+        method: editing ? 'PATCH' : 'POST',
+        headers: buildAuthHeader(),
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) return;
+
+      const saved = await res.json();
+      await fetch(`${API}/admin/pricing/EXAM_SESSION/${saved.id}`, {
+        method: 'PATCH',
+        headers: buildAuthHeader(),
+        body: JSON.stringify({
+          currency: form.currency,
+          basePrice: unifiedAmount,
+          salePrice: null,
+          discountType: 'NONE',
+          discountValue: 0,
+          priceValidFrom: null,
+          priceValidUntil: null,
+          reason: form.reason || '시험 응시료 단일 필드 동기화',
+        }),
+      });
+
+      setModal(false);
+      load();
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false);
+    }
   };
 
   const columns: DataTableColumn<Session>[] = [
-    { key: 'qual', header: '자격명', cell: (s) => <span className="font-medium">{s.qualificationName}</span> },
-    { key: 'round', header: '회차', cell: (s) => <span className="text-muted-foreground">{s.roundName}</span>, className: 'w-28' },
-    { key: 'examAt', header: '시험일', cell: (s) => <span className="text-xs text-muted-foreground">{new Date(s.examAt).toLocaleDateString('ko-KR')}</span>, className: 'w-24', hideOnMobile: true },
-    { key: 'applyEnd', header: '접수마감', cell: (s) => <span className="text-xs text-muted-foreground">{s.applyEndAt ? new Date(s.applyEndAt).toLocaleDateString('ko-KR') : '-'}</span>, className: 'w-24', hideOnMobile: true },
-    { key: 'status', header: '상태', cell: (s) => { const si = sessionStatusInfo[s.status] ?? { label: s.status, variant: 'default' as const }; return <BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge>; }, className: 'w-20' },
-    { key: 'count', header: '접수자', cell: (s) => <Link href={`/admin/exam/${s.id}/applications`} className="flex items-center gap-1 text-xs font-semibold text-brand-blue"><Users className="w-3.5 h-3.5" /> {s._count?.applications ?? 0}명</Link>, className: 'w-20' },
-    { key: 'fee', header: '응시료', cell: (s) => <span className="text-muted-foreground tabular-nums">{(s.displayFee ?? s.fee).toLocaleString('ko-KR')}원</span>, className: 'w-24', hideOnMobile: true },
-    { key: 'actions', header: '관리', cell: (s) => <button onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-muted"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>, className: 'w-12' },
+    {
+      key: 'qual',
+      header: '자격명',
+      cell: (s) => <span className="font-medium">{s.qualificationName}</span>,
+    },
+    {
+      key: 'round',
+      header: '회차',
+      cell: (s) => <span className="text-muted-foreground">{s.roundName}</span>,
+      className: 'w-28',
+    },
+    {
+      key: 'examAt',
+      header: '시험일',
+      cell: (s) => (
+        <span className="text-xs text-muted-foreground">
+          {new Date(s.examAt).toLocaleDateString('ko-KR')}
+        </span>
+      ),
+      className: 'w-24',
+      hideOnMobile: true,
+    },
+    {
+      key: 'applyEnd',
+      header: '접수마감',
+      cell: (s) => (
+        <span className="text-xs text-muted-foreground">
+          {s.applyEndAt ? new Date(s.applyEndAt).toLocaleDateString('ko-KR') : '-'}
+        </span>
+      ),
+      className: 'w-24',
+      hideOnMobile: true,
+    },
+    {
+      key: 'status',
+      header: '상태',
+      cell: (s) => {
+        const info = sessionStatusInfo[s.status] ?? {
+          label: s.status,
+          variant: 'default' as const,
+        };
+        return (
+          <BrandBadge variant={info.variant} className="text-xs">
+            {info.label}
+          </BrandBadge>
+        );
+      },
+      className: 'w-20',
+    },
+    {
+      key: 'count',
+      header: '접수자',
+      cell: (s) => (
+        <Link
+          href={`/admin/exam/${s.id}/applications`}
+          className="flex items-center gap-1 text-xs font-semibold text-brand-blue"
+        >
+          <Users className="h-3.5 w-3.5" /> {s._count?.applications ?? 0}명
+        </Link>
+      ),
+      className: 'w-20',
+    },
+    {
+      key: 'fee',
+      header: '응시료',
+      cell: (s) => (
+        <span className="tabular-nums text-muted-foreground">
+          {(s.displayFee ?? s.fee).toLocaleString('ko-KR')}원
+        </span>
+      ),
+      className: 'w-24',
+      hideOnMobile: true,
+    },
+    {
+      key: 'actions',
+      header: '관리',
+      cell: (s) => (
+        <button
+          type="button"
+          onClick={() => openEdit(s)}
+          className="rounded p-1.5 hover:bg-muted"
+          aria-label="회차 수정"
+        >
+          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      ),
+      className: 'w-12',
+    },
   ];
 
   return (
     <div>
       <PageHeader
         title="시험 회차 관리"
-        description={`총 ${sessions.length}개 회차 · 공개 자격 소개(\`/admin/qualifications\`)와 시험 회차 자격명을 함께 맞춰주세요.`}
+        description={`총 ${sessions.length}개 회차 · 목록 응시료를 기준으로 편집/내부/사용자 노출 금액을 동일하게 유지합니다.`}
         actions={
           <BrandButton variant="primary" size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" /> 회차 등록
+            <Plus className="mr-1 h-4 w-4" /> 회차 등록
           </BrandButton>
         }
       />
@@ -228,9 +305,10 @@ export default function AdminExamPage() {
       />
 
       {modal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold mb-5">{editing ? '회차 수정' : '회차 등록'}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="mb-5 text-lg font-bold">{editing ? '회차 수정' : '회차 등록'}</h2>
+
             <div className="space-y-4">
               {[
                 { label: '자격명', key: 'qualificationName', type: 'text', placeholder: 'AI 크리에이터' },
@@ -242,72 +320,82 @@ export default function AdminExamPage() {
                 { label: '수용 인원', key: 'capacity', type: 'number', placeholder: '100' },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key}>
-                  <label className="block text-sm font-medium mb-1">{label}</label>
-                  <input type={type} value={form[key as keyof typeof form]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} placeholder={placeholder} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                  <label className="mb-1 block text-sm font-medium">{label}</label>
+                  <input
+                    type={type}
+                    value={form[key as keyof SessionForm]}
+                    onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
                 </div>
               ))}
+
               <div>
-                <label className="block text-sm font-medium mb-1">상태</label>
-                <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                  {Object.entries(sessionStatusInfo).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
+                <label className="mb-1 block text-sm font-medium">상태</label>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
+                  className="w-full rounded-lg border bg-white px-3 py-2 text-sm"
+                >
+                  {Object.entries(sessionStatusInfo).map(([value, { label }]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </div>
-              <div className="border-t pt-4 mt-1 space-y-4">
-                <p className="text-sm font-semibold">응시료 설정</p>
+
+              <div className="mt-1 space-y-4 border-t pt-4">
+                <p className="text-sm font-semibold">응시료 설정 (단일 필드)</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1">통화</label>
-                    <input value={form.currency} onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value.toUpperCase() }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                    <label className="mb-1 block text-sm font-medium">통화</label>
+                    <input
+                      value={form.currency}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, currency: e.target.value.toUpperCase() }))
+                      }
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">응시료 정가</label>
-                    <input type="number" value={form.basePrice} onChange={(e) => setForm((p) => ({ ...p, basePrice: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                    <label className="mb-1 block text-sm font-medium">응시료</label>
+                    <input
+                      type="number"
+                      value={form.basePrice}
+                      onChange={(e) => setForm((prev) => ({ ...prev, basePrice: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">판매가</label>
-                    <input type="number" value={form.salePrice} onChange={(e) => setForm((p) => ({ ...p, salePrice: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                  <div className="col-span-2">
+                    <label className="mb-1 block text-sm font-medium">변경 사유</label>
+                    <input
+                      value={form.reason}
+                      onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">할인 유형</label>
-                    <select value={form.discountType} onChange={(e) => setForm((p) => ({ ...p, discountType: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                      {['NONE', 'PERCENT', 'FIXED'].map((v) => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">할인 값</label>
-                    <input type="number" value={form.discountValue} onChange={(e) => setForm((p) => ({ ...p, discountValue: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">변경 사유</label>
-                    <input value={form.reason} onChange={(e) => setForm((p) => ({ ...p, reason: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">유효 시작</label>
-                    <input type="datetime-local" value={form.priceValidFrom} onChange={(e) => setForm((p) => ({ ...p, priceValidFrom: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">유효 종료</label>
-                    <input type="datetime-local" value={form.priceValidUntil} onChange={(e) => setForm((p) => ({ ...p, priceValidUntil: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                  </div>
-                  <div className="col-span-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm space-y-1">
-                    <div>
-                      최종 응시료: <span className="font-semibold tabular-nums">{finalPreviewFee.toLocaleString('ko-KR')}원</span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        (정가 {previewSnapshot.baseAmount.toLocaleString('ko-KR')} / 적용가 {previewSnapshot.preDiscount.toLocaleString('ko-KR')} / 할인 {previewSnapshot.discountAmount.toLocaleString('ko-KR')})
-                      </span>
-                    </div>
-                    {!previewSnapshot.isInValidWindow && (
-                      <p className="text-[11px] text-orange-600">
-                        현재 시각이 유효기간 밖이라 할인/판매가 미적용 상태입니다. 저장 시 공개 화면과 결제 금액은 정가({previewSnapshot.baseAmount.toLocaleString('ko-KR')}원) 기준이 됩니다.
-                      </p>
-                    )}
+                  <div className="col-span-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+                    최종 응시료:{' '}
+                    <span className="font-semibold tabular-nums">
+                      {finalPreviewFee.toLocaleString('ko-KR')}원
+                    </span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      (목록/내부/사용자 표시 동일)
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <BrandButton variant="ghost" size="sm" onClick={() => setModal(false)}>취소</BrandButton>
-              <BrandButton variant="primary" size="sm" loading={saving} onClick={handleSave}>저장</BrandButton>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <BrandButton variant="ghost" size="sm" onClick={() => setModal(false)}>
+                취소
+              </BrandButton>
+              <BrandButton variant="primary" size="sm" loading={saving} onClick={handleSave}>
+                저장
+              </BrandButton>
             </div>
           </div>
         </div>
