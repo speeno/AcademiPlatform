@@ -79,7 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ),
       }}
     >
-      <div className="p-6 md:p-8">{children}</div>
+      <div className="min-w-0 max-w-full overflow-x-hidden p-4 sm:p-6 md:p-8">{children}</div>
     </SidebarShell>
   );
 }

@@ -184,7 +184,7 @@ export default function AdminReferrersPage() {
   if (loading) return <PageLoader />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 max-w-full overflow-x-hidden">
       <PageHeader title="권유자 관리" description="시험 접수 시 선택 가능한 권유자 그룹 및 멤버를 관리합니다." />
 
       <div className="flex gap-1 border-b">
@@ -220,7 +220,7 @@ export default function AdminReferrersPage() {
           </div>
 
           {groups.map((group, gIdx) => (
-            <div key={group.id} className="bg-white rounded-xl border p-5 space-y-4">
+            <div key={group.id} className="bg-white rounded-xl border p-4 sm:p-5 space-y-4 min-w-0 overflow-hidden">
               <div className="grid md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">그룹 이름</label>
@@ -260,15 +260,15 @@ export default function AdminReferrersPage() {
                   <div className="space-y-3">
                     {group.members.map((member, mIdx) => (
                       <div key={mIdx} className="rounded-lg border bg-muted/30 p-3 space-y-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <input
-                            className="flex-1 border rounded-lg px-3 py-1.5 text-sm bg-white"
+                            className="w-full min-w-0 border rounded-lg px-3 py-1.5 text-sm bg-white sm:flex-1"
                             placeholder="코드 (예: GTC-001)"
                             value={member.code}
                             onChange={(e) => updateMember(gIdx, mIdx, 'code', e.target.value)}
                           />
                           <input
-                            className="flex-1 border rounded-lg px-3 py-1.5 text-sm bg-white"
+                            className="w-full min-w-0 border rounded-lg px-3 py-1.5 text-sm bg-white sm:flex-1"
                             placeholder="표시명 (예: GTC Team 1)"
                             value={member.label}
                             onChange={(e) => updateMember(gIdx, mIdx, 'label', e.target.value)}
@@ -276,7 +276,8 @@ export default function AdminReferrersPage() {
                           <button
                             type="button"
                             onClick={() => removeMember(gIdx, mIdx)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                            className="self-end shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors sm:self-auto"
+                            aria-label="멤버 삭제"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -286,21 +287,21 @@ export default function AdminReferrersPage() {
                           <p className="text-[11px] font-medium text-muted-foreground mb-1.5">
                             멤버별 입금 계좌 정보 <span className="font-normal">(선택사항)</span>
                           </p>
-                          <div className="grid md:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                             <input
-                              className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+                              className="w-full min-w-0 border rounded-lg px-3 py-1.5 text-sm bg-white"
                               placeholder="입금은행 (예: 농협은행)"
                               value={member.depositBank ?? ''}
                               onChange={(e) => updateMember(gIdx, mIdx, 'depositBank', e.target.value)}
                             />
                             <input
-                              className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+                              className="w-full min-w-0 border rounded-lg px-3 py-1.5 text-sm bg-white"
                               placeholder="입금계좌"
                               value={member.depositAccount ?? ''}
                               onChange={(e) => updateMember(gIdx, mIdx, 'depositAccount', e.target.value)}
                             />
                             <input
-                              className="border rounded-lg px-3 py-1.5 text-sm bg-white"
+                              className="w-full min-w-0 border rounded-lg px-3 py-1.5 text-sm bg-white"
                               placeholder="예금주"
                               value={member.depositHolder ?? ''}
                               onChange={(e) => updateMember(gIdx, mIdx, 'depositHolder', e.target.value)}
@@ -313,7 +314,7 @@ export default function AdminReferrersPage() {
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t">
+              <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
                 <BrandButton variant="outline" size="sm" onClick={() => deleteGroup(group.id)}>
                   <Trash2 className="w-4 h-4 mr-1" /> 삭제
                 </BrandButton>

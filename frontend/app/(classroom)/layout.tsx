@@ -81,7 +81,7 @@ export default function ClassroomLayout({ children }: { children: React.ReactNod
           </Link>
         ),
       }}
-      mainClassName="p-6 md:p-8"
+      mainClassName="min-w-0 max-w-full overflow-x-hidden p-4 sm:p-6 md:p-8"
     >
       {children}
     </SidebarShell>
