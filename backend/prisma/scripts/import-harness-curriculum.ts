@@ -36,6 +36,7 @@ type ManifestCourse = {
   duration: string;
   summary?: string;
   description?: string;
+  thumbnailUrl?: string;
   tags?: string[];
   modules: ManifestModule[];
   assignments?: ManifestAssignment[];
@@ -130,6 +131,7 @@ async function upsertCourse(
       category: defaultCategory,
       summary: courseDef.summary ?? '가격·일정 미정',
       description: courseDef.description ?? '',
+      thumbnailUrl: courseDef.thumbnailUrl ?? null,
       tags: courseDef.tags ?? [],
       price: 0,
       basePrice: 0,
@@ -142,6 +144,7 @@ async function upsertCourse(
       category: defaultCategory,
       summary: courseDef.summary ?? '가격·일정 미정',
       description: courseDef.description ?? '',
+      thumbnailUrl: courseDef.thumbnailUrl ?? null,
       tags: courseDef.tags ?? [],
       price: 0,
       basePrice: 0,

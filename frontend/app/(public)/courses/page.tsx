@@ -8,6 +8,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { PriceDisplay } from '@/components/ui/price-display';
 import type { Metadata } from 'next';
 import { getServerApiBase } from '@/lib/api-base';
+import { resolveCourseThumbnailUrl } from '@/lib/course-thumbnail';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
@@ -92,16 +93,20 @@ export default async function CoursesPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => {
               const isUpcoming = course.status === 'UPCOMING';
+              const thumbnailSrc = resolveCourseThumbnailUrl(course.thumbnailUrl, {
+                server: true,
+              });
               const card = (
                 <BrandCard hoverable={!isUpcoming} accent="blue" padding="none" className={`overflow-hidden h-full flex flex-col${isUpcoming ? ' opacity-75' : ''}`}>
                   <div className="relative h-48 overflow-hidden bg-muted flex-shrink-0">
-                    {course.thumbnailUrl ? (
+                    {thumbnailSrc ? (
                       <Image
-                        src={course.thumbnailUrl}
+                        src={thumbnailSrc}
                         alt={course.title}
                         width={400}
                         height={192}
-                        className="w-full h-full object-cover"
+                        unoptimized
+                        className="w-full h-full object-cover object-top"
                       />
                     ) : (
                       <div

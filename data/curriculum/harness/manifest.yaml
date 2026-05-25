@@ -5,6 +5,7 @@
     {
       "title": "Harness·Agent Skills (비개발 1일)",
       "slug": "harness-nondev-1d",
+      "thumbnailUrl": "/covers/harness-nondev-1d.png",
       "track": "non-developer",
       "duration": "1-day",
       "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
@@ -40,6 +41,7 @@
     {
       "title": "Harness·Agent Skills (개발 1일)",
       "slug": "harness-dev-1d",
+      "thumbnailUrl": "/covers/harness-dev-1d.png",
       "track": "developer",
       "duration": "1-day",
       "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
@@ -75,6 +77,7 @@
     {
       "title": "Harness·Agent Skills (비개발 3일)",
       "slug": "harness-nondev-3d",
+      "thumbnailUrl": "/covers/harness-nondev-3d.png",
       "track": "non-developer",
       "duration": "3-day",
       "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
@@ -116,6 +119,7 @@
     {
       "title": "Harness·Agent Skills (개발 3일)",
       "slug": "harness-dev-3d",
+      "thumbnailUrl": "/covers/harness-dev-3d.png",
       "track": "developer",
       "duration": "3-day",
       "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
@@ -156,6 +160,7 @@
     {
       "title": "Harness·Agent Skills (비개발 1주)",
       "slug": "harness-nondev-1w",
+      "thumbnailUrl": "/covers/harness-nondev-1w.png",
       "track": "non-developer",
       "duration": "1-week",
       "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
@@ -192,6 +197,7 @@
     {
       "title": "Harness·Agent Skills (개발 1주)",
       "slug": "harness-dev-1w",
+      "thumbnailUrl": "/covers/harness-dev-1w.png",
       "track": "developer",
       "duration": "1-week",
       "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",

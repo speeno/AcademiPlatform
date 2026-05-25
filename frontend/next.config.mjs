@@ -10,6 +10,11 @@ const nextConfig = {
     root: __dirname,
   },
   images: {
+    localPatterns: [
+      {
+        pathname: '/covers/**',
+      },
+    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -26,6 +31,8 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
+        port: '4400',
+        pathname: '/covers/**',
       },
     ],
   },

@@ -7,6 +7,7 @@ import { PriceDisplay } from '@/components/ui/price-display';
 import { PageShell } from '@/components/layout/PageShell';
 import EnrollButton from './EnrollButton';
 import { API_BASE, getServerApiBase } from '@/lib/api-base';
+import { resolveCourseThumbnailUrl } from '@/lib/course-thumbnail';
 import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
@@ -82,6 +83,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
 
   if (!course) notFound();
 
+  const thumbnailSrc = resolveCourseThumbnailUrl(course.thumbnailUrl, { server: true });
   const totalLessons = (course.modules ?? []).reduce(
     (acc: number, m: any) => acc + (m.lessons?.length ?? 0), 0
   );
@@ -129,19 +131,19 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
           <div className="lg:col-span-1">
             <div className="sticky top-6 bg-white rounded-2xl border shadow-lg p-6">
               {/* 썸네일 */}
-              <div className="w-full rounded-xl mb-5 overflow-hidden bg-muted">
-                {course.thumbnailUrl ? (
+              <div className="w-full h-48 rounded-xl mb-5 overflow-hidden bg-muted">
+                {thumbnailSrc ? (
                   <Image
-                    src={course.thumbnailUrl}
+                    src={thumbnailSrc}
                     alt={course.title}
                     width={480}
                     height={300}
-                    className="w-full object-cover"
-                    style={{ maxHeight: '240px' }}
+                    unoptimized
+                    className="w-full h-full object-cover object-top"
                   />
                 ) : (
                   <div
-                    className="h-40 flex items-center justify-center"
+                    className="h-full flex items-center justify-center"
                     style={{ background: 'var(--gradient-logo)' }}
                   >
                     <BookOpen className="w-14 h-14 text-white opacity-70" />
