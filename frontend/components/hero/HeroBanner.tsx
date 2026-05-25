@@ -46,6 +46,26 @@ function sanitizeHeroSlide(slide: HeroSlide): HeroSlide {
   };
 }
 
+export const HARNESS_AX_HERO_SLIDE: HeroSlide = {
+  id: 'default-harness-ax',
+  backgroundImage: '/covers/harness-nondev-1w.png',
+  overlayOpacity: 0.62,
+  badge: '기업 AX 전환 · Harness·Agent Skills',
+  title: '팀 단위 **AX 전환**,\nHarness로\n실무 자동화를 설계하세요',
+  subtitle:
+    '비개발·개발 트랙, 1일·3일·1주 코호트.\n실시간 워크숍 중심으로 진행하고 AcademiQ는 자료·과제 허브로 보조 활용합니다.',
+  primaryButton: { text: '기업 교육 프로그램', href: '/courses/harness-program' },
+  secondaryButton: { text: '교육 문의', href: '/contact' },
+  promoCard: {
+    image: '/covers/harness-dev-3d.png',
+    title: 'Harness·Agent Skills',
+    description: '스킬·워크플로·검증까지 파일럿 패키지로 완성하는 기업 AX 전환 과정',
+    href: '/courses/harness-program',
+    ctaText: '프로그램 보기',
+  },
+  isActive: true,
+};
+
 export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'default-1',
@@ -66,6 +86,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     },
     isActive: true,
   },
+  HARNESS_AX_HERO_SLIDE,
   {
     id: 'default-2',
     backgroundImage: '/images/promos/hero-promo-corporate.webp',

@@ -30,7 +30,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:all": "npm test && npm run test:e2e",
     "cms:migrate:legacy": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/migrate-lesson-content-to-cms.ts",
-    "curriculum:harness:import": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/import-harness-curriculum.ts"
+    "curriculum:harness:import": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/import-harness-curriculum.ts",
+    "hero:harness:merge": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/merge-hero-harness-slide.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

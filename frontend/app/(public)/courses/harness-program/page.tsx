@@ -30,7 +30,7 @@ export default function HarnessProgramPage() {
             <Link href="/courses">
               <BrandButton variant="outline" size="sm">강좌 목록으로</BrandButton>
             </Link>
-            <Link href="/about/exam">
+            <Link href="/contact">
               <BrandButton variant="ghost" size="sm">교육 문의</BrandButton>
             </Link>
           </div>
