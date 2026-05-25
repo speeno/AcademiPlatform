@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import {
@@ -100,7 +105,49 @@ export class AdminService {
     return this.prisma.user.update({ where: { id: userId }, data: { status } });
   }
 
-  async updateUserRole(userId: string, role: UserRole) {
+  async updateUserRole(
+    userId: string,
+    role: UserRole,
+    actor: { id: string; role: UserRole },
+  ) {
+    if (actor.id === userId) {
+      throw new ForbiddenException('본인 역할은 변경할 수 없습니다.');
+    }
+    if (role === UserRole.SUPER_ADMIN && actor.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        '최고관리자 역할은 최고관리자만 부여할 수 있습니다.',
+      );
+    }
+
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!target) throw new NotFoundException('회원을 찾을 수 없습니다.');
+
+    if (
+      target.role === UserRole.SUPER_ADMIN &&
+      actor.role !== UserRole.SUPER_ADMIN
+    ) {
+      throw new ForbiddenException(
+        '최고관리자 회원의 역할은 최고관리자만 변경할 수 있습니다.',
+      );
+    }
+
+    if (
+      target.role === UserRole.SUPER_ADMIN &&
+      role !== UserRole.SUPER_ADMIN
+    ) {
+      const superAdminCount = await this.prisma.user.count({
+        where: { role: UserRole.SUPER_ADMIN },
+      });
+      if (superAdminCount <= 1) {
+        throw new BadRequestException(
+          '시스템에 최소 한 명의 최고관리자가 필요합니다.',
+        );
+      }
+    }
+
     return this.prisma.user.update({ where: { id: userId }, data: { role } });
   }
 

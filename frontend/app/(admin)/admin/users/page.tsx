@@ -10,6 +10,7 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { apiFetchWithAuth } from '@/lib/api-client';
 
 const roleLabel: Record<string, string> = { USER: '일반', INSTRUCTOR: '강사', OPERATOR: '운영자', SUPER_ADMIN: '최고관리자' };
+const roleOptions = Object.keys(roleLabel) as Array<keyof typeof roleLabel>;
 const statusVariant: Record<string, 'green' | 'orange' | 'red'> = { ACTIVE: 'green', DORMANT: 'orange', SUSPENDED: 'red' };
 const statusLabel: Record<string, string> = { ACTIVE: '정상', DORMANT: '휴면', SUSPENDED: '정지' };
 
@@ -22,7 +23,10 @@ export default function AdminUsersPage() {
   const [q, setQ] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [myId, setMyId] = useState<string | null>(null);
+  const [myRole, setMyRole] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [updatingRole, setUpdatingRole] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -37,8 +41,22 @@ export default function AdminUsersPage() {
 
   useEffect(() => { load(); }, [page, roleFilter]);
 
+  useEffect(() => {
+    apiFetchWithAuth('/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((me) => {
+        if (me?.id) setMyId(String(me.id));
+        if (me?.role) setMyRole(String(me.role));
+      })
+      .catch(() => { /* ignore */ });
+  }, []);
+
+  const assignableRoles = roleOptions.filter(
+    (r) => r !== 'SUPER_ADMIN' || myRole === 'SUPER_ADMIN',
+  );
+
   const handleStatusChange = async (id: string, status: string) => {
-    setUpdating(id);
+    setUpdatingStatus(id);
     try {
       const res = await apiFetchWithAuth(`/admin/users/${id}/status`, {
         method: 'PATCH',
@@ -46,13 +64,63 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) setUsers((p) => p.map((u) => u.id === id ? { ...u, status } : u));
-    } catch { /* ignore */ } finally { setUpdating(null); }
+    } catch { /* ignore */ } finally { setUpdatingStatus(null); }
+  };
+
+  const handleRoleChange = async (id: string, role: string) => {
+    setUpdatingRole(id);
+    try {
+      const res = await apiFetchWithAuth(`/admin/users/${id}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      if (res.ok) {
+        setUsers((p) => p.map((u) => (u.id === id ? { ...u, role } : u)));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        const msg = typeof err?.message === 'string'
+          ? err.message
+          : Array.isArray(err?.message)
+            ? err.message.join(', ')
+            : '역할 변경에 실패했습니다.';
+        window.alert(msg);
+        await load();
+      }
+    } catch { /* ignore */ } finally { setUpdatingRole(null); }
   };
 
   const columns: DataTableColumn<User>[] = [
     { key: 'name', header: '이름', cell: (u) => <span className="font-medium">{u.name}</span> },
     { key: 'email', header: '이메일', cell: (u) => <span className="text-xs text-muted-foreground">{u.email}</span>, hideOnMobile: true },
-    { key: 'role', header: '역할', cell: (u) => <BrandBadge variant="blue" className="text-xs">{roleLabel[u.role] ?? u.role}</BrandBadge> },
+    {
+      key: 'role',
+      header: '역할',
+      cell: (u) => {
+        const roleLocked =
+          myId === u.id ||
+          (u.role === 'SUPER_ADMIN' && myRole !== 'SUPER_ADMIN');
+        if (roleLocked) {
+          return (
+            <BrandBadge variant="blue" className="text-xs">
+              {roleLabel[u.role] ?? u.role}
+            </BrandBadge>
+          );
+        }
+        return (
+          <select
+            value={u.role}
+            disabled={updatingRole === u.id}
+            onChange={(e) => handleRoleChange(u.id, e.target.value)}
+            className="text-xs border rounded px-2 py-1 bg-white min-w-[6.5rem]"
+          >
+            {assignableRoles.map((r) => (
+              <option key={r} value={r}>{roleLabel[r]}</option>
+            ))}
+          </select>
+        );
+      },
+    },
     { key: 'status', header: '상태', cell: (u) => <BrandBadge variant={statusVariant[u.status] ?? 'default'} className="text-xs">{statusLabel[u.status] ?? u.status}</BrandBadge> },
     { key: 'enrollments', header: '수강', cell: (u) => <span className="text-center block">{u._count?.enrollments ?? 0}</span>, className: 'w-16', hideOnMobile: true },
     { key: 'payments', header: '결제', cell: (u) => <span className="text-center block">{u._count?.payments ?? 0}</span>, className: 'w-16', hideOnMobile: true },
@@ -61,7 +129,7 @@ export default function AdminUsersPage() {
       key: 'actions', header: '관리', cell: (u) => (
         <select
           value={u.status}
-          disabled={updating === u.id}
+          disabled={updatingStatus === u.id}
           onChange={(e) => handleStatusChange(u.id, e.target.value)}
           className="text-xs border rounded px-2 py-1 bg-white"
         >

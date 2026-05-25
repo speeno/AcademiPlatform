@@ -52,8 +52,12 @@ export class AdminController {
   }
 
   @Patch('users/:id/role')
-  updateUserRole(@Param('id') id: string, @Body('role') role: UserRole) {
-    return this.adminService.updateUserRole(id, role);
+  updateUserRole(
+    @Param('id') id: string,
+    @Body('role') role: UserRole,
+    @CurrentUser() actor: { id: string; role: UserRole },
+  ) {
+    return this.adminService.updateUserRole(id, role, actor);
   }
 
   /* 공지사항 */
