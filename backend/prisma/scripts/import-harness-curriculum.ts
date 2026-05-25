@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import { createHash } from 'crypto';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   PrismaClient,
@@ -67,6 +68,10 @@ function getArg(flag: string, fallback?: string): string | undefined {
   const idx = process.argv.indexOf(flag);
   if (idx >= 0 && process.argv[idx + 1]) return process.argv[idx + 1];
   return fallback;
+}
+
+function hasFlag(flag: string): boolean {
+  return process.argv.includes(flag);
 }
 
 function markdownToHtml(md: string): string {
@@ -162,8 +167,41 @@ async function upsertContentDraft(
   courseId: string,
   actorId: string,
   html: string,
+  changeNote: string,
+  forceContent: boolean,
 ) {
   const item = await prisma.contentItem.findUnique({ where: { lessonId } });
+
+  if (item && !forceContent) {
+    const latest = await prisma.contentVersion.findFirst({
+      where: { itemId: item.id, versionNo: item.latestVersionNo ?? 0 },
+      select: { schemaJson: true },
+    });
+    const prevHtml =
+      latest?.schemaJson &&
+      typeof latest.schemaJson === 'object' &&
+      'html' in latest.schemaJson &&
+      typeof (latest.schemaJson as { html?: unknown }).html === 'string'
+        ? ((latest.schemaJson as { html: string }).html ?? '')
+        : '';
+    if (prevHtml === html) {
+      await prisma.contentItem.update({
+        where: { id: item.id },
+        data: {
+          status: CmsContentStatus.DRAFT,
+          contentType: CmsContentType.HTML,
+          updatedById: actorId,
+        },
+      });
+      await prisma.lesson.update({
+        where: { id: lessonId },
+        data: { contentStatus: 'DRAFT' },
+      });
+      console.log(`  - skip content version (no change): lessonId=${lessonId}`);
+      return;
+    }
+  }
+
   const latestVersionNo = (item?.latestVersionNo ?? 0) + 1;
 
   const upserted = await prisma.contentItem.upsert({
@@ -190,7 +228,7 @@ async function upsertContentDraft(
       itemId: upserted.id,
       versionNo: latestVersionNo,
       schemaJson: { html },
-      changeNote: 'Harness 커리큘럼 1차 등록',
+      changeNote,
       createdById: actorId,
     },
   });
@@ -216,6 +254,7 @@ async function run() {
     )!,
   );
   const mode = getArg('--mode', 'all');
+  const forceContent = hasFlag('--force-content');
   const instructorId = await ensureInstructorId(getArg('--instructor-id'));
 
   const raw = readFileSync(manifestPath, 'utf-8');
@@ -233,46 +272,109 @@ async function run() {
     );
     console.log(`course: ${course.slug}`);
 
+    const usedModuleIds = new Set<string>();
+
     for (let mIdx = 0; mIdx < courseDef.modules.length; mIdx += 1) {
       const moduleDef = courseDef.modules[mIdx];
       const existingModule = await prisma.courseModule.findFirst({
-        where: { courseId: course.id, title: moduleDef.title },
+        where: {
+          courseId: course.id,
+          title: moduleDef.title,
+        },
       });
-      const module =
-        existingModule ??
-        (await prisma.courseModule.create({
-          data: {
-            courseId: course.id,
-            title: moduleDef.title,
-            sortOrder: mIdx + 1,
-          },
-        }));
+      const module = existingModule
+        ? await prisma.courseModule.update({
+            where: { id: existingModule.id },
+            data: { title: moduleDef.title, sortOrder: mIdx + 1 },
+          })
+        : await prisma.courseModule.create({
+            data: {
+              courseId: course.id,
+              title: moduleDef.title,
+              sortOrder: mIdx + 1,
+            },
+          });
+      usedModuleIds.add(module.id);
+
+      const usedLessonIds = new Set<string>();
 
       for (let lIdx = 0; lIdx < moduleDef.lessons.length; lIdx += 1) {
         const lessonDef = moduleDef.lessons[lIdx];
         const existingLesson = await prisma.lesson.findFirst({
-          where: { moduleId: module.id, title: lessonDef.title },
+          where: {
+            moduleId: module.id,
+            title: lessonDef.title,
+          },
         });
-        const lesson =
-          existingLesson ??
-          (await prisma.lesson.create({
-            data: {
-              courseId: course.id,
-              moduleId: module.id,
-              title: lessonDef.title,
-              lessonType: lessonDef.lessonType,
-              description:
-                lessonDef.sourcePath ?? lessonDef.inlineMarkdown ?? null,
-              sortOrder: lIdx + 1,
-              contentStatus: 'DRAFT',
-              isPreview: false,
-            },
-          }));
+        const lesson = existingLesson
+          ? await prisma.lesson.update({
+              where: { id: existingLesson.id },
+              data: {
+                title: lessonDef.title,
+                lessonType: lessonDef.lessonType,
+                description:
+                  lessonDef.sourcePath ?? lessonDef.inlineMarkdown ?? null,
+                sortOrder: lIdx + 1,
+                contentStatus: 'DRAFT',
+                isPreview: false,
+              },
+            })
+          : await prisma.lesson.create({
+              data: {
+                courseId: course.id,
+                moduleId: module.id,
+                title: lessonDef.title,
+                lessonType: lessonDef.lessonType,
+                description:
+                  lessonDef.sourcePath ?? lessonDef.inlineMarkdown ?? null,
+                sortOrder: lIdx + 1,
+                contentStatus: 'DRAFT',
+                isPreview: false,
+              },
+            });
+        usedLessonIds.add(lesson.id);
 
         const markdown = readSourceMarkdown(curriculumRoot, lessonDef);
         const html = markdownToHtml(markdown);
-        await upsertContentDraft(lesson.id, course.id, instructorId, html);
+        const sourceLabel = lessonDef.sourcePath ?? '[inlineMarkdown]';
+        const sourceHash = createHash('sha256')
+          .update(html)
+          .digest('hex')
+          .slice(0, 12);
+        const changeNote = `Harness 커리큘럼 동기화: ${sourceLabel}#${sourceHash}`;
+        if (lessonDef.sourceKind?.startsWith('shared-intro-')) {
+          console.log(
+            `  - shared lesson source (${lessonDef.sourceKind}): ${sourceLabel}`,
+          );
+        }
+        await upsertContentDraft(
+          lesson.id,
+          course.id,
+          instructorId,
+          html,
+          changeNote,
+          forceContent,
+        );
       }
+
+      await prisma.lesson.deleteMany({
+        where: {
+          moduleId: module.id,
+          id: { notIn: Array.from(usedLessonIds) },
+        },
+      });
+    }
+
+    const staleModules = await prisma.courseModule.findMany({
+      where: {
+        courseId: course.id,
+        id: { notIn: Array.from(usedModuleIds) },
+      },
+      select: { id: true },
+    });
+    for (const stale of staleModules) {
+      await prisma.lesson.deleteMany({ where: { moduleId: stale.id } });
+      await prisma.courseModule.delete({ where: { id: stale.id } });
     }
 
     for (const assignment of courseDef.assignments ?? []) {

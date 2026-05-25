@@ -1,6 +1,11 @@
 {
   "version": 1,
   "defaultCategory": "AI Harness",
+  "sharedSources": {
+    "commonIntro": "materials/01_overall_training_intro_material.md",
+    "threeDayIntro": "materials/proposal package/03-course-options-1day-3day-1week.md",
+    "oneWeekIntro": "materials/proposal package/03-course-options-1day-3day-1week.md"
+  },
   "courses": [
     {
       "title": "Harness·Agent Skills (비개발 1일)",
@@ -19,16 +24,16 @@
       },
       "modules": [
         {
-          "title": "M0 사전 준비",
+          "title": "M0 공통 오프닝",
           "lessons": [
-            { "title": "오리엔테이션", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common" }
+            { "title": "공통 교육 소개 (PPT)", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common-ppt" }
           ]
         },
         {
-          "title": "M1~M5 핵심 실습",
+          "title": "M1 비개발자 1일 핵심 세션",
           "lessons": [
-            { "title": "커리큘럼 가이드", "lessonType": "TEXT", "sourcePath": "non-developer/1-day.md", "sourceKind": "curriculum" },
-            { "title": "슬라이드 (1차안)", "lessonType": "TEXT", "sourcePath": "materials/02_non_developer_1_day_slides_recreated.md", "sourceKind": "slide" },
+            { "title": "1일 과정 가이드", "lessonType": "TEXT", "sourcePath": "non-developer/1-day.md", "sourceKind": "curriculum" },
+            { "title": "비개발자 1일 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/02_non_developer_1_day_slides_recreated.md", "sourceKind": "slide-ppt" },
             { "title": "워크북 안내", "lessonType": "DOCUMENT", "sourcePath": "materials/03_non_developer_1_day_workbook_complete.md", "sourceKind": "workbook" },
             { "title": "실시간 세션 입장", "lessonType": "LIVE_LINK", "inlineMarkdown": "실시간 세션 링크를 강사가 안내합니다.\\n\\n입장 URL: https://example.com/live/nondev-1d", "sourceKind": "inline" }
           ]
@@ -55,16 +60,16 @@
       },
       "modules": [
         {
-          "title": "M0 사전 준비",
+          "title": "M0 공통 오프닝",
           "lessons": [
-            { "title": "오리엔테이션", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common" }
+            { "title": "공통 교육 소개 (PPT)", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common-ppt" }
           ]
         },
         {
-          "title": "M1~M5 핵심 실습",
+          "title": "M1 개발자 1일 핵심 세션",
           "lessons": [
-            { "title": "커리큘럼 가이드", "lessonType": "TEXT", "sourcePath": "developer/1-day.md", "sourceKind": "curriculum" },
-            { "title": "슬라이드 (1차안)", "lessonType": "TEXT", "sourcePath": "materials/04_developer_1_day_slide_material.md", "sourceKind": "slide" },
+            { "title": "1일 과정 가이드", "lessonType": "TEXT", "sourcePath": "developer/1-day.md", "sourceKind": "curriculum" },
+            { "title": "개발자 1일 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/04_developer_1_day_slide_material.md", "sourceKind": "slide-ppt" },
             { "title": "실습 템플릿 안내", "lessonType": "DOCUMENT", "sourcePath": "materials/05_developer_1_day_practice_templates.md", "sourceKind": "workbook" },
             { "title": "실시간 세션 입장", "lessonType": "LIVE_LINK", "inlineMarkdown": "실시간 세션 링크를 강사가 안내합니다.\\n\\n입장 URL: https://example.com/live/dev-1d", "sourceKind": "inline" }
           ]
@@ -85,16 +90,28 @@
       "tags": ["harness", "nondev", "3d", "cohort"],
       "sources": {
         "curriculum": "non-developer/3-day.md",
-        "slides": ["materials/08_three_day_course_expansion_material.md"],
+        "slides": ["materials/proposal package/03-course-options-1day-3day-1week.md"],
         "workbooks": [],
         "expansion": ["materials/08_three_day_course_expansion_material.md"]
       },
       "modules": [
         {
+          "title": "M0 공통 오프닝",
+          "lessons": [
+            { "title": "공통 교육 소개 (PPT)", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common-ppt" }
+          ]
+        },
+        {
+          "title": "M1 3일 과정 소개",
+          "lessons": [
+            { "title": "3일 과정 소개 (공통)", "lessonType": "TEXT", "sourcePath": "materials/proposal package/03-course-options-1day-3day-1week.md", "sourceKind": "shared-intro-3d" }
+          ]
+        },
+        {
           "title": "Day 1",
           "lessons": [
             { "title": "Day1 커리큘럼", "lessonType": "TEXT", "sourcePath": "non-developer/3-day.md", "sourceKind": "curriculum" },
-            { "title": "Day1 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/08_three_day_course_expansion_material.md", "sourceKind": "slide" }
+            { "title": "3일 심화 운영 가이드", "lessonType": "TEXT", "sourcePath": "materials/08_three_day_course_expansion_material.md", "sourceKind": "expansion" }
           ]
         },
         {
@@ -127,15 +144,28 @@
       "tags": ["harness", "developer", "3d", "cohort"],
       "sources": {
         "curriculum": "developer/3-day.md",
-        "slides": ["materials/08_three_day_course_expansion_material.md"],
+        "slides": ["materials/proposal package/03-course-options-1day-3day-1week.md"],
         "workbooks": [],
         "expansion": ["materials/08_three_day_course_expansion_material.md"]
       },
       "modules": [
         {
+          "title": "M0 공통 오프닝",
+          "lessons": [
+            { "title": "공통 교육 소개 (PPT)", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common-ppt" }
+          ]
+        },
+        {
+          "title": "M1 3일 과정 소개",
+          "lessons": [
+            { "title": "3일 과정 소개 (공통)", "lessonType": "TEXT", "sourcePath": "materials/proposal package/03-course-options-1day-3day-1week.md", "sourceKind": "shared-intro-3d" }
+          ]
+        },
+        {
           "title": "Day 1",
           "lessons": [
-            { "title": "Day1 커리큘럼", "lessonType": "TEXT", "sourcePath": "developer/3-day.md", "sourceKind": "curriculum" }
+            { "title": "Day1 커리큘럼", "lessonType": "TEXT", "sourcePath": "developer/3-day.md", "sourceKind": "curriculum" },
+            { "title": "3일 심화 운영 가이드", "lessonType": "TEXT", "sourcePath": "materials/08_three_day_course_expansion_material.md", "sourceKind": "expansion" }
           ]
         },
         {
@@ -168,16 +198,28 @@
       "tags": ["harness", "nondev", "1w", "governance"],
       "sources": {
         "curriculum": "non-developer/1-week.md",
-        "slides": ["materials/09_one_week_course_expansion_material.md"],
+        "slides": ["materials/proposal package/03-course-options-1day-3day-1week.md"],
         "workbooks": [],
         "expansion": ["materials/09_one_week_course_expansion_material.md"]
       },
       "modules": [
         {
+          "title": "M0 공통 오프닝",
+          "lessons": [
+            { "title": "공통 교육 소개 (PPT)", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common-ppt" }
+          ]
+        },
+        {
+          "title": "M1 1주 과정 소개",
+          "lessons": [
+            { "title": "1주 과정 소개 (공통)", "lessonType": "TEXT", "sourcePath": "materials/proposal package/03-course-options-1day-3day-1week.md", "sourceKind": "shared-intro-1w" }
+          ]
+        },
+        {
           "title": "Week Core",
           "lessons": [
             { "title": "1주 과정 가이드", "lessonType": "TEXT", "sourcePath": "non-developer/1-week.md", "sourceKind": "curriculum" },
-            { "title": "확장 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/09_one_week_course_expansion_material.md", "sourceKind": "slide" }
+            { "title": "1주 심화 운영 가이드", "lessonType": "TEXT", "sourcePath": "materials/09_one_week_course_expansion_material.md", "sourceKind": "expansion" }
           ]
         },
         {
@@ -205,16 +247,28 @@
       "tags": ["harness", "developer", "1w", "ci"],
       "sources": {
         "curriculum": "developer/1-week.md",
-        "slides": ["materials/09_one_week_course_expansion_material.md"],
+        "slides": ["materials/proposal package/03-course-options-1day-3day-1week.md"],
         "workbooks": [],
         "expansion": ["materials/09_one_week_course_expansion_material.md"]
       },
       "modules": [
         {
+          "title": "M0 공통 오프닝",
+          "lessons": [
+            { "title": "공통 교육 소개 (PPT)", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common-ppt" }
+          ]
+        },
+        {
+          "title": "M1 1주 과정 소개",
+          "lessons": [
+            { "title": "1주 과정 소개 (공통)", "lessonType": "TEXT", "sourcePath": "materials/proposal package/03-course-options-1day-3day-1week.md", "sourceKind": "shared-intro-1w" }
+          ]
+        },
+        {
           "title": "Week Core",
           "lessons": [
             { "title": "1주 과정 가이드", "lessonType": "TEXT", "sourcePath": "developer/1-week.md", "sourceKind": "curriculum" },
-            { "title": "확장 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/09_one_week_course_expansion_material.md", "sourceKind": "slide" }
+            { "title": "1주 심화 운영 가이드", "lessonType": "TEXT", "sourcePath": "materials/09_one_week_course_expansion_material.md", "sourceKind": "expansion" }
           ]
         },
         {
