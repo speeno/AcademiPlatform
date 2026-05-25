@@ -3,7 +3,11 @@ import { createHttpE2eApp } from './helpers/http-e2e.helper';
 
 applyE2eTestEnv();
 
-import { ExecutionContext, INestApplication, CanActivate } from '@nestjs/common';
+import {
+  ExecutionContext,
+  INestApplication,
+  CanActivate,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -53,12 +57,17 @@ describe('Payment refund (HTTP e2e)', () => {
         const tx = {
           payment: {
             findUnique: jest.fn(async () => ({ ...payment })),
-            update: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
-              Object.assign(payment, data);
-              return { ...payment };
-            }),
+            update: jest.fn(
+              async ({ data }: { data: Record<string, unknown> }) => {
+                Object.assign(payment, data);
+                return { ...payment };
+              },
+            ),
           },
-          enrollment: { findFirst: jest.fn(async () => null), update: jest.fn() },
+          enrollment: {
+            findFirst: jest.fn(async () => null),
+            update: jest.fn(),
+          },
           examApplication: { updateMany: jest.fn(async () => ({ count: 0 })) },
           textbookAccess: { updateMany: jest.fn(async () => ({ count: 0 })) },
         };

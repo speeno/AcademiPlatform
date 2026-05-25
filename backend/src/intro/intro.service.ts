@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { CreateIntroPageDto, CreateIntroSectionDto } from './dto/create-intro-page.dto';
+import {
+  CreateIntroPageDto,
+  CreateIntroSectionDto,
+} from './dto/create-intro-page.dto';
 import { IntroPageStatus } from '@prisma/client';
 
 @Injectable()
@@ -11,7 +14,13 @@ export class IntroService {
     return this.prisma.introPage.findMany({
       where: { status: IntroPageStatus.PUBLISHED },
       orderBy: { publishedAt: 'desc' },
-      select: { id: true, slug: true, title: true, summary: true, publishedAt: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        publishedAt: true,
+      },
     });
   }
 
@@ -25,7 +34,8 @@ export class IntroService {
         },
       },
     });
-    if (!page) throw new NotFoundException(`소개 페이지를 찾을 수 없습니다: ${slug}`);
+    if (!page)
+      throw new NotFoundException(`소개 페이지를 찾을 수 없습니다: ${slug}`);
     return page;
   }
 
@@ -46,7 +56,8 @@ export class IntroService {
       data: {
         ...dto,
         updatedBy: userId,
-        publishedAt: dto.status === IntroPageStatus.PUBLISHED ? new Date() : undefined,
+        publishedAt:
+          dto.status === IntroPageStatus.PUBLISHED ? new Date() : undefined,
       },
     });
   }
@@ -59,9 +70,7 @@ export class IntroService {
         ...dto,
         updatedBy: userId,
         publishedAt:
-          dto.status === IntroPageStatus.PUBLISHED
-            ? new Date()
-            : undefined,
+          dto.status === IntroPageStatus.PUBLISHED ? new Date() : undefined,
       },
     });
   }

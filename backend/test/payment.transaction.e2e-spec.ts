@@ -43,10 +43,12 @@ describe('Payment verify transaction rollback (e2e)', () => {
         const tx = {
           payment: {
             findUnique: jest.fn(async () => ({ ...payment })),
-            update: jest.fn(async ({ data }: { data: Partial<typeof payment> }) => {
-              Object.assign(payment, data);
-              return { ...payment };
-            }),
+            update: jest.fn(
+              async ({ data }: { data: Partial<typeof payment> }) => {
+                Object.assign(payment, data);
+                return { ...payment };
+              },
+            ),
           },
         };
         try {

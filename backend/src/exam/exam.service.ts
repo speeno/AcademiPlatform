@@ -5,7 +5,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { ExamApplicationStatus, ExamSessionStatus, PaymentStatus } from '@prisma/client';
+import {
+  ExamApplicationStatus,
+  ExamSessionStatus,
+  PaymentStatus,
+} from '@prisma/client';
 import {
   maskPriceFields,
   shouldExposePrices,
@@ -13,7 +17,11 @@ import {
 import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
 
 const MAX_ID_PHOTO_BYTES = 10 * 1024 * 1024;
-const ALLOWED_ID_PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_ID_PHOTO_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
 
 const DEFAULT_DEPOSIT_ACCOUNT = {
   bank: '농협은행',
@@ -29,7 +37,7 @@ function sanitizeUploadedFileName(rawName: string | undefined): string {
 
 /** Prisma Bytes 필드는 Uint8Array<ArrayBuffer>만 허용 (Node Buffer의 ArrayBufferLike 불일치 방지) */
 function toPrismaBytes(buffer: Buffer): Uint8Array<ArrayBuffer> {
-  return new Uint8Array(Buffer.from(buffer)) as Uint8Array<ArrayBuffer>;
+  return new Uint8Array(Buffer.from(buffer));
 }
 
 type UploadedExamIdPhoto = {
@@ -54,7 +62,10 @@ export class ExamService {
 
     const where: any = {};
     if (status) where.status = status;
-    else where.status = { in: [ExamSessionStatus.UPCOMING, ExamSessionStatus.OPEN] };
+    else
+      where.status = {
+        in: [ExamSessionStatus.UPCOMING, ExamSessionStatus.OPEN],
+      };
 
     const [sessions, total] = await Promise.all([
       this.prisma.examSession.findMany({
@@ -68,7 +79,9 @@ export class ExamService {
     ]);
 
     return {
-      sessions: sessions.map((session) => this.toPublicSession(session, viewerId)),
+      sessions: sessions.map((session) =>
+        this.toPublicSession(session, viewerId),
+      ),
       total,
       page,
       limit,
@@ -108,17 +121,19 @@ export class ExamService {
     }).finalAmount;
   }
 
-  private toPublicSession<T extends {
-    fee: number;
-    basePrice: number;
-    salePrice: number | null;
-    discountType: any;
-    discountValue: number;
-    priceValidFrom: Date | null;
-    priceValidUntil: Date | null;
-    currency: string;
-    pricePolicyVersion: number;
-  }>(session: T, viewerId?: string) {
+  private toPublicSession<
+    T extends {
+      fee: number;
+      basePrice: number;
+      salePrice: number | null;
+      discountType: any;
+      discountValue: number;
+      priceValidFrom: Date | null;
+      priceValidUntil: Date | null;
+      currency: string;
+      pricePolicyVersion: number;
+    },
+  >(session: T, viewerId?: string) {
     const displayFee = this.resolveSessionDisplayFee(session);
     const withDisplay = { ...session, fee: displayFee, displayFee };
 
@@ -149,7 +164,11 @@ export class ExamService {
       } catch {
         throw new BadRequestException('접수 정보 형식이 올바르지 않습니다.');
       }
-    } else if (formJsonRaw && typeof formJsonRaw === 'object' && !Array.isArray(formJsonRaw)) {
+    } else if (
+      formJsonRaw &&
+      typeof formJsonRaw === 'object' &&
+      !Array.isArray(formJsonRaw)
+    ) {
       formJson = formJsonRaw as Record<string, unknown>;
     } else {
       throw new BadRequestException('접수 정보가 누락되었습니다.');
@@ -160,13 +179,20 @@ export class ExamService {
     }
 
     const normalizedMimeType = idPhoto.mimetype?.toLowerCase();
-    if (!normalizedMimeType || !ALLOWED_ID_PHOTO_MIME_TYPES.has(normalizedMimeType)) {
-      throw new BadRequestException('증명사진은 JPG, PNG, WEBP 형식만 업로드할 수 있습니다.');
+    if (
+      !normalizedMimeType ||
+      !ALLOWED_ID_PHOTO_MIME_TYPES.has(normalizedMimeType)
+    ) {
+      throw new BadRequestException(
+        '증명사진은 JPG, PNG, WEBP 형식만 업로드할 수 있습니다.',
+      );
     }
 
     const idPhotoSize = idPhoto.size ?? idPhoto.buffer.length;
     if (idPhotoSize > MAX_ID_PHOTO_BYTES) {
-      throw new BadRequestException('증명사진은 10MB 이하만 업로드할 수 있습니다.');
+      throw new BadRequestException(
+        '증명사진은 10MB 이하만 업로드할 수 있습니다.',
+      );
     }
 
     const session = await this.findSessionById(sessionId, userId ?? undefined);
@@ -185,10 +211,16 @@ export class ExamService {
       const count = await this.prisma.examApplication.count({
         where: {
           examSessionId: sessionId,
-          status: { in: [ExamApplicationStatus.APPLIED, ExamApplicationStatus.PAYMENT_PENDING] },
+          status: {
+            in: [
+              ExamApplicationStatus.APPLIED,
+              ExamApplicationStatus.PAYMENT_PENDING,
+            ],
+          },
         },
       });
-      if (count >= session.capacity) throw new BadRequestException('정원이 초과되었습니다.');
+      if (count >= session.capacity)
+        throw new BadRequestException('정원이 초과되었습니다.');
     }
 
     // 중복 접수 확인 (로그인 사용자만 userId 기반 체크)
@@ -197,16 +229,23 @@ export class ExamService {
         where: {
           examSessionId: sessionId,
           userId,
-          status: { notIn: [ExamApplicationStatus.CANCELLED, ExamApplicationStatus.REFUNDED] },
+          status: {
+            notIn: [
+              ExamApplicationStatus.CANCELLED,
+              ExamApplicationStatus.REFUNDED,
+            ],
+          },
         },
       });
       if (existing) throw new BadRequestException('이미 접수하셨습니다.');
     }
 
     const form = formJson as any;
-    const referrerCode = typeof form?.referrerCode === 'string' ? form.referrerCode || null : null;
+    const referrerCode =
+      typeof form?.referrerCode === 'string' ? form.referrerCode || null : null;
     const fileName = sanitizeUploadedFileName(idPhoto.originalname);
-    const idPhotoFileName = fileName.length > 0 ? fileName : `exam-id-photo-${Date.now()}.jpg`;
+    const idPhotoFileName =
+      fileName.length > 0 ? fileName : `exam-id-photo-${Date.now()}.jpg`;
 
     return this.prisma.examApplication.create({
       data: {
@@ -311,13 +350,19 @@ export class ExamService {
     const groups = await this.loadReferrerGroups();
     return applications.map((app) => {
       const session = app.examSession;
-      const displayFee = session ? this.resolveSessionDisplayFee(session) : null;
+      const displayFee = session
+        ? this.resolveSessionDisplayFee(session)
+        : null;
       return {
         ...app,
         examSession: session
           ? { ...session, fee: displayFee ?? session.fee, displayFee }
           : session,
-        depositAccount: this.resolveDepositAccount(app.formJson, app.referrerCode, groups),
+        depositAccount: this.resolveDepositAccount(
+          app.formJson,
+          app.referrerCode,
+          groups,
+        ),
       };
     });
   }
@@ -338,7 +383,15 @@ export class ExamService {
   private resolveDepositAccount(
     formJson: unknown,
     referrerCode: string | null,
-    groups: Array<{ members?: Array<{ code: string; label: string; depositBank?: string; depositAccount?: string; depositHolder?: string }> }>,
+    groups: Array<{
+      members?: Array<{
+        code: string;
+        label: string;
+        depositBank?: string;
+        depositAccount?: string;
+        depositHolder?: string;
+      }>;
+    }>,
   ) {
     const form = formJson as Record<string, unknown> | null;
     const snapshot = form?.depositAccount as Record<string, string> | undefined;
@@ -364,7 +417,10 @@ export class ExamService {
           return {
             bank,
             account,
-            holder: member.depositHolder?.trim() || member.label || DEFAULT_DEPOSIT_ACCOUNT.holder,
+            holder:
+              member.depositHolder?.trim() ||
+              member.label ||
+              DEFAULT_DEPOSIT_ACCOUNT.holder,
             sourceLabel: member.label,
           };
         }
@@ -379,8 +435,10 @@ export class ExamService {
       where: { id: applicationId },
     });
 
-    if (!app || app.userId !== userId) throw new NotFoundException('접수 내역을 찾을 수 없습니다.');
-    if (app.status === ExamApplicationStatus.CANCELLED) throw new BadRequestException('이미 취소된 접수입니다.');
+    if (!app || app.userId !== userId)
+      throw new NotFoundException('접수 내역을 찾을 수 없습니다.');
+    if (app.status === ExamApplicationStatus.CANCELLED)
+      throw new BadRequestException('이미 취소된 접수입니다.');
 
     return this.prisma.examApplication.update({
       where: { id: applicationId },
@@ -393,7 +451,11 @@ export class ExamService {
   }
 
   /* 관리자 API */
-  async findAllSessions(filter: { status?: ExamSessionStatus; page?: number; limit?: number }) {
+  async findAllSessions(filter: {
+    status?: ExamSessionStatus;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, page = 1, limit = 50 } = filter;
     const skip = (page - 1) * limit;
     const where: any = {};
@@ -425,12 +487,17 @@ export class ExamService {
   }
 
   async createSession(data: any) {
-    return this.prisma.examSession.create({ data: this.normalizeSessionData(data) });
+    return this.prisma.examSession.create({
+      data: this.normalizeSessionData(data),
+    });
   }
 
   async updateSession(id: string, data: any) {
     await this.findSessionById(id);
-    return this.prisma.examSession.update({ where: { id }, data: this.normalizeSessionData(data) });
+    return this.prisma.examSession.update({
+      where: { id },
+      data: this.normalizeSessionData(data),
+    });
   }
 
   private normalizeSessionData(data: any) {
@@ -442,8 +509,10 @@ export class ExamService {
       }
     }
     if (typeof result.fee === 'string') result.fee = Number(result.fee);
-    if (typeof result.capacity === 'string') result.capacity = Number(result.capacity) || null;
-    if (result.basePrice !== undefined && typeof result.basePrice === 'string') result.basePrice = Number(result.basePrice);
+    if (typeof result.capacity === 'string')
+      result.capacity = Number(result.capacity) || null;
+    if (result.basePrice !== undefined && typeof result.basePrice === 'string')
+      result.basePrice = Number(result.basePrice);
     return result;
   }
 
@@ -467,7 +536,9 @@ export class ExamService {
           user: { select: { id: true, name: true, email: true, phone: true } },
         },
       }),
-      this.prisma.examApplication.count({ where: { examSessionId: sessionId } }),
+      this.prisma.examApplication.count({
+        where: { examSessionId: sessionId },
+      }),
     ]);
     return {
       applications: applications.map((application) => ({
@@ -491,7 +562,11 @@ export class ExamService {
       },
     });
 
-    if (!application?.idPhoto || !application.idPhotoMimeType || !application.idPhotoFileName) {
+    if (
+      !application?.idPhoto ||
+      !application.idPhotoMimeType ||
+      !application.idPhotoFileName
+    ) {
       throw new NotFoundException('증명사진을 찾을 수 없습니다.');
     }
 

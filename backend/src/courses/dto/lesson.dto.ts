@@ -1,5 +1,12 @@
 import { LessonType } from '@prisma/client';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class AddLessonDto {
   @IsString()

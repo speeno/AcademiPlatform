@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Query, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  NotFoundException,
+} from '@nestjs/common';
 import { Public } from '../common/decorators/public.decorator';
 import { PrismaService } from '../common/prisma/prisma.service';
 
@@ -8,10 +14,7 @@ export class NoticesController {
   constructor(private prisma: PrismaService) {}
 
   @Get()
-  async list(
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
-  ) {
+  async list(@Query('page') page = 1, @Query('limit') limit = 20) {
     const skip = (Number(page) - 1) * Number(limit);
     const where = { isPublished: true };
 

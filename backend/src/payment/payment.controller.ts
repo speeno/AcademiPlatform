@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { PortoneWebhookGuard } from './guards/portone-webhook.guard';
 import { PaymentStatus, UserRole } from '@prisma/client';
 import { PaymentService } from './payment.service';
@@ -17,19 +25,22 @@ export class PaymentController {
   constructor(private paymentService: PaymentService) {}
 
   @Post('orders')
-  createOrder(
-    @CurrentUser() user: any,
-    @Body() dto: CreateOrderDto,
-  ) {
-    return this.paymentService.createOrder(user.id, dto.targetType, dto.targetId, dto.amount);
+  createOrder(@CurrentUser() user: any, @Body() dto: CreateOrderDto) {
+    return this.paymentService.createOrder(
+      user.id,
+      dto.targetType,
+      dto.targetId,
+      dto.amount,
+    );
   }
 
   @Post('verify')
-  verify(
-    @CurrentUser() user: any,
-    @Body() dto: VerifyPaymentDto,
-  ) {
-    return this.paymentService.verifyAndComplete(user.id, dto.imp_uid, dto.merchant_uid);
+  verify(@CurrentUser() user: any, @Body() dto: VerifyPaymentDto) {
+    return this.paymentService.verifyAndComplete(
+      user.id,
+      dto.imp_uid,
+      dto.merchant_uid,
+    );
   }
 
   @Public()
@@ -50,7 +61,11 @@ export class PaymentController {
     @CurrentUser() user: any,
     @Body() dto: RefundPaymentDto,
   ) {
-    return this.paymentService.requestRefund(paymentId, user.id, dto.reason ?? '');
+    return this.paymentService.requestRefund(
+      paymentId,
+      user.id,
+      dto.reason ?? '',
+    );
   }
 
   @Roles(UserRole.OPERATOR)

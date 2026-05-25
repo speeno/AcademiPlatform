@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -31,7 +40,13 @@ export class InstructorPostsController {
   update(
     @Param('id') id: string,
     @CurrentUser() user: { id: string; role: UserRole },
-    @Body() body: { title?: string; content?: string; isPinned?: boolean; isPublished?: boolean },
+    @Body()
+    body: {
+      title?: string;
+      content?: string;
+      isPinned?: boolean;
+      isPublished?: boolean;
+    },
   ) {
     return this.svc.update(id, user.id, user.role, body);
   }

@@ -45,6 +45,8 @@ describe('PortoneWebhookGuard', () => {
       get: () => '',
     } as any);
 
-    expect(() => guard.canActivate(mockContext({}))).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(mockContext({}))).toThrow(
+      UnauthorizedException,
+    );
   });
 });

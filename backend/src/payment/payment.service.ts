@@ -80,7 +80,10 @@ export class PaymentService {
       targetType,
       targetId,
     );
-    if (typeof clientAmount === 'number' && clientAmount !== pricing.finalAmount) {
+    if (
+      typeof clientAmount === 'number' &&
+      clientAmount !== pricing.finalAmount
+    ) {
       throw new BadRequestException('결제 금액이 올바르지 않습니다.');
     }
 
@@ -123,7 +126,9 @@ export class PaymentService {
   // 포트원 결제 완료 검증 및 처리
   async verifyAndComplete(userId: string, impUid: string, orderNo: string) {
     this.assertPaymentModuleEnabled();
-    const payment = await this.prisma.payment.findUnique({ where: { orderNo } });
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderNo },
+    });
     if (!payment) throw new NotFoundException('결제 주문을 찾을 수 없습니다.');
     if (payment.userId !== userId)
       throw new BadRequestException('결제 주문 정보가 일치하지 않습니다.');
@@ -144,14 +149,19 @@ export class PaymentService {
         where: { orderNo },
         data: { paymentStatus: PaymentStatus.FAILED, pgTxId: impUid },
       });
-      await this.notifyOps('payment_verify_failed', { orderNo, userId, impUid });
+      await this.notifyOps('payment_verify_failed', {
+        orderNo,
+        userId,
+        impUid,
+      });
       throw new BadRequestException('결제 검증에 실패했습니다.');
     }
 
     try {
       const updated = await this.prisma.$transaction(async (tx) => {
         const current = await tx.payment.findUnique({ where: { orderNo } });
-        if (!current) throw new NotFoundException('결제 주문을 찾을 수 없습니다.');
+        if (!current)
+          throw new NotFoundException('결제 주문을 찾을 수 없습니다.');
         if (current.paymentStatus === PaymentStatus.PAID) return current;
         if (current.paymentStatus !== PaymentStatus.PENDING) {
           throw new BadRequestException('처리 가능한 결제 상태가 아닙니다.');
@@ -186,13 +196,21 @@ export class PaymentService {
       return updated;
     } catch (err) {
       this.logger.error(`결제 후처리 트랜잭션 실패 orderNo=${orderNo}`, err);
-      await this.notifyOps('payment_postprocess_failed', { orderNo, userId, impUid });
+      await this.notifyOps('payment_postprocess_failed', {
+        orderNo,
+        userId,
+        impUid,
+      });
       throw err;
     }
   }
 
   // 포트원 웹훅 처리
-  async handleWebhook(body: { imp_uid: string; merchant_uid: string; status: string }) {
+  async handleWebhook(body: {
+    imp_uid: string;
+    merchant_uid: string;
+    status: string;
+  }) {
     this.assertPaymentModuleEnabled();
     const { imp_uid, merchant_uid, status } = body;
     const payment = await this.prisma.payment.findUnique({
@@ -249,17 +267,26 @@ export class PaymentService {
           );
         });
       } catch (err) {
-        this.logger.error(`웹훅 후처리 트랜잭션 실패 orderNo=${merchant_uid}`, err);
+        this.logger.error(
+          `웹훅 후처리 트랜잭션 실패 orderNo=${merchant_uid}`,
+          err,
+        );
         await this.notifyOps('payment_webhook_postprocess_failed', {
           merchant_uid,
           imp_uid,
         });
         throw err;
       }
-    } else if (status === 'cancelled' && payment.paymentStatus === PaymentStatus.PENDING) {
+    } else if (
+      status === 'cancelled' &&
+      payment.paymentStatus === PaymentStatus.PENDING
+    ) {
       await this.prisma.payment.update({
         where: { orderNo: merchant_uid },
-        data: { paymentStatus: PaymentStatus.CANCELLED, cancelledAt: new Date() },
+        data: {
+          paymentStatus: PaymentStatus.CANCELLED,
+          cancelledAt: new Date(),
+        },
       });
     }
   }
@@ -291,8 +318,11 @@ export class PaymentService {
     // 2) PG 취소 성공 후 DB 상태·권한 회수를 단일 트랜잭션으로 묶어 원자성 보장.
     try {
       const refunded = await this.prisma.$transaction(async (tx) => {
-        const current = await tx.payment.findUnique({ where: { id: paymentId } });
-        if (!current) throw new NotFoundException('결제 내역을 찾을 수 없습니다.');
+        const current = await tx.payment.findUnique({
+          where: { id: paymentId },
+        });
+        if (!current)
+          throw new NotFoundException('결제 내역을 찾을 수 없습니다.');
         if (current.paymentStatus === PaymentStatus.REFUNDED) {
           // 멱등: 이미 환불 처리됨.
           return current;
@@ -341,7 +371,11 @@ export class PaymentService {
   }
 
   /* 관리자 */
-  async getPayments(filter: { status?: PaymentStatus; page?: number; limit?: number }) {
+  async getPayments(filter: {
+    status?: PaymentStatus;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, page = 1, limit = 20 } = filter;
     const skip = (page - 1) * limit;
     const where: any = {};
@@ -390,7 +424,9 @@ export class PaymentService {
   /* ---------- 내부 운영 유틸 ---------- */
 
   private logEvent(event: string, payload: Record<string, unknown>) {
-    this.logger.log(JSON.stringify({ event, at: new Date().toISOString(), ...payload }));
+    this.logger.log(
+      JSON.stringify({ event, at: new Date().toISOString(), ...payload }),
+    );
   }
 
   private async notifyOps(event: string, payload: Record<string, unknown>) {

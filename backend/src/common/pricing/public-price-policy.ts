@@ -29,17 +29,20 @@ export function maskPriceFields<T extends PriceFields>(
   };
 }
 
-export function maskCourseForPublic<T extends PriceFields & { courseTextbooks?: Array<{ textbook?: PriceFields | null }> }>(
-  course: T,
-  viewerId?: string | null,
-): T {
+export function maskCourseForPublic<
+  T extends PriceFields & {
+    courseTextbooks?: Array<{ textbook?: PriceFields | null }>;
+  },
+>(course: T, viewerId?: string | null): T {
   const masked = maskPriceFields(course, viewerId);
   if (shouldExposePrices(viewerId) || !masked.courseTextbooks) return masked;
   return {
     ...masked,
     courseTextbooks: masked.courseTextbooks.map((ct) => ({
       ...ct,
-      textbook: ct.textbook ? maskPriceFields(ct.textbook, viewerId) : ct.textbook,
+      textbook: ct.textbook
+        ? maskPriceFields(ct.textbook, viewerId)
+        : ct.textbook,
     })),
   };
 }

@@ -1,4 +1,11 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+  Matches,
+} from 'class-validator';
 
 export class RegisterDto {
   @IsEmail({}, { message: '유효한 이메일 주소를 입력해주세요.' })
@@ -6,7 +13,9 @@ export class RegisterDto {
 
   @IsString()
   @MinLength(8, { message: '비밀번호는 8자 이상이어야 합니다.' })
-  @Matches(/^(?=.*[a-z])(?=.*\d)/, { message: '비밀번호는 영문자와 숫자를 포함해야 합니다.' })
+  @Matches(/^(?=.*[a-z])(?=.*\d)/, {
+    message: '비밀번호는 영문자와 숫자를 포함해야 합니다.',
+  })
   password: string;
 
   @IsString()

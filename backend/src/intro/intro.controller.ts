@@ -1,9 +1,18 @@
 import {
-  Body, Controller, Delete, Get, Param, Patch, Post,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { IntroService } from './intro.service';
-import { CreateIntroPageDto, CreateIntroSectionDto } from './dto/create-intro-page.dto';
+import {
+  CreateIntroPageDto,
+  CreateIntroSectionDto,
+} from './dto/create-intro-page.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -56,7 +65,10 @@ export class IntroController {
 
   @Roles(UserRole.OPERATOR)
   @Patch('admin/sections/:id')
-  updateSection(@Param('id') id: string, @Body() dto: Partial<CreateIntroSectionDto>) {
+  updateSection(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateIntroSectionDto>,
+  ) {
     return this.introService.updateSection(id, dto);
   }
 

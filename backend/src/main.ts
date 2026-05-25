@@ -24,7 +24,11 @@ async function bootstrap() {
     }),
   );
 
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? process.env.FRONTEND_URL ?? 'http://localhost:3300')
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS ??
+    process.env.FRONTEND_URL ??
+    'http://localhost:3300'
+  )
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -42,7 +46,8 @@ async function bootstrap() {
 }
 
 bootstrap().catch((error: unknown) => {
-  const message = error instanceof Error ? error.stack ?? error.message : String(error);
+  const message =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
   console.error('❌ AcademiQ API bootstrap failed:', message);
   process.exit(1);
 });

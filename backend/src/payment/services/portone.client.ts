@@ -21,7 +21,10 @@ export class PortOneClient {
 
   /** PaymentService.requestRefund 가 PG 취소 가능 여부 사전 판단에 활용. */
   hasCredentials(): boolean {
-    return !!this.config.get('PORTONE_API_KEY', '') && !!this.config.get('PORTONE_API_SECRET', '');
+    return (
+      !!this.config.get('PORTONE_API_KEY', '') &&
+      !!this.config.get('PORTONE_API_SECRET', '')
+    );
   }
 
   isDevBypassEnabled(): boolean {
@@ -38,7 +41,9 @@ export class PortOneClient {
   ): Promise<boolean> {
     if (!this.hasCredentials()) {
       if (this.isDevBypassEnabled()) {
-        this.logger.warn('PAYMENT_DEV_BYPASS=true — 포트원 검증을 건너뜁니다(개발 전용).');
+        this.logger.warn(
+          'PAYMENT_DEV_BYPASS=true — 포트원 검증을 건너뜁니다(개발 전용).',
+        );
         return true;
       }
       this.logger.error(
@@ -58,7 +63,9 @@ export class PortOneClient {
   async cancel(impUid: string, amount: number, reason: string): Promise<void> {
     if (!this.hasCredentials() || !impUid) {
       if (this.isDevBypassEnabled()) {
-        this.logger.warn('PAYMENT_DEV_BYPASS=true — 포트원 환불 호출을 건너뜁니다(개발 전용).');
+        this.logger.warn(
+          'PAYMENT_DEV_BYPASS=true — 포트원 환불 호출을 건너뜁니다(개발 전용).',
+        );
         return;
       }
       // 키 또는 PG 트랜잭션 정보 부재 시 무음 통과 금지: DB 상태가 PAID 그대로 유지되어야 한다.
@@ -82,7 +89,10 @@ export class PortOneClient {
 
     const cancelRes = await fetch('https://api.iamport.kr/payments/cancel', {
       method: 'POST',
-      headers: { Authorization: accessToken, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: accessToken,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ imp_uid: impUid, amount, reason }),
     });
     const cancelData = await cancelRes.json();
@@ -99,7 +109,9 @@ export class PortOneClient {
     }
   }
 
-  private async fetchPayment(impUid: string): Promise<PortOnePaymentInfo | null> {
+  private async fetchPayment(
+    impUid: string,
+  ): Promise<PortOnePaymentInfo | null> {
     if (!this.hasCredentials()) return null;
 
     try {

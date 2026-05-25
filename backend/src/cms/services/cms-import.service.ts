@@ -4,10 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  CmsContentStatus,
-  CmsContentType,
-} from '@prisma/client';
+import { CmsContentStatus, CmsContentType } from '@prisma/client';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const AdmZip = require('adm-zip');
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -79,7 +76,10 @@ export class CmsImportService {
     file: { buffer: Buffer; originalname: string },
   ) {
     if (!file) throw new BadRequestException('ZIP 파일이 필요합니다.');
-    const { courseId } = await this.access.ensureCanEditLesson(userId, lessonId);
+    const { courseId } = await this.access.ensureCanEditLesson(
+      userId,
+      lessonId,
+    );
 
     const zip = new AdmZip(file.buffer);
     const entries = zip.getEntries();
@@ -247,46 +247,55 @@ export class CmsImportService {
     });
     const nextVersionNo = (existing?.latestVersionNo ?? 0) + 1;
 
-    const item = await this.prisma.contentItem.upsert({
-      where: { lessonId },
-      create: {
-        courseId,
-        lessonId,
-        contentType: CmsContentType.COURSE_PACKAGE,
-        status: CmsContentStatus.DRAFT,
-        latestVersionNo: nextVersionNo,
-        createdById: userId,
-        updatedById: userId,
-      },
-      update: {
-        contentType: CmsContentType.COURSE_PACKAGE,
-        latestVersionNo: nextVersionNo,
-        status: CmsContentStatus.DRAFT,
-        updatedById: userId,
-      },
-    });
-
-    const version = await this.prisma.contentVersion.create({
-      data: {
-        itemId: item.id,
-        versionNo: nextVersionNo,
-        schemaJson: JSON.parse(JSON.stringify(schemaJson)),
-        changeNote: `강의 패키지 업로드 (${chapters.length}개 챕터)`,
-        createdById: userId,
-      },
-    });
-
-    await this.prisma.contentAuditLog.create({
-      data: {
-        itemId: item.id,
-        actorId: userId,
-        action: 'COURSE_PACKAGE_UPLOADED',
-        payloadJson: {
-          versionNo: nextVersionNo,
-          chapterCount: chapters.length,
-          fileName: file.originalname ?? 'package.zip',
+    const { item, version } = await this.prisma.$transaction(async (tx) => {
+      const upserted = await tx.contentItem.upsert({
+        where: { lessonId },
+        create: {
+          courseId,
+          lessonId,
+          contentType: CmsContentType.COURSE_PACKAGE,
+          status: CmsContentStatus.DRAFT,
+          latestVersionNo: nextVersionNo,
+          createdById: userId,
+          updatedById: userId,
         },
-      },
+        update: {
+          contentType: CmsContentType.COURSE_PACKAGE,
+          latestVersionNo: nextVersionNo,
+          status: CmsContentStatus.DRAFT,
+          updatedById: userId,
+        },
+      });
+
+      const createdVersion = await tx.contentVersion.create({
+        data: {
+          itemId: upserted.id,
+          versionNo: nextVersionNo,
+          schemaJson: JSON.parse(JSON.stringify(schemaJson)),
+          changeNote: `강의 패키지 업로드 (${chapters.length}개 챕터)`,
+          createdById: userId,
+        },
+      });
+
+      await tx.lesson.update({
+        where: { id: lessonId },
+        data: { contentStatus: 'DRAFT' },
+      });
+
+      await tx.contentAuditLog.create({
+        data: {
+          itemId: upserted.id,
+          actorId: userId,
+          action: 'COURSE_PACKAGE_UPLOADED',
+          payloadJson: {
+            versionNo: nextVersionNo,
+            chapterCount: chapters.length,
+            fileName: file.originalname ?? 'package.zip',
+            lessonStatus: 'DRAFT',
+          },
+        },
+      });
+      return { item: upserted, version: createdVersion };
     });
 
     return {

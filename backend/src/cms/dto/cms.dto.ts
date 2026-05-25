@@ -1,5 +1,16 @@
-import { CmsCollaboratorRole, CmsContentType, CmsReviewStatus } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  CmsCollaboratorRole,
+  CmsContentType,
+  CmsReviewStatus,
+} from '@prisma/client';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UpsertCollaboratorDto {
   @IsString()

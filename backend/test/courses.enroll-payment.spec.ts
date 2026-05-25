@@ -29,10 +29,7 @@ describe('CoursesService.enroll payment validation (P0)', () => {
     ...overrides,
   });
 
-  const buildPrisma = (state: {
-    course: any;
-    payment?: any;
-  }) => {
+  const buildPrisma = (state: { course: any; payment?: any }) => {
     const upserted: any[] = [];
     return {
       _upserted: upserted,

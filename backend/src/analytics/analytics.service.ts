@@ -43,11 +43,13 @@ export class AnalyticsService {
     ] = await Promise.all([
       this.prisma.pageView.count({ where }),
 
-      this.prisma.pageView.groupBy({
-        by: ['sessionId'],
-        where,
-        _count: { id: true },
-      }).then((rows) => rows.length),
+      this.prisma.pageView
+        .groupBy({
+          by: ['sessionId'],
+          where,
+          _count: { id: true },
+        })
+        .then((rows) => rows.length),
 
       this.prisma.pageView.groupBy({
         by: ['path'],
@@ -72,7 +74,9 @@ export class AnalyticsService {
       }),
 
       Promise.all([
-        this.prisma.pageView.count({ where: { ...where, userId: { not: null } } }),
+        this.prisma.pageView.count({
+          where: { ...where, userId: { not: null } },
+        }),
         this.prisma.pageView.count({ where: { ...where, userId: null } }),
       ]),
 
@@ -100,7 +104,10 @@ export class AnalyticsService {
       }),
     );
 
-    const hourly = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0 }));
+    const hourly = Array.from({ length: 24 }, (_, h) => ({
+      hour: h,
+      count: 0,
+    }));
     for (const row of hourlyRaw) {
       const h = new Date(row.createdAt).getHours();
       hourly[h].count++;

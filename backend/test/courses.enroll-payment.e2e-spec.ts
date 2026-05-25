@@ -3,16 +3,16 @@ import { createHttpE2eApp } from './helpers/http-e2e.helper';
 
 applyE2eTestEnv();
 
-import { ExecutionContext, INestApplication, CanActivate } from '@nestjs/common';
+import {
+  ExecutionContext,
+  INestApplication,
+  CanActivate,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import {
-  DiscountType,
-  PaymentStatus,
-  PaymentTarget,
-} from '@prisma/client';
+import { DiscountType, PaymentStatus, PaymentTarget } from '@prisma/client';
 import { CoursesModule } from '../src/courses/courses.module';
 import { PrismaModule } from '../src/common/prisma/prisma.module';
 import { PrismaService } from '../src/common/prisma/prisma.service';
@@ -53,10 +53,12 @@ describe('Courses enroll payment (HTTP e2e)', () => {
     course: { findUnique: jest.fn(async () => buildCourse()) },
     enrollment: {
       findUnique: jest.fn(async () => null),
-      upsert: jest.fn(async ({ create }: { create: Record<string, unknown> }) => ({
-        id: 'enrollment-1',
-        ...create,
-      })),
+      upsert: jest.fn(
+        async ({ create }: { create: Record<string, unknown> }) => ({
+          id: 'enrollment-1',
+          ...create,
+        }),
+      ),
     },
     courseTextbook: { findMany: jest.fn(async () => []) },
     bookVoucherCampaign: { findMany: jest.fn(async () => []) },
@@ -100,7 +102,7 @@ describe('Courses enroll payment (HTTP e2e)', () => {
   });
 
   it('PAID·본인·ENROLLMENT·courseId 일치 시 201', async () => {
-    const prisma = app.get(PrismaService) as ReturnType<typeof buildPrisma>;
+    const prisma = app.get(PrismaService);
     (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
       id: 'pay-1',
       userId: 'user-1',

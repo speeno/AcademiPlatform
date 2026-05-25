@@ -21,7 +21,9 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
     if (existing) throw new ConflictException('이미 사용 중인 이메일입니다.');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -34,7 +36,13 @@ export class AuthService {
         phone: dto.phone,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
       },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      },
     });
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
@@ -42,16 +50,30 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user) throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
-    if (user.status !== 'ACTIVE') throw new UnauthorizedException('비활성화된 계정입니다.');
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (!user)
+      throw new UnauthorizedException(
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
+    if (user.status !== 'ACTIVE')
+      throw new UnauthorizedException('비활성화된 계정입니다.');
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!valid) throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
+    if (!valid)
+      throw new UnauthorizedException(
+        '이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     return {
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
       ...tokens,
     };
   }
@@ -59,7 +81,14 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+        createdAt: true,
+      },
     });
     if (!user) throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
     return user;

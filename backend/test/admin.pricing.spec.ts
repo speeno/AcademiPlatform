@@ -29,8 +29,7 @@ describe('AdminService.updatePricingPolicy (EXAM_SESSION)', () => {
         }),
       },
       priceHistory: { create: jest.fn().mockResolvedValue({}) },
-      capturedUpdate: () =>
-        (updated as any) /* 최종 update 결과 */,
+      capturedUpdate: () => updated /* 최종 update 결과 */,
     } as any;
   }
 

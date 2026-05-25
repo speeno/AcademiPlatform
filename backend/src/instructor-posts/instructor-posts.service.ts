@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 
@@ -20,7 +24,10 @@ export class InstructorPostsService {
     const [posts, total] = await Promise.all([
       this.prisma.instructorPost.findMany({
         where,
-        orderBy: [{ isPinned: 'desc' as const }, { createdAt: 'desc' as const }],
+        orderBy: [
+          { isPinned: 'desc' as const },
+          { createdAt: 'desc' as const },
+        ],
         skip,
         take: limit,
         include: { author: { select: { id: true, name: true, email: true } } },
@@ -40,7 +47,10 @@ export class InstructorPostsService {
     return post;
   }
 
-  async create(authorId: string, data: { title: string; content: string; isPinned?: boolean }) {
+  async create(
+    authorId: string,
+    data: { title: string; content: string; isPinned?: boolean },
+  ) {
     return this.prisma.instructorPost.create({
       data: {
         authorId,
@@ -55,7 +65,12 @@ export class InstructorPostsService {
     id: string,
     userId: string,
     userRole: UserRole,
-    data: { title?: string; content?: string; isPinned?: boolean; isPublished?: boolean },
+    data: {
+      title?: string;
+      content?: string;
+      isPinned?: boolean;
+      isPublished?: boolean;
+    },
   ) {
     const post = await this.findById(id);
     this.assertOwnerOrOperator(post.authorId, userId, userRole);
@@ -73,7 +88,11 @@ export class InstructorPostsService {
     return this.prisma.instructorPost.delete({ where: { id } });
   }
 
-  private assertOwnerOrOperator(authorId: string, userId: string, userRole: UserRole) {
+  private assertOwnerOrOperator(
+    authorId: string,
+    userId: string,
+    userRole: UserRole,
+  ) {
     if (authorId === userId) return;
     if (ROLE_LEVEL[userRole] >= ROLE_LEVEL.OPERATOR) return;
     throw new ForbiddenException('본인 글만 수정/삭제할 수 있습니다.');

@@ -172,7 +172,10 @@ export class CmsContentService {
   }
 
   async getLessonContent(lessonId: string, userId: string) {
-    const { courseId } = await this.access.ensureCanEditLesson(userId, lessonId);
+    const { courseId } = await this.access.ensureCanEditLesson(
+      userId,
+      lessonId,
+    );
     const item = await this.prisma.contentItem.findUnique({
       where: { lessonId },
       include: {
@@ -246,7 +249,10 @@ export class CmsContentService {
       changeNote?: string;
     },
   ) {
-    const { courseId } = await this.access.ensureCanEditLesson(userId, lessonId);
+    const { courseId } = await this.access.ensureCanEditLesson(
+      userId,
+      lessonId,
+    );
     const existing = await this.prisma.contentItem.findUnique({
       where: { lessonId },
     });
@@ -257,45 +263,55 @@ export class CmsContentService {
         ? this.sanitizeHtmlSchema(payload.schemaJson)
         : (payload.schemaJson ?? {});
 
-    const item = await this.prisma.contentItem.upsert({
-      where: { lessonId },
-      create: {
-        courseId,
-        lessonId,
-        contentType: payload.contentType,
-        status: CmsContentStatus.DRAFT,
-        latestVersionNo: nextVersionNo,
-        createdById: userId,
-        updatedById: userId,
-      },
-      update: {
-        contentType: payload.contentType,
-        latestVersionNo: nextVersionNo,
-        status: CmsContentStatus.DRAFT,
-        updatedById: userId,
-      },
-    });
-
-    const version = await this.prisma.contentVersion.create({
-      data: {
-        itemId: item.id,
-        versionNo: nextVersionNo,
-        schemaJson: sanitizedSchemaJson,
-        changeNote: payload.changeNote,
-        createdById: userId,
-      },
-    });
-
-    await this.prisma.contentAuditLog.create({
-      data: {
-        itemId: item.id,
-        actorId: userId,
-        action: 'CONTENT_SAVED',
-        payloadJson: {
-          versionNo: nextVersionNo,
+    const { item, version } = await this.prisma.$transaction(async (tx) => {
+      const upserted = await tx.contentItem.upsert({
+        where: { lessonId },
+        create: {
+          courseId,
+          lessonId,
           contentType: payload.contentType,
+          status: CmsContentStatus.DRAFT,
+          latestVersionNo: nextVersionNo,
+          createdById: userId,
+          updatedById: userId,
         },
-      },
+        update: {
+          contentType: payload.contentType,
+          latestVersionNo: nextVersionNo,
+          status: CmsContentStatus.DRAFT,
+          updatedById: userId,
+        },
+      });
+
+      const createdVersion = await tx.contentVersion.create({
+        data: {
+          itemId: upserted.id,
+          versionNo: nextVersionNo,
+          schemaJson: sanitizedSchemaJson,
+          changeNote: payload.changeNote,
+          createdById: userId,
+        },
+      });
+
+      await tx.lesson.update({
+        where: { id: lessonId },
+        data: { contentStatus: 'DRAFT' },
+      });
+
+      await tx.contentAuditLog.create({
+        data: {
+          itemId: upserted.id,
+          actorId: userId,
+          action: 'CONTENT_SAVED',
+          payloadJson: {
+            versionNo: nextVersionNo,
+            contentType: payload.contentType,
+            lessonStatus: 'DRAFT',
+          },
+        },
+      });
+
+      return { item: upserted, version: createdVersion };
     });
 
     return { item, version };
@@ -316,21 +332,27 @@ export class CmsContentService {
     const target = item.versions.find((v) => v.versionNo === versionNo);
     if (!target) throw new NotFoundException('롤백할 버전을 찾을 수 없습니다.');
 
-    await this.prisma.contentItem.update({
-      where: { id: item.id },
-      data: {
-        publishedVersionNo: versionNo,
-        status: CmsContentStatus.PUBLISHED,
-        updatedById: operatorId,
-      },
-    });
-    await this.prisma.contentAuditLog.create({
-      data: {
-        itemId: item.id,
-        actorId: operatorId,
-        action: 'ROLLED_BACK',
-        payloadJson: { versionNo },
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contentItem.update({
+        where: { id: item.id },
+        data: {
+          publishedVersionNo: versionNo,
+          status: CmsContentStatus.PUBLISHED,
+          updatedById: operatorId,
+        },
+      });
+      await tx.lesson.update({
+        where: { id: lessonId },
+        data: { contentStatus: 'PUBLISHED' },
+      });
+      await tx.contentAuditLog.create({
+        data: {
+          itemId: item.id,
+          actorId: operatorId,
+          action: 'ROLLED_BACK',
+          payloadJson: { versionNo, lessonStatus: 'PUBLISHED' },
+        },
+      });
     });
     return { rolledBackTo: versionNo };
   }
@@ -447,7 +469,10 @@ export class CmsContentService {
       item.assets.map(async (asset) => {
         let resolvedUrl = asset.publicUrl ?? null;
         if (!resolvedUrl && bucket && asset.storageKey) {
-          resolvedUrl = await this.storage.getSignedDownloadUrl(asset.storageKey, 600);
+          resolvedUrl = await this.storage.getSignedDownloadUrl(
+            asset.storageKey,
+            600,
+          );
         }
         return {
           ...asset,

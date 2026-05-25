@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   PlayCircle, FileText, ChevronDown, CheckCircle2, Circle,
   Loader2, BookOpen, Award, ExternalLink,
@@ -35,6 +36,7 @@ interface LessonProgress {
 interface Lesson {
   id: string;
   title: string;
+  description?: string | null;
   lessonType: string;
   sortOrder: number;
   videoAsset?: {
@@ -194,6 +196,14 @@ export default function CoursePlayerPage() {
   const progress = selectedLesson ? progressMap[selectedLesson.id] : null;
   const cmsPrimaryAsset = cmsContent?.assets?.[0];
   const cmsAssetUrl = cmsPrimaryAsset?.resolvedUrl || cmsPrimaryAsset?.publicUrl || null;
+  const fromSchema = String(
+    cmsContent?.schemaJson?.linkUrl ??
+    cmsContent?.schemaJson?.liveUrl ??
+    '',
+  );
+  const fromDescription = selectedLesson?.description ?? '';
+  const liveLinkFromLesson =
+    `${fromSchema} ${fromDescription}`.match(/https?:\/\/[^\s"'<]+/)?.[0] ?? null;
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
@@ -321,6 +331,28 @@ export default function CoursePlayerPage() {
                   lessonId={selectedLesson.id}
                   onProgress={handleProgress}
                 />
+              ) : selectedLesson.lessonType === 'LIVE_LINK' ? (
+                <div className="aspect-video flex flex-col items-center justify-center gap-4 bg-white text-center px-6">
+                  <ExternalLink className="w-10 h-10 text-green-600" />
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">실시간 세션 입장</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      강사가 안내한 링크로 입장하세요. 링크가 없으면 운영자에게 문의해 주세요.
+                    </p>
+                  </div>
+                  {liveLinkFromLesson ? (
+                    <a
+                      href={liveLinkFromLesson}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
+                    >
+                      라이브 입장하기
+                    </a>
+                  ) : (
+                    <BrandBadge variant="orange">입장 링크 준비 중</BrandBadge>
+                  )}
+                </div>
               ) : (
                 <div className="aspect-video flex flex-col items-center justify-center text-muted-foreground">
                   {selectedLesson.lessonType === 'VIDEO_UPLOAD' ? (
@@ -346,6 +378,11 @@ export default function CoursePlayerPage() {
                     )}
                   </div>
                 </div>
+                <Link href={`/classroom/${course.id}/assignments`}>
+                  <span className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-xs font-semibold text-brand-blue hover:bg-brand-blue-subtle">
+                    과제 제출
+                  </span>
+                </Link>
               </div>
 
               {progress && (

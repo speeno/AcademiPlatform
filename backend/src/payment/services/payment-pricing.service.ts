@@ -111,7 +111,9 @@ export class PaymentPricingService {
       policyVersion: app.examSession.pricePolicyVersion,
     });
     if (pricing.finalAmount === 0) {
-      throw new BadRequestException('무료 응시 회차는 결제가 필요하지 않습니다.');
+      throw new BadRequestException(
+        '무료 응시 회차는 결제가 필요하지 않습니다.',
+      );
     }
     return {
       ...pricing,

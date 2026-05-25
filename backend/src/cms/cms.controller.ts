@@ -78,7 +78,10 @@ export class CmsController {
 
   @Roles(UserRole.USER)
   @Get('lessons/:lessonId/content')
-  getLessonContent(@Param('lessonId') lessonId: string, @CurrentUser() user: any) {
+  getLessonContent(
+    @Param('lessonId') lessonId: string,
+    @CurrentUser() user: any,
+  ) {
     return this.cmsService.getLessonContent(lessonId, user.id);
   }
 
@@ -91,14 +94,20 @@ export class CmsController {
   ) {
     const file = await this.cmsService.getPublishedAssetFile(assetId, user.id);
     res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.fileName)}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${encodeURIComponent(file.fileName)}"`,
+    );
     res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     return new StreamableFile(file.buffer);
   }
 
   @Roles(UserRole.USER)
   @Get('lessons/:lessonId/history')
-  getLessonHistory(@Param('lessonId') lessonId: string, @CurrentUser() user: any) {
+  getLessonHistory(
+    @Param('lessonId') lessonId: string,
+    @CurrentUser() user: any,
+  ) {
     return this.cmsService.getLessonHistory(lessonId, user.id);
   }
 
@@ -152,8 +161,13 @@ export class CmsController {
 
   @Roles(UserRole.OPERATOR)
   @Post('review/:requestId/approve')
-  approveReview(@Param('requestId') requestId: string, @CurrentUser() user: any) {
-    return this.cmsService.reviewDecision(requestId, user.id, { status: CmsReviewStatus.APPROVED });
+  approveReview(
+    @Param('requestId') requestId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.cmsService.reviewDecision(requestId, user.id, {
+      status: CmsReviewStatus.APPROVED,
+    });
   }
 
   @Roles(UserRole.OPERATOR)
@@ -187,7 +201,11 @@ export class CmsController {
     @CurrentUser() user: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const file = await this.cmsService.getPackageAssetFile(storageKey, lessonId, user.id);
+    const file = await this.cmsService.getPackageAssetFile(
+      storageKey,
+      lessonId,
+      user.id,
+    );
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('Cache-Control', 'private, max-age=3600');
     return new StreamableFile(file.buffer);
@@ -195,7 +213,9 @@ export class CmsController {
 
   @Roles(UserRole.USER)
   @Post('lessons/:lessonId/course-package')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 500 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 500 * 1024 * 1024 } }),
+  )
   uploadCoursePackage(
     @Param('lessonId') lessonId: string,
     @UploadedFile() file: { buffer: Buffer; originalname: string },

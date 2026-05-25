@@ -84,10 +84,7 @@ export function validateRequiredEnv(): void {
       process.exit(1);
     }
   } else {
-    const devPaymentKeys = [
-      'PORTONE_API_KEY',
-      'PORTONE_API_SECRET',
-    ] as const;
+    const devPaymentKeys = ['PORTONE_API_KEY', 'PORTONE_API_SECRET'] as const;
     const missingPayment = devPaymentKeys.filter(
       (key) => !process.env[key]?.trim(),
     );

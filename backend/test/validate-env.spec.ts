@@ -11,7 +11,7 @@ describe('validateRequiredEnv (P0)', () => {
     process.env = { ...ORIGINAL_ENV };
     exitSpy = jest
       .spyOn(process, 'exit')
-      .mockImplementation((code?: number | string | null | undefined) => {
+      .mockImplementation((code?: number | string | null) => {
         throw new Error(`__exit_${code}`);
       });
     jest.spyOn(console, 'error').mockImplementation(() => undefined);

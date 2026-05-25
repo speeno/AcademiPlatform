@@ -1,0 +1,229 @@
+{
+  "version": 1,
+  "defaultCategory": "AI Harness",
+  "courses": [
+    {
+      "title": "Harness·Agent Skills (비개발 1일)",
+      "slug": "harness-nondev-1d",
+      "track": "non-developer",
+      "duration": "1-day",
+      "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
+      "description": "비개발 직군을 위한 Harness/Skill 기본 과정. 플랫폼은 발표자료·워크북 허브로 사용합니다.",
+      "tags": ["harness", "nondev", "1d", "workshop"],
+      "sources": {
+        "curriculum": "non-developer/1-day.md",
+        "slides": ["materials/02_non_developer_1_day_slides_recreated.md"],
+        "workbooks": ["materials/03_non_developer_1_day_workbook_complete.md"],
+        "expansion": []
+      },
+      "modules": [
+        {
+          "title": "M0 사전 준비",
+          "lessons": [
+            { "title": "오리엔테이션", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common" }
+          ]
+        },
+        {
+          "title": "M1~M5 핵심 실습",
+          "lessons": [
+            { "title": "커리큘럼 가이드", "lessonType": "TEXT", "sourcePath": "non-developer/1-day.md", "sourceKind": "curriculum" },
+            { "title": "슬라이드 (1차안)", "lessonType": "TEXT", "sourcePath": "materials/02_non_developer_1_day_slides_recreated.md", "sourceKind": "slide" },
+            { "title": "워크북 안내", "lessonType": "DOCUMENT", "sourcePath": "materials/03_non_developer_1_day_workbook_complete.md", "sourceKind": "workbook" },
+            { "title": "실시간 세션 입장", "lessonType": "LIVE_LINK", "inlineMarkdown": "실시간 세션 링크를 강사가 안내합니다.\\n\\n입장 URL: https://example.com/live/nondev-1d", "sourceKind": "inline" }
+          ]
+        }
+      ],
+      "assignments": [
+        { "title": "업무 시나리오 1페이지", "description": "현업 업무 1건을 Skill 초안으로 정리해 제출", "dueOffsetDays": 1 }
+      ]
+    },
+    {
+      "title": "Harness·Agent Skills (개발 1일)",
+      "slug": "harness-dev-1d",
+      "track": "developer",
+      "duration": "1-day",
+      "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
+      "description": "개발 직군을 위한 Skill/Task/오케스트레이터 기본 과정.",
+      "tags": ["harness", "developer", "1d", "workshop"],
+      "sources": {
+        "curriculum": "developer/1-day.md",
+        "slides": ["materials/04_developer_1_day_slide_material.md"],
+        "workbooks": ["materials/05_developer_1_day_practice_templates.md"],
+        "expansion": []
+      },
+      "modules": [
+        {
+          "title": "M0 사전 준비",
+          "lessons": [
+            { "title": "오리엔테이션", "lessonType": "TEXT", "sourcePath": "materials/01_overall_training_intro_material.md", "sourceKind": "common" }
+          ]
+        },
+        {
+          "title": "M1~M5 핵심 실습",
+          "lessons": [
+            { "title": "커리큘럼 가이드", "lessonType": "TEXT", "sourcePath": "developer/1-day.md", "sourceKind": "curriculum" },
+            { "title": "슬라이드 (1차안)", "lessonType": "TEXT", "sourcePath": "materials/04_developer_1_day_slide_material.md", "sourceKind": "slide" },
+            { "title": "실습 템플릿 안내", "lessonType": "DOCUMENT", "sourcePath": "materials/05_developer_1_day_practice_templates.md", "sourceKind": "workbook" },
+            { "title": "실시간 세션 입장", "lessonType": "LIVE_LINK", "inlineMarkdown": "실시간 세션 링크를 강사가 안내합니다.\\n\\n입장 URL: https://example.com/live/dev-1d", "sourceKind": "inline" }
+          ]
+        }
+      ],
+      "assignments": [
+        { "title": "SKILL.md 초안 제출", "description": "실습한 Skill 초안을 제출하고 피드백 받기", "dueOffsetDays": 1 }
+      ]
+    },
+    {
+      "title": "Harness·Agent Skills (비개발 3일)",
+      "slug": "harness-nondev-3d",
+      "track": "non-developer",
+      "duration": "3-day",
+      "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
+      "description": "비개발 3일 확장 과정. Day별 파일럿 설계와 운영 표준화를 진행합니다.",
+      "tags": ["harness", "nondev", "3d", "cohort"],
+      "sources": {
+        "curriculum": "non-developer/3-day.md",
+        "slides": ["materials/08_three_day_course_expansion_material.md"],
+        "workbooks": [],
+        "expansion": ["materials/08_three_day_course_expansion_material.md"]
+      },
+      "modules": [
+        {
+          "title": "Day 1",
+          "lessons": [
+            { "title": "Day1 커리큘럼", "lessonType": "TEXT", "sourcePath": "non-developer/3-day.md", "sourceKind": "curriculum" },
+            { "title": "Day1 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/08_three_day_course_expansion_material.md", "sourceKind": "slide" }
+          ]
+        },
+        {
+          "title": "Day 2",
+          "lessons": [
+            { "title": "실시간 워크숍 Day2", "lessonType": "LIVE_LINK", "inlineMarkdown": "실시간 워크숍 Day2 입장 링크를 공지합니다.", "sourceKind": "inline" }
+          ]
+        },
+        {
+          "title": "Day 3",
+          "lessons": [
+            { "title": "파일럿 발표/피드백", "lessonType": "TEXT", "sourcePath": "materials/07_evaluation_checklist.md", "sourceKind": "rubric" }
+          ]
+        }
+      ],
+      "assignments": [
+        { "title": "Day1 산출물", "description": "업무 후보와 초안 제출", "dueOffsetDays": 1 },
+        { "title": "Day2 산출물", "description": "워크플로우/검증 체크", "dueOffsetDays": 2 },
+        { "title": "Day3 최종 산출물", "description": "파일럿 패키지 제출", "dueOffsetDays": 3 }
+      ]
+    },
+    {
+      "title": "Harness·Agent Skills (개발 3일)",
+      "slug": "harness-dev-3d",
+      "track": "developer",
+      "duration": "3-day",
+      "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
+      "description": "개발 3일 확장 과정. Task 분해, 병렬 서브에이전트, 검증 파이프라인까지 포함합니다.",
+      "tags": ["harness", "developer", "3d", "cohort"],
+      "sources": {
+        "curriculum": "developer/3-day.md",
+        "slides": ["materials/08_three_day_course_expansion_material.md"],
+        "workbooks": [],
+        "expansion": ["materials/08_three_day_course_expansion_material.md"]
+      },
+      "modules": [
+        {
+          "title": "Day 1",
+          "lessons": [
+            { "title": "Day1 커리큘럼", "lessonType": "TEXT", "sourcePath": "developer/3-day.md", "sourceKind": "curriculum" }
+          ]
+        },
+        {
+          "title": "Day 2",
+          "lessons": [
+            { "title": "실시간 워크숍 Day2", "lessonType": "LIVE_LINK", "inlineMarkdown": "실시간 워크숍 Day2 입장 링크를 공지합니다.", "sourceKind": "inline" }
+          ]
+        },
+        {
+          "title": "Day 3",
+          "lessons": [
+            { "title": "검증 체크리스트", "lessonType": "TEXT", "sourcePath": "materials/07_evaluation_checklist.md", "sourceKind": "rubric" }
+          ]
+        }
+      ],
+      "assignments": [
+        { "title": "Day1 Skill 패키지", "description": "SKILL.md 초안과 Task 분해 문서", "dueOffsetDays": 1 },
+        { "title": "Day2 오케스트레이터", "description": "병렬 실행/실패 정책 제출", "dueOffsetDays": 2 },
+        { "title": "Day3 최종 검증", "description": "스모크 결과와 롤아웃 체크리스트 제출", "dueOffsetDays": 3 }
+      ]
+    },
+    {
+      "title": "Harness·Agent Skills (비개발 1주)",
+      "slug": "harness-nondev-1w",
+      "track": "non-developer",
+      "duration": "1-week",
+      "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
+      "description": "비개발 1주 과정. 조직 표준/거버넌스와 산업별 적용 시나리오를 다룹니다.",
+      "tags": ["harness", "nondev", "1w", "governance"],
+      "sources": {
+        "curriculum": "non-developer/1-week.md",
+        "slides": ["materials/09_one_week_course_expansion_material.md"],
+        "workbooks": [],
+        "expansion": ["materials/09_one_week_course_expansion_material.md"]
+      },
+      "modules": [
+        {
+          "title": "Week Core",
+          "lessons": [
+            { "title": "1주 과정 가이드", "lessonType": "TEXT", "sourcePath": "non-developer/1-week.md", "sourceKind": "curriculum" },
+            { "title": "확장 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/09_one_week_course_expansion_material.md", "sourceKind": "slide" }
+          ]
+        },
+        {
+          "title": "산업별 Harness Lab",
+          "lessons": [
+            { "title": "교육 프랜차이즈 Lab 안내", "lessonType": "DOCUMENT", "inlineMarkdown": "자료 경로: materials/industry-use-cases/labs/06-education-franchise", "sourceKind": "lab" },
+            { "title": "라이프스타일 Lab 안내", "lessonType": "DOCUMENT", "inlineMarkdown": "자료 경로: materials/industry-use-cases/labs/07-lifestyle", "sourceKind": "lab" }
+          ]
+        }
+      ],
+      "assignments": [
+        { "title": "Day1 산출물", "description": "초기 운영 규칙 정리", "dueOffsetDays": 1 },
+        { "title": "Day3 중간 산출물", "description": "표준안 v1", "dueOffsetDays": 3 },
+        { "title": "Day5 최종 산출물", "description": "파일럿 전환 체크리스트", "dueOffsetDays": 5 }
+      ]
+    },
+    {
+      "title": "Harness·Agent Skills (개발 1주)",
+      "slug": "harness-dev-1w",
+      "track": "developer",
+      "duration": "1-week",
+      "summary": "가격·일정 미정. 실시간 워크숍 중심 과정입니다.",
+      "description": "개발 1주 과정. 참조 구현·CI·Runbook 및 산업별 랩 확장을 다룹니다.",
+      "tags": ["harness", "developer", "1w", "ci"],
+      "sources": {
+        "curriculum": "developer/1-week.md",
+        "slides": ["materials/09_one_week_course_expansion_material.md"],
+        "workbooks": [],
+        "expansion": ["materials/09_one_week_course_expansion_material.md"]
+      },
+      "modules": [
+        {
+          "title": "Week Core",
+          "lessons": [
+            { "title": "1주 과정 가이드", "lessonType": "TEXT", "sourcePath": "developer/1-week.md", "sourceKind": "curriculum" },
+            { "title": "확장 슬라이드", "lessonType": "TEXT", "sourcePath": "materials/09_one_week_course_expansion_material.md", "sourceKind": "slide" }
+          ]
+        },
+        {
+          "title": "산업별 Harness Lab",
+          "lessons": [
+            { "title": "헬스케어 Lab 안내", "lessonType": "DOCUMENT", "inlineMarkdown": "자료 경로: materials/industry-use-cases/labs/05-healthcare", "sourceKind": "lab" },
+            { "title": "물류 Lab 안내", "lessonType": "DOCUMENT", "inlineMarkdown": "자료 경로: materials/industry-use-cases/labs/04-logistics", "sourceKind": "lab" }
+          ]
+        }
+      ],
+      "assignments": [
+        { "title": "Day1 Skill 패키지", "description": "초기 Skill 집합 제출", "dueOffsetDays": 1 },
+        { "title": "Day3 검증 체계", "description": "스모크/리그레션 플랜", "dueOffsetDays": 3 },
+        { "title": "Day5 운영 Runbook", "description": "파일럿 운영 문서", "dueOffsetDays": 5 }
+      ]
+    }
+  ]
+}

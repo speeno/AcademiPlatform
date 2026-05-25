@@ -1,8 +1,21 @@
 import {
-  Body, Controller, Get, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { ExamApplicationStatus, ExamSessionStatus, UserRole } from '@prisma/client';
+import {
+  ExamApplicationStatus,
+  ExamSessionStatus,
+  UserRole,
+} from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ExamService } from './exam.service';
 import { Public } from '../common/decorators/public.decorator';
@@ -27,12 +40,17 @@ export class ExamController {
 
   @Public()
   @Get('sessions/:id')
-  findSessionById(@Param('id') id: string, @CurrentUser() user?: { id: string }) {
+  findSessionById(
+    @Param('id') id: string,
+    @CurrentUser() user?: { id: string },
+  ) {
     return this.examService.findSessionById(id, user?.id);
   }
 
   @Post('sessions/:id/apply')
-  @UseInterceptors(FileInterceptor('idPhoto', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('idPhoto', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   createApplication(
     @Param('id') sessionId: string,
     @CurrentUser() user: { id?: string } | undefined,
@@ -40,11 +58,21 @@ export class ExamController {
     @Body('formJson') formJsonRaw: string | undefined,
     @UploadedFile()
     file:
-      | { originalname?: string; mimetype?: string; buffer?: Buffer; size?: number }
+      | {
+          originalname?: string;
+          mimetype?: string;
+          buffer?: Buffer;
+          size?: number;
+        }
       | undefined,
   ) {
     const payload = formJsonRaw ?? body;
-    return this.examService.createApplication(sessionId, user?.id ?? null, payload, file);
+    return this.examService.createApplication(
+      sessionId,
+      user?.id ?? null,
+      payload,
+      file,
+    );
   }
 
   @Get('my/applications')

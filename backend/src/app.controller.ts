@@ -12,7 +12,11 @@ export class AppController {
 
   @Public()
   @Get('health')
-  async health(): Promise<{ status: string; db: 'ok' | 'down'; timestamp: string }> {
+  async health(): Promise<{
+    status: string;
+    db: 'ok' | 'down';
+    timestamp: string;
+  }> {
     let db: 'ok' | 'down' = 'ok';
     try {
       await this.prisma.$queryRaw`SELECT 1`;

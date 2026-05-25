@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Save, GripVertical, PlayCircle, FileText } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
@@ -70,7 +71,7 @@ export default function AdminCourseEditorPage() {
     const h: Record<string, string> = { 'Content-Type': 'application/json' }; if (t) h['Authorization'] = `Bearer ${t}`; return h;
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await fetch(`${API}/courses/admin/${id}`, { headers: authHeader() });
       if (!res.ok) { router.push('/admin/courses'); return; }
@@ -94,9 +95,9 @@ export default function AdminCourseEditorPage() {
       });
     } catch { router.push('/admin/courses'); }
     finally { setLoading(false); }
-  };
+  }, [id, router]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const handleSaveBasic = async () => {
     setSavingBasic(true);
@@ -149,10 +150,10 @@ export default function AdminCourseEditorPage() {
 
   const handleAddLesson = async (moduleId: string) => {
     if (!newLesson.title.trim()) return;
-    const module = course?.modules.find((m) => m.id === moduleId);
+    const targetModule = course?.modules.find((m) => m.id === moduleId);
     const res = await fetch(`${API}/courses/admin/modules/${moduleId}/lessons`, {
       method: 'POST', headers: authHeader(),
-      body: JSON.stringify({ ...newLesson, sortOrder: (module?.lessons.length ?? 0) + 1 }),
+      body: JSON.stringify({ ...newLesson, sortOrder: (targetModule?.lessons.length ?? 0) + 1 }),
     });
     if (res.ok) { setAddingLesson(null); setNewLesson({ title: '', lessonType: 'VIDEO_UPLOAD' }); load(); }
   };
@@ -172,6 +173,12 @@ export default function AdminCourseEditorPage() {
         <BrandButton variant="ghost" size="sm" onClick={() => router.push('/admin/courses')}>
           <ArrowLeft className="w-4 h-4 mr-1" /> 목록
         </BrandButton>
+        <Link href={`/admin/courses/${id}/assignments`}>
+          <BrandButton variant="outline" size="sm">과제 관리</BrandButton>
+        </Link>
+        <Link href={`/admin/courses/${id}/enrollments`}>
+          <BrandButton variant="outline" size="sm">수동 등록</BrandButton>
+        </Link>
         <div>
           <h1 className="text-heading text-brand-blue">강좌 편집</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{course.title}</p>

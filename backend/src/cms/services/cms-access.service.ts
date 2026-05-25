@@ -33,7 +33,8 @@ export class CmsAccessService {
 
   async canEditCourse(userId: string, courseId: string): Promise<boolean> {
     const role = await this.getUserRole(userId);
-    if (role === UserRole.OPERATOR || role === UserRole.SUPER_ADMIN) return true;
+    if (role === UserRole.OPERATOR || role === UserRole.SUPER_ADMIN)
+      return true;
 
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -69,7 +70,8 @@ export class CmsAccessService {
     isPreview: boolean,
   ): Promise<boolean> {
     const role = await this.getUserRole(userId);
-    if (role === UserRole.OPERATOR || role === UserRole.SUPER_ADMIN) return true;
+    if (role === UserRole.OPERATOR || role === UserRole.SUPER_ADMIN)
+      return true;
     if (await this.canEditCourse(userId, courseId)) return true;
     if (isPreview) return true;
 

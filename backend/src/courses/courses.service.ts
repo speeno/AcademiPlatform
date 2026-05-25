@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import {
+  AssignmentSubmissionStatus,
   BookVoucherCodeStatus,
   Course,
   CourseStatus,
@@ -11,6 +16,12 @@ import {
 } from '@prisma/client';
 import { CreateCourseDto, CourseFilterDto } from './dto/course.dto';
 import { AddLessonDto } from './dto/lesson.dto';
+import {
+  AdminCreateAssignmentDto,
+  AdminReviewAssignmentSubmissionDto,
+  AdminUpdateAssignmentDto,
+  SubmitAssignmentDto,
+} from './dto/assignment.dto';
 import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
 import { maskCourseForPublic } from '../common/pricing/public-price-policy';
 
@@ -18,7 +29,12 @@ import { maskCourseForPublic } from '../common/pricing/public-price-policy';
 export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
-  async getAdminCourses(filter: { status?: CourseStatus; search?: string; page?: number; limit?: number }) {
+  async getAdminCourses(filter: {
+    status?: CourseStatus;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, search, page = 1, limit = 50 } = filter;
     const skip = (page - 1) * limit;
 
@@ -53,12 +69,15 @@ export class CoursesService {
     const { category, search, page = 1, limit = 12 } = filter;
     const skip = (page - 1) * limit;
 
-    const where: any = { status: { in: [CourseStatus.ACTIVE, CourseStatus.UPCOMING] } };
+    const where: any = {
+      status: { in: [CourseStatus.ACTIVE, CourseStatus.UPCOMING] },
+    };
     if (category) where.category = category;
-    if (search) where.OR = [
-      { title: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
-    ];
+    if (search)
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
 
     const [courses, total] = await Promise.all([
       this.prisma.course.findMany({
@@ -94,16 +113,29 @@ export class CoursesService {
             lessons: {
               orderBy: { sortOrder: 'asc' },
               select: {
-                id: true, title: true, lessonType: true, contentStatus: true,
-                isPreview: true, sortOrder: true,
-                videoAsset: { select: { durationSeconds: true, encodingStatus: true } },
+                id: true,
+                title: true,
+                lessonType: true,
+                contentStatus: true,
+                isPreview: true,
+                sortOrder: true,
+                videoAsset: {
+                  select: { durationSeconds: true, encodingStatus: true },
+                },
               },
             },
           },
         },
         courseTextbooks: {
           include: {
-            textbook: { select: { id: true, title: true, coverImageUrl: true, price: true } },
+            textbook: {
+              select: {
+                id: true,
+                title: true,
+                coverImageUrl: true,
+                price: true,
+              },
+            },
           },
         },
         _count: { select: { enrollments: true } },
@@ -151,6 +183,29 @@ export class CoursesService {
       include: { instructor: { select: { id: true, name: true } } },
     });
     if (!course) throw new NotFoundException('교육과정을 찾을 수 없습니다.');
+    const now = new Date();
+    if (
+      course.status !== CourseStatus.ACTIVE &&
+      course.status !== CourseStatus.UPCOMING
+    ) {
+      throw new BadRequestException(
+        '현재 수강 신청이 가능한 강의 상태가 아닙니다.',
+      );
+    }
+    if (course.enrollmentStartAt && now < course.enrollmentStartAt) {
+      throw new BadRequestException('수강 신청 시작 전입니다.');
+    }
+    if (course.enrollmentEndAt && now > course.enrollmentEndAt) {
+      throw new BadRequestException('수강 신청이 마감되었습니다.');
+    }
+    if (course.maxCapacity && course.maxCapacity > 0) {
+      const currentActive = await db.enrollment.count({
+        where: { courseId, status: EnrollmentStatus.ACTIVE },
+      });
+      if (currentActive >= course.maxCapacity) {
+        throw new BadRequestException('정원이 마감되었습니다.');
+      }
+    }
 
     // tx 가 전달된 경로(PaymentService.handlePostPaymentInTx)는 결제·금액 검증이 이미 완료된
     // 신뢰 호출이다. 외부 컨트롤러 진입(tx 미전달)은 paymentId 위조 차단을 위해 추가 검증을 수행한다.
@@ -171,7 +226,13 @@ export class CoursesService {
 
     const enrollment = await db.enrollment.upsert({
       where: { userId_courseId: { userId, courseId } },
-      create: { userId, courseId, paymentId, expiresAt, status: EnrollmentStatus.ACTIVE },
+      create: {
+        userId,
+        courseId,
+        paymentId,
+        expiresAt,
+        status: EnrollmentStatus.ACTIVE,
+      },
       update: { status: EnrollmentStatus.ACTIVE, paymentId, expiresAt },
     });
 
@@ -216,6 +277,245 @@ export class CoursesService {
     });
   }
 
+  async addEnrollmentByAdmin(
+    courseId: string,
+    targetUserId: string,
+    operatorId: string,
+  ) {
+    await this.prisma.user.findUniqueOrThrow({
+      where: { id: operatorId },
+      select: { id: true },
+    });
+    await this.prisma.user.findUniqueOrThrow({
+      where: { id: targetUserId },
+      select: { id: true },
+    });
+    return this.enroll(courseId, targetUserId, undefined, this.prisma);
+  }
+
+  async getAdminEnrollments(courseId: string) {
+    await this.findById(courseId);
+    return this.prisma.enrollment.findMany({
+      where: { courseId },
+      orderBy: { enrolledAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
+      },
+    });
+  }
+
+  async getAdminAssignments(courseId: string) {
+    await this.findById(courseId);
+    return this.prisma.assignment.findMany({
+      where: { courseId },
+      orderBy: [{ dueAt: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        _count: { select: { submissions: true } },
+      },
+    });
+  }
+
+  async createAssignment(courseId: string, dto: AdminCreateAssignmentDto) {
+    await this.findById(courseId);
+    return this.prisma.assignment.create({
+      data: {
+        courseId,
+        title: dto.title.trim(),
+        description: dto.description?.trim(),
+        dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
+        allowResubmit: dto.allowResubmit ?? false,
+        allowLateSubmit: dto.allowLateSubmit ?? false,
+        maxFileSizeMb: dto.maxFileSizeMb ?? 50,
+        allowedFileTypes: dto.allowedFileTypes ?? [],
+      },
+    });
+  }
+
+  async updateAssignment(
+    courseId: string,
+    assignmentId: string,
+    dto: AdminUpdateAssignmentDto,
+  ) {
+    const assignment = await this.prisma.assignment.findFirst({
+      where: { id: assignmentId, courseId },
+    });
+    if (!assignment) throw new NotFoundException('과제를 찾을 수 없습니다.');
+
+    return this.prisma.assignment.update({
+      where: { id: assignmentId },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description.trim() || null }
+          : {}),
+        ...(dto.dueAt !== undefined
+          ? { dueAt: dto.dueAt ? new Date(dto.dueAt) : null }
+          : {}),
+        ...(dto.allowResubmit !== undefined
+          ? { allowResubmit: dto.allowResubmit }
+          : {}),
+        ...(dto.allowLateSubmit !== undefined
+          ? { allowLateSubmit: dto.allowLateSubmit }
+          : {}),
+        ...(dto.maxFileSizeMb !== undefined
+          ? { maxFileSizeMb: dto.maxFileSizeMb }
+          : {}),
+        ...(dto.allowedFileTypes !== undefined
+          ? { allowedFileTypes: dto.allowedFileTypes }
+          : {}),
+      },
+    });
+  }
+
+  async deleteAssignment(courseId: string, assignmentId: string) {
+    const assignment = await this.prisma.assignment.findFirst({
+      where: { id: assignmentId, courseId },
+      select: { id: true },
+    });
+    if (!assignment) throw new NotFoundException('과제를 찾을 수 없습니다.');
+    await this.prisma.assignment.delete({ where: { id: assignmentId } });
+    return { deleted: true };
+  }
+
+  async getAssignmentSubmissions(courseId: string, assignmentId: string) {
+    const assignment = await this.prisma.assignment.findFirst({
+      where: { id: assignmentId, courseId },
+      select: { id: true },
+    });
+    if (!assignment) throw new NotFoundException('과제를 찾을 수 없습니다.');
+    return this.prisma.assignmentSubmission.findMany({
+      where: { assignmentId },
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+  }
+
+  async reviewAssignmentSubmission(
+    courseId: string,
+    assignmentId: string,
+    submissionId: string,
+    dto: AdminReviewAssignmentSubmissionDto,
+  ) {
+    const submission = await this.prisma.assignmentSubmission.findFirst({
+      where: {
+        id: submissionId,
+        assignmentId,
+        assignment: { courseId },
+      },
+      select: { id: true },
+    });
+    if (!submission) throw new NotFoundException('제출물을 찾을 수 없습니다.');
+
+    return this.prisma.assignmentSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: dto.status,
+        feedback: dto.feedback ?? null,
+        feedbackAt: dto.feedback ? new Date() : null,
+      },
+    });
+  }
+
+  async getMyAssignments(courseId: string, userId: string) {
+    await this.assertActiveEnrollment(courseId, userId);
+    return this.prisma.assignment.findMany({
+      where: { courseId },
+      orderBy: [{ dueAt: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        submissions: {
+          where: { userId },
+          take: 1,
+          orderBy: { submittedAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+            submittedAt: true,
+            feedback: true,
+            feedbackAt: true,
+            fileName: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getMyAssignmentSubmission(assignmentId: string, userId: string) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      select: { id: true, courseId: true },
+    });
+    if (!assignment) throw new NotFoundException('과제를 찾을 수 없습니다.');
+    await this.assertActiveEnrollment(assignment.courseId, userId);
+    return this.prisma.assignmentSubmission.findFirst({
+      where: { assignmentId, userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+  }
+
+  async submitAssignment(
+    assignmentId: string,
+    userId: string,
+    dto: SubmitAssignmentDto,
+  ) {
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: assignmentId },
+    });
+    if (!assignment) throw new NotFoundException('과제를 찾을 수 없습니다.');
+    await this.assertActiveEnrollment(assignment.courseId, userId);
+
+    const now = new Date();
+    const current = await this.prisma.assignmentSubmission.findFirst({
+      where: { assignmentId, userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+    if (
+      assignment.dueAt &&
+      now > assignment.dueAt &&
+      !assignment.allowLateSubmit
+    ) {
+      throw new BadRequestException('제출 기한이 지났습니다.');
+    }
+    if (current && !assignment.allowResubmit) {
+      throw new BadRequestException('재제출이 허용되지 않은 과제입니다.');
+    }
+
+    if (!dto.textAnswer?.trim() && !dto.fileUrl?.trim()) {
+      throw new BadRequestException(
+        '텍스트 답안 또는 파일 URL 중 하나는 필요합니다.',
+      );
+    }
+
+    if (current && assignment.allowResubmit) {
+      return this.prisma.assignmentSubmission.update({
+        where: { id: current.id },
+        data: {
+          textAnswer: dto.textAnswer?.trim() || null,
+          fileUrl: dto.fileUrl?.trim() || null,
+          fileName: dto.fileName?.trim() || null,
+          submittedAt: now,
+          status: AssignmentSubmissionStatus.PENDING,
+          feedback: null,
+          feedbackAt: null,
+        },
+      });
+    }
+
+    return this.prisma.assignmentSubmission.create({
+      data: {
+        assignmentId,
+        userId,
+        textAnswer: dto.textAnswer?.trim() || null,
+        fileUrl: dto.fileUrl?.trim() || null,
+        fileName: dto.fileName?.trim() || null,
+        status: AssignmentSubmissionStatus.PENDING,
+      },
+    });
+  }
+
   async getCategories() {
     const categories = await this.prisma.course.groupBy({
       by: ['category'],
@@ -237,7 +537,9 @@ export class CoursesService {
   }
 
   async addLesson(moduleId: string, data: AddLessonDto) {
-    const module = await this.prisma.courseModule.findUnique({ where: { id: moduleId } });
+    const module = await this.prisma.courseModule.findUnique({
+      where: { id: moduleId },
+    });
     if (!module) throw new NotFoundException('모듈을 찾을 수 없습니다.');
 
     const maxOrder = await this.prisma.lesson.aggregate({
@@ -289,7 +591,9 @@ export class CoursesService {
       isPreview?: boolean;
     },
   ) {
-    const module = await this.prisma.courseModule.findUnique({ where: { id: moduleId } });
+    const module = await this.prisma.courseModule.findUnique({
+      where: { id: moduleId },
+    });
     if (!module) throw new NotFoundException('모듈을 찾을 수 없습니다.');
 
     const lesson = await this.prisma.lesson.findFirst({
@@ -301,8 +605,12 @@ export class CoursesService {
       where: { id: lessonId },
       data: {
         ...(data.title !== undefined ? { title: data.title } : {}),
-        ...(data.lessonType !== undefined ? { lessonType: data.lessonType } : {}),
-        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.lessonType !== undefined
+          ? { lessonType: data.lessonType }
+          : {}),
+        ...(data.description !== undefined
+          ? { description: data.description }
+          : {}),
         ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
         ...(data.isPreview !== undefined ? { isPreview: data.isPreview } : {}),
       },
@@ -385,7 +693,9 @@ export class CoursesService {
     }
 
     if (!paymentId) {
-      throw new BadRequestException('유료 강의는 결제 완료 후 수강 신청이 가능합니다.');
+      throw new BadRequestException(
+        '유료 강의는 결제 완료 후 수강 신청이 가능합니다.',
+      );
     }
 
     const payment = await this.prisma.payment.findUnique({
@@ -405,10 +715,14 @@ export class CoursesService {
       throw new BadRequestException('결제 정보를 찾을 수 없습니다.');
     }
     if (payment.userId !== userId) {
-      throw new BadRequestException('결제자와 수강 신청자가 일치하지 않습니다.');
+      throw new BadRequestException(
+        '결제자와 수강 신청자가 일치하지 않습니다.',
+      );
     }
     if (payment.targetType !== PaymentTarget.ENROLLMENT) {
-      throw new BadRequestException('수강 결제가 아닌 결제로는 등록할 수 없습니다.');
+      throw new BadRequestException(
+        '수강 결제가 아닌 결제로는 등록할 수 없습니다.',
+      );
     }
     if (payment.targetId !== course.id) {
       throw new BadRequestException('결제 대상 강의가 일치하지 않습니다.');
@@ -445,7 +759,10 @@ export class CoursesService {
       if (existingGrant) continue;
 
       const code = await db.bookVoucherCode.findFirst({
-        where: { campaignId: campaign.id, status: BookVoucherCodeStatus.AVAILABLE },
+        where: {
+          campaignId: campaign.id,
+          status: BookVoucherCodeStatus.AVAILABLE,
+        },
         orderBy: { createdAt: 'asc' },
       });
       if (!code) continue;
@@ -465,6 +782,19 @@ export class CoursesService {
           enrollmentId,
         },
       });
+    }
+  }
+
+  private async assertActiveEnrollment(
+    courseId: string,
+    userId: string,
+  ): Promise<void> {
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { id: true, status: true },
+    });
+    if (!enrollment || enrollment.status !== EnrollmentStatus.ACTIVE) {
+      throw new BadRequestException('수강 중인 사용자만 접근할 수 있습니다.');
     }
   }
 }

@@ -94,7 +94,7 @@ describe('Auth refresh (HTTP e2e)', () => {
 
     const payload = jwt.verify(res.body.accessToken, {
       secret: process.env.JWT_SECRET,
-    }) as { sub: string };
+    });
     expect(payload.sub).toBe(activeUser.id);
 
     await request(app.getHttpServer())

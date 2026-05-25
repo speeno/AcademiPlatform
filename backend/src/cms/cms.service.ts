@@ -47,7 +47,12 @@ export class CmsService {
     role: CmsCollaboratorRole,
     operatorId: string,
   ) {
-    return this.content.upsertCollaborator(courseId, targetUserId, role, operatorId);
+    return this.content.upsertCollaborator(
+      courseId,
+      targetUserId,
+      role,
+      operatorId,
+    );
   }
 
   setCourseOwner(courseId: string, ownerUserId: string, operatorId: string) {

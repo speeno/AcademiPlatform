@@ -16,13 +16,21 @@ export class NotifyService {
 
   async send(payload: NotifyPayload): Promise<void> {
     if (payload.type === 'email') {
-      await this.sendEmail(payload.to, payload.subject ?? 'AcademiQ 알림', payload.body);
+      await this.sendEmail(
+        payload.to,
+        payload.subject ?? 'AcademiQ 알림',
+        payload.body,
+      );
     } else if (payload.type === 'sms' || payload.type === 'kakao') {
       await this.sendSms(payload.to, payload.body);
     }
   }
 
-  async sendEnrollmentConfirm(to: string, userName: string, courseTitle: string) {
+  async sendEnrollmentConfirm(
+    to: string,
+    userName: string,
+    courseTitle: string,
+  ) {
     await this.send({
       type: 'email',
       to,
@@ -35,7 +43,11 @@ export class NotifyService {
     });
   }
 
-  async sendExamApplicationConfirm(to: string, userName: string, examName: string) {
+  async sendExamApplicationConfirm(
+    to: string,
+    userName: string,
+    examName: string,
+  ) {
     await this.send({
       type: 'email',
       to,
@@ -48,7 +60,12 @@ export class NotifyService {
     });
   }
 
-  async sendPaymentConfirm(to: string, userName: string, amount: number, orderNo: string) {
+  async sendPaymentConfirm(
+    to: string,
+    userName: string,
+    amount: number,
+    orderNo: string,
+  ) {
     await this.send({
       type: 'email',
       to,
@@ -61,27 +78,36 @@ export class NotifyService {
     });
   }
 
-  private async sendEmail(to: string, subject: string, htmlBody: string): Promise<void> {
+  private async sendEmail(
+    to: string,
+    subject: string,
+    htmlBody: string,
+  ): Promise<void> {
     const sesFrom = this.config.get('AWS_SES_FROM_EMAIL', '');
     const awsRegion = this.config.get('AWS_REGION', 'ap-northeast-2');
     const awsAccessKey = this.config.get('AWS_ACCESS_KEY_ID', '');
 
     if (!awsAccessKey) {
-      this.logger.log(`[개발] 이메일 발송 생략 — to: ${to}, subject: ${subject}`);
+      this.logger.log(
+        `[개발] 이메일 발송 생략 — to: ${to}, subject: ${subject}`,
+      );
       return;
     }
 
     try {
-      const { SESClient, SendEmailCommand } = await import('@aws-sdk/client-ses');
+      const { SESClient, SendEmailCommand } =
+        await import('@aws-sdk/client-ses');
       const ses = new SESClient({ region: awsRegion });
-      await ses.send(new SendEmailCommand({
-        Source: sesFrom,
-        Destination: { ToAddresses: [to] },
-        Message: {
-          Subject: { Data: subject, Charset: 'UTF-8' },
-          Body: { Html: { Data: htmlBody, Charset: 'UTF-8' } },
-        },
-      }));
+      await ses.send(
+        new SendEmailCommand({
+          Source: sesFrom,
+          Destination: { ToAddresses: [to] },
+          Message: {
+            Subject: { Data: subject, Charset: 'UTF-8' },
+            Body: { Html: { Data: htmlBody, Charset: 'UTF-8' } },
+          },
+        }),
+      );
       this.logger.log(`이메일 발송 완료: ${to}`);
     } catch (err) {
       this.logger.error(`이메일 발송 실패: ${to}`, err);

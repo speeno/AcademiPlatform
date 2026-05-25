@@ -20,7 +20,9 @@ export class PortoneWebhookGuard implements CanActivate {
       );
     }
 
-    const secret = this.config.get<string>('PORTONE_WEBHOOK_SECRET', '')?.trim();
+    const secret = this.config
+      .get<string>('PORTONE_WEBHOOK_SECRET', '')
+      ?.trim();
     if (!secret) {
       if (process.env.NODE_ENV === 'production') {
         throw new UnauthorizedException('웹훅 시크릿이 설정되지 않았습니다.');
@@ -28,7 +30,9 @@ export class PortoneWebhookGuard implements CanActivate {
       return true;
     }
 
-    const req = context.switchToHttp().getRequest<{ headers: Record<string, string | undefined> }>();
+    const req = context
+      .switchToHttp()
+      .getRequest<{ headers: Record<string, string | undefined> }>();
     const provided =
       req.headers['x-portone-webhook-secret'] ??
       req.headers['x-webhook-secret'] ??

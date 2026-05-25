@@ -25,17 +25,20 @@ export class AdminService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [newUsers, todayPayments, enrollments, examApps, openInquiries] = await Promise.all([
-      this.prisma.user.count({ where: { createdAt: { gte: today } } }),
-      this.prisma.payment.aggregate({
-        where: { createdAt: { gte: today }, paymentStatus: 'PAID' },
-        _sum: { finalAmount: true },
-        _count: true,
-      }),
-      this.prisma.enrollment.count({ where: { enrolledAt: { gte: today } } }),
-      this.prisma.examApplication.count({ where: { appliedAt: { gte: today } } }),
-      this.prisma.inquiry.count({ where: { status: InquiryStatus.OPEN } }),
-    ]);
+    const [newUsers, todayPayments, enrollments, examApps, openInquiries] =
+      await Promise.all([
+        this.prisma.user.count({ where: { createdAt: { gte: today } } }),
+        this.prisma.payment.aggregate({
+          where: { createdAt: { gte: today }, paymentStatus: 'PAID' },
+          _sum: { finalAmount: true },
+          _count: true,
+        }),
+        this.prisma.enrollment.count({ where: { enrolledAt: { gte: today } } }),
+        this.prisma.examApplication.count({
+          where: { appliedAt: { gte: today } },
+        }),
+        this.prisma.inquiry.count({ where: { status: InquiryStatus.OPEN } }),
+      ]);
 
     return {
       newUsers,
@@ -48,17 +51,24 @@ export class AdminService {
   }
 
   /* 회원 관리 */
-  async getUsers(filter: { search?: string; status?: UserStatus; role?: UserRole; page?: number; limit?: number }) {
+  async getUsers(filter: {
+    search?: string;
+    status?: UserStatus;
+    role?: UserRole;
+    page?: number;
+    limit?: number;
+  }) {
     const { search, status, role, page = 1, limit = 20 } = filter;
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (status) where.status = status;
     if (role) where.role = role;
-    if (search) where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { email: { contains: search, mode: 'insensitive' } },
-    ];
+    if (search)
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
 
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -67,8 +77,13 @@ export class AdminService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         select: {
-          id: true, email: true, name: true, phone: true,
-          role: true, status: true, createdAt: true,
+          id: true,
+          email: true,
+          name: true,
+          phone: true,
+          role: true,
+          status: true,
+          createdAt: true,
           _count: { select: { enrollments: true, payments: true } },
         },
       }),
@@ -87,8 +102,12 @@ export class AdminService {
 
   /* 공지사항 */
   async createNotice(data: {
-    title: string; content: string; isPinned?: boolean;
-    isPublished?: boolean; scopeType?: 'GLOBAL' | 'COURSE'; scopeId?: string;
+    title: string;
+    content: string;
+    isPinned?: boolean;
+    isPublished?: boolean;
+    scopeType?: 'GLOBAL' | 'COURSE';
+    scopeId?: string;
   }) {
     return this.prisma.notice.create({
       data: {
@@ -120,7 +139,12 @@ export class AdminService {
   }
 
   /* FAQ */
-  async createFaq(data: { category: string; question: string; answer: string; sortOrder?: number }) {
+  async createFaq(data: {
+    category: string;
+    question: string;
+    answer: string;
+    sortOrder?: number;
+  }) {
     return this.prisma.faq.create({ data });
   }
 
@@ -140,7 +164,11 @@ export class AdminService {
   }
 
   /* 1:1 문의 */
-  async getInquiries(filter: { status?: InquiryStatus; page?: number; limit?: number }) {
+  async getInquiries(filter: {
+    status?: InquiryStatus;
+    page?: number;
+    limit?: number;
+  }) {
     const { status, page = 1, limit = 20 } = filter;
     const skip = (page - 1) * limit;
 
@@ -171,7 +199,10 @@ export class AdminService {
     });
   }
 
-  async createInquiry(userId: string, data: { category: string; title: string; content: string }) {
+  async createInquiry(
+    userId: string,
+    data: { category: string; title: string; content: string },
+  ) {
     return this.prisma.inquiry.create({
       data: {
         userId,
@@ -246,7 +277,8 @@ export class AdminService {
   async updateBookOffer(id: string, patch: any) {
     const offers = await this.getBookOffers();
     const idx = offers.findIndex((o: any) => o.id === id);
-    if (idx < 0) throw new NotFoundException('북이오 구매 링크를 찾을 수 없습니다.');
+    if (idx < 0)
+      throw new NotFoundException('북이오 구매 링크를 찾을 수 없습니다.');
     offers[idx] = {
       ...offers[idx],
       ...patch,
@@ -299,7 +331,11 @@ export class AdminService {
     const items = await this.getShortsGallery();
     const idx = items.findIndex((o: any) => o.id === id);
     if (idx < 0) throw new NotFoundException('홍보영상을 찾을 수 없습니다.');
-    items[idx] = { ...items[idx], ...patch, updatedAt: new Date().toISOString() };
+    items[idx] = {
+      ...items[idx],
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
     await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(items));
     return items[idx];
   }
@@ -343,7 +379,11 @@ export class AdminService {
     const groups = await this.getReferrerGroups();
     const idx = groups.findIndex((g: any) => g.id === id);
     if (idx < 0) throw new NotFoundException('권유자 그룹을 찾을 수 없습니다.');
-    groups[idx] = { ...groups[idx], ...patch, updatedAt: new Date().toISOString() };
+    groups[idx] = {
+      ...groups[idx],
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
     await this.updateSetting(this.REFERRER_GROUPS_KEY, JSON.stringify(groups));
     return groups[idx];
   }
@@ -364,8 +404,11 @@ export class AdminService {
     });
 
     const groups = await this.getReferrerGroups();
-    const codeToInfo = new Map<string, { memberName: string; groupName: string }>();
-    for (const g of groups as any[]) {
+    const codeToInfo = new Map<
+      string,
+      { memberName: string; groupName: string }
+    >();
+    for (const g of groups) {
       const groupName = g.groupName ?? '';
       if (Array.isArray(g.members)) {
         for (const m of g.members) {
@@ -375,18 +418,30 @@ export class AdminService {
     }
 
     const sessionIds = [...new Set(grouped.map((r) => r.examSessionId))];
-    const sessions = sessionIds.length > 0
-      ? await this.prisma.examSession.findMany({
-          where: { id: { in: sessionIds } },
-          select: { id: true, qualificationName: true, roundName: true },
-        })
-      : [];
-    const sessionMap = new Map(sessions.map((s) => [s.id, `${s.qualificationName} ${s.roundName}`]));
+    const sessions =
+      sessionIds.length > 0
+        ? await this.prisma.examSession.findMany({
+            where: { id: { in: sessionIds } },
+            select: { id: true, qualificationName: true, roundName: true },
+          })
+        : [];
+    const sessionMap = new Map(
+      sessions.map((s) => [s.id, `${s.qualificationName} ${s.roundName}`]),
+    );
 
-    type ExamSub = { examName: string; examSessionId: string; total: number; byStatus: Record<string, number> };
+    type ExamSub = {
+      examName: string;
+      examSessionId: string;
+      total: number;
+      byStatus: Record<string, number>;
+    };
     type CodeEntry = {
-      code: string; memberName: string; groupName: string;
-      total: number; byStatus: Record<string, number>; byExam: ExamSub[];
+      code: string;
+      memberName: string;
+      groupName: string;
+      total: number;
+      byStatus: Record<string, number>;
+      byExam: ExamSub[];
     };
 
     const codeMap = new Map<string, CodeEntry>();
@@ -406,9 +461,12 @@ export class AdminService {
       }
       const entry = codeMap.get(code)!;
       entry.total += row._count.id;
-      entry.byStatus[row.status] = (entry.byStatus[row.status] ?? 0) + row._count.id;
+      entry.byStatus[row.status] =
+        (entry.byStatus[row.status] ?? 0) + row._count.id;
 
-      let examSub = entry.byExam.find((e) => e.examSessionId === row.examSessionId);
+      let examSub = entry.byExam.find(
+        (e) => e.examSessionId === row.examSessionId,
+      );
       if (!examSub) {
         examSub = {
           examName: sessionMap.get(row.examSessionId) ?? row.examSessionId,
@@ -419,7 +477,8 @@ export class AdminService {
         entry.byExam.push(examSub);
       }
       examSub.total += row._count.id;
-      examSub.byStatus[row.status] = (examSub.byStatus[row.status] ?? 0) + row._count.id;
+      examSub.byStatus[row.status] =
+        (examSub.byStatus[row.status] ?? 0) + row._count.id;
     }
 
     const stats = Array.from(codeMap.values());
@@ -467,23 +526,37 @@ export class AdminService {
       createdAt: new Date().toISOString(),
     };
     items.push(item);
-    await this.updateSetting(this.QUALIFICATION_INTROS_KEY, JSON.stringify(items));
+    await this.updateSetting(
+      this.QUALIFICATION_INTROS_KEY,
+      JSON.stringify(items),
+    );
     return item;
   }
 
   async updateQualificationIntro(id: string, patch: any) {
     const items = await this.getQualificationIntros();
     const idx = items.findIndex((i: any) => i.id === id);
-    if (idx < 0) throw new NotFoundException('자격 소개 항목을 찾을 수 없습니다.');
-    items[idx] = { ...items[idx], ...patch, updatedAt: new Date().toISOString() };
-    await this.updateSetting(this.QUALIFICATION_INTROS_KEY, JSON.stringify(items));
+    if (idx < 0)
+      throw new NotFoundException('자격 소개 항목을 찾을 수 없습니다.');
+    items[idx] = {
+      ...items[idx],
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    await this.updateSetting(
+      this.QUALIFICATION_INTROS_KEY,
+      JSON.stringify(items),
+    );
     return items[idx];
   }
 
   async deleteQualificationIntro(id: string) {
     const items = await this.getQualificationIntros();
     const next = items.filter((i: any) => i.id !== id);
-    await this.updateSetting(this.QUALIFICATION_INTROS_KEY, JSON.stringify(next));
+    await this.updateSetting(
+      this.QUALIFICATION_INTROS_KEY,
+      JSON.stringify(next),
+    );
     return { deleted: true };
   }
 
@@ -498,7 +571,11 @@ export class AdminService {
     });
   }
 
-  async createVoucherCampaign(data: { name: string; courseId?: string | null; isActive?: boolean }) {
+  async createVoucherCampaign(data: {
+    name: string;
+    courseId?: string | null;
+    isActive?: boolean;
+  }) {
     return this.prisma.bookVoucherCampaign.create({
       data: {
         name: data.name,
@@ -508,7 +585,10 @@ export class AdminService {
     });
   }
 
-  async updateVoucherCampaign(id: string, data: { name?: string; courseId?: string | null; isActive?: boolean }) {
+  async updateVoucherCampaign(
+    id: string,
+    data: { name?: string; courseId?: string | null; isActive?: boolean },
+  ) {
     return this.prisma.bookVoucherCampaign.update({
       where: { id },
       data: {
@@ -520,9 +600,14 @@ export class AdminService {
   }
 
   async appendVoucherCodes(campaignId: string, codes: string[]) {
-    const campaign = await this.prisma.bookVoucherCampaign.findUnique({ where: { id: campaignId } });
-    if (!campaign) throw new NotFoundException('이용권 캠페인을 찾을 수 없습니다.');
-    const uniqueCodes = [...new Set(codes.map((c) => c.trim()).filter(Boolean))];
+    const campaign = await this.prisma.bookVoucherCampaign.findUnique({
+      where: { id: campaignId },
+    });
+    if (!campaign)
+      throw new NotFoundException('이용권 캠페인을 찾을 수 없습니다.');
+    const uniqueCodes = [
+      ...new Set(codes.map((c) => c.trim()).filter(Boolean)),
+    ];
     if (uniqueCodes.length === 0) return { created: 0 };
 
     const existing = await this.prisma.bookVoucherCode.findMany({
@@ -532,14 +617,25 @@ export class AdminService {
     const existingSet = new Set(existing.map((e) => e.code));
     const payload = uniqueCodes
       .filter((code) => !existingSet.has(code))
-      .map((code) => ({ campaignId, code, status: BookVoucherCodeStatus.AVAILABLE }));
+      .map((code) => ({
+        campaignId,
+        code,
+        status: BookVoucherCodeStatus.AVAILABLE,
+      }));
     if (payload.length === 0) return { created: 0 };
 
-    const result = await this.prisma.bookVoucherCode.createMany({ data: payload });
+    const result = await this.prisma.bookVoucherCode.createMany({
+      data: payload,
+    });
     return { created: result.count };
   }
 
-  async getVoucherGrants(filter: { campaignId?: string; userId?: string; page?: number; limit?: number }) {
+  async getVoucherGrants(filter: {
+    campaignId?: string;
+    userId?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { campaignId, userId, page = 1, limit = 50 } = filter;
     const skip = (page - 1) * limit;
     const where: any = {};
@@ -585,7 +681,9 @@ export class AdminService {
     }
 
     if (targetType === PriceTargetType.COURSE) {
-      const current = await this.prisma.course.findUnique({ where: { id: targetId } });
+      const current = await this.prisma.course.findUnique({
+        where: { id: targetId },
+      });
       if (!current) throw new NotFoundException('강의를 찾을 수 없습니다.');
       const { updateData, finalAmount } = this.buildPricingUpdate(
         { ...current, legacyPrice: current.price },
@@ -599,13 +697,23 @@ export class AdminService {
           pricePolicyVersion: current.pricePolicyVersion + 1,
         },
       });
-      await this.createPriceHistory(targetType, targetId, changedById, data.reason, current, updated);
+      await this.createPriceHistory(
+        targetType,
+        targetId,
+        changedById,
+        data.reason,
+        current,
+        updated,
+      );
       return updated;
     }
 
     if (targetType === PriceTargetType.EXAM_SESSION) {
-      const current = await this.prisma.examSession.findUnique({ where: { id: targetId } });
-      if (!current) throw new NotFoundException('시험 회차를 찾을 수 없습니다.');
+      const current = await this.prisma.examSession.findUnique({
+        where: { id: targetId },
+      });
+      if (!current)
+        throw new NotFoundException('시험 회차를 찾을 수 없습니다.');
       const { updateData, finalAmount } = this.buildPricingUpdate(
         { ...current, legacyPrice: current.fee },
         patch,
@@ -618,11 +726,20 @@ export class AdminService {
           pricePolicyVersion: current.pricePolicyVersion + 1,
         },
       });
-      await this.createPriceHistory(targetType, targetId, changedById, data.reason, current, updated);
+      await this.createPriceHistory(
+        targetType,
+        targetId,
+        changedById,
+        data.reason,
+        current,
+        updated,
+      );
       return updated;
     }
 
-    const current = await this.prisma.textbook.findUnique({ where: { id: targetId } });
+    const current = await this.prisma.textbook.findUnique({
+      where: { id: targetId },
+    });
     if (!current) throw new NotFoundException('교재를 찾을 수 없습니다.');
     const { updateData, finalAmount } = this.buildPricingUpdate(
       { ...current, legacyPrice: current.price },
@@ -636,7 +753,14 @@ export class AdminService {
         pricePolicyVersion: current.pricePolicyVersion + 1,
       },
     });
-    await this.createPriceHistory(targetType, targetId, changedById, data.reason, current, updated);
+    await this.createPriceHistory(
+      targetType,
+      targetId,
+      changedById,
+      data.reason,
+      current,
+      updated,
+    );
     return updated;
   }
 
@@ -676,15 +800,22 @@ export class AdminService {
     priceValidUntil?: string | null;
   }) {
     const patch: any = {};
-    if (typeof data.currency === 'string' && data.currency.trim()) patch.currency = data.currency.trim();
-    if (typeof data.basePrice === 'number') patch.basePrice = Math.max(0, Math.floor(data.basePrice));
-    if (typeof data.salePrice === 'number') patch.salePrice = Math.max(0, Math.floor(data.salePrice));
+    if (typeof data.currency === 'string' && data.currency.trim())
+      patch.currency = data.currency.trim();
+    if (typeof data.basePrice === 'number')
+      patch.basePrice = Math.max(0, Math.floor(data.basePrice));
+    if (typeof data.salePrice === 'number')
+      patch.salePrice = Math.max(0, Math.floor(data.salePrice));
     if (data.salePrice === null) patch.salePrice = null;
-    if (typeof data.discountType === 'string') patch.discountType = data.discountType;
-    if (typeof data.discountValue === 'number') patch.discountValue = Math.max(0, Math.floor(data.discountValue));
-    if (typeof data.priceValidFrom === 'string') patch.priceValidFrom = new Date(data.priceValidFrom);
+    if (typeof data.discountType === 'string')
+      patch.discountType = data.discountType;
+    if (typeof data.discountValue === 'number')
+      patch.discountValue = Math.max(0, Math.floor(data.discountValue));
+    if (typeof data.priceValidFrom === 'string')
+      patch.priceValidFrom = new Date(data.priceValidFrom);
     if (data.priceValidFrom === null) patch.priceValidFrom = null;
-    if (typeof data.priceValidUntil === 'string') patch.priceValidUntil = new Date(data.priceValidUntil);
+    if (typeof data.priceValidUntil === 'string')
+      patch.priceValidUntil = new Date(data.priceValidUntil);
     if (data.priceValidUntil === null) patch.priceValidUntil = null;
     return Object.keys(patch).length > 0 ? patch : null;
   }
@@ -719,13 +850,18 @@ export class AdminService {
     const merged = {
       currency: patch.currency ?? current.currency,
       basePrice: patch.basePrice ?? current.basePrice,
-      salePrice: 'salePrice' in patch ? (patch.salePrice ?? null) : current.salePrice,
+      salePrice:
+        'salePrice' in patch ? (patch.salePrice ?? null) : current.salePrice,
       discountType: patch.discountType ?? current.discountType,
       discountValue: patch.discountValue ?? current.discountValue,
       priceValidFrom:
-        'priceValidFrom' in patch ? (patch.priceValidFrom ?? null) : current.priceValidFrom,
+        'priceValidFrom' in patch
+          ? (patch.priceValidFrom ?? null)
+          : current.priceValidFrom,
       priceValidUntil:
-        'priceValidUntil' in patch ? (patch.priceValidUntil ?? null) : current.priceValidUntil,
+        'priceValidUntil' in patch
+          ? (patch.priceValidUntil ?? null)
+          : current.priceValidUntil,
     };
 
     const snapshot = calculatePricingSnapshot({

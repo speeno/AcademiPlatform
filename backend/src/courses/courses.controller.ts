@@ -1,10 +1,27 @@
 import {
-  Body, Controller, Delete, Get, Param, Patch, Post, Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { CourseStatus, LessonType, UserRole } from '@prisma/client';
 import { CoursesService } from './courses.service';
-import { CreateCourseDto, CourseFilterDto, UpdateCourseDto } from './dto/course.dto';
+import {
+  CreateCourseDto,
+  CourseFilterDto,
+  UpdateCourseDto,
+} from './dto/course.dto';
 import { AddLessonDto } from './dto/lesson.dto';
+import {
+  AdminCreateAssignmentDto,
+  AdminReviewAssignmentSubmissionDto,
+  AdminUpdateAssignmentDto,
+  SubmitAssignmentDto,
+} from './dto/assignment.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -16,7 +33,10 @@ export class CoursesController {
   /* 공개 API */
   @Public()
   @Get()
-  findAll(@Query() filter: CourseFilterDto, @CurrentUser() user?: { id: string }) {
+  findAll(
+    @Query() filter: CourseFilterDto,
+    @CurrentUser() user?: { id: string },
+  ) {
     return this.coursesService.findAll(filter, user?.id);
   }
 
@@ -39,6 +59,28 @@ export class CoursesController {
   @Get('my/enrollments')
   getMyEnrollments(@CurrentUser() user: any) {
     return this.coursesService.getMyEnrollments(user.id);
+  }
+
+  @Get('my/courses/:id/assignments')
+  getMyAssignments(@Param('id') courseId: string, @CurrentUser() user: any) {
+    return this.coursesService.getMyAssignments(courseId, user.id);
+  }
+
+  @Get('my/assignments/:assignmentId/submission')
+  getMyAssignmentSubmission(
+    @Param('assignmentId') assignmentId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.coursesService.getMyAssignmentSubmission(assignmentId, user.id);
+  }
+
+  @Post('my/assignments/:assignmentId/submission')
+  submitAssignment(
+    @Param('assignmentId') assignmentId: string,
+    @CurrentUser() user: any,
+    @Body() dto: SubmitAssignmentDto,
+  ) {
+    return this.coursesService.submitAssignment(assignmentId, user.id, dto);
   }
 
   /* 관리자 API */
@@ -77,15 +119,101 @@ export class CoursesController {
     return this.coursesService.delete(id);
   }
 
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/:id/enrollments')
+  getAdminEnrollments(@Param('id') courseId: string) {
+    return this.coursesService.getAdminEnrollments(courseId);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Post('admin/:id/enrollments')
+  addEnrollment(
+    @Param('id') courseId: string,
+    @CurrentUser() user: any,
+    @Body('userId') targetUserId: string,
+  ) {
+    return this.coursesService.addEnrollmentByAdmin(
+      courseId,
+      targetUserId,
+      user.id,
+    );
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/:id/assignments')
+  getAdminAssignments(@Param('id') courseId: string) {
+    return this.coursesService.getAdminAssignments(courseId);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Post('admin/:id/assignments')
+  createAdminAssignment(
+    @Param('id') courseId: string,
+    @Body() dto: AdminCreateAssignmentDto,
+  ) {
+    return this.coursesService.createAssignment(courseId, dto);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Patch('admin/:id/assignments/:assignmentId')
+  updateAdminAssignment(
+    @Param('id') courseId: string,
+    @Param('assignmentId') assignmentId: string,
+    @Body() dto: AdminUpdateAssignmentDto,
+  ) {
+    return this.coursesService.updateAssignment(courseId, assignmentId, dto);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Delete('admin/:id/assignments/:assignmentId')
+  deleteAdminAssignment(
+    @Param('id') courseId: string,
+    @Param('assignmentId') assignmentId: string,
+  ) {
+    return this.coursesService.deleteAssignment(courseId, assignmentId);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/:id/assignments/:assignmentId/submissions')
+  getAdminAssignmentSubmissions(
+    @Param('id') courseId: string,
+    @Param('assignmentId') assignmentId: string,
+  ) {
+    return this.coursesService.getAssignmentSubmissions(courseId, assignmentId);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Patch('admin/:id/assignments/:assignmentId/submissions/:submissionId')
+  reviewAdminAssignmentSubmission(
+    @Param('id') courseId: string,
+    @Param('assignmentId') assignmentId: string,
+    @Param('submissionId') submissionId: string,
+    @Body() dto: AdminReviewAssignmentSubmissionDto,
+  ) {
+    return this.coursesService.reviewAssignmentSubmission(
+      courseId,
+      assignmentId,
+      submissionId,
+      dto,
+    );
+  }
+
   @Public()
   @Get(':slug')
-  findBySlug(@Param('slug') slug: string, @CurrentUser() user?: { id: string }) {
+  findBySlug(
+    @Param('slug') slug: string,
+    @CurrentUser() user?: { id: string },
+  ) {
     return this.coursesService.findBySlug(slug, user?.id);
   }
 
   @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
   @Post('admin/:id/modules')
-  addModule(@Param('id') courseId: string, @Body('title') title: string, @Body('sortOrder') sortOrder?: number) {
+  addModule(
+    @Param('id') courseId: string,
+    @Body('title') title: string,
+    @Body('sortOrder') sortOrder?: number,
+  ) {
     return this.coursesService.addModule(courseId, title);
   }
 
@@ -110,7 +238,8 @@ export class CoursesController {
   updateLesson(
     @Param('moduleId') moduleId: string,
     @Param('lessonId') lessonId: string,
-    @Body() data: {
+    @Body()
+    data: {
       title?: string;
       lessonType?: LessonType;
       description?: string;
@@ -129,7 +258,10 @@ export class CoursesController {
 
   @Roles(UserRole.OPERATOR, UserRole.INSTRUCTOR)
   @Delete('admin/modules/:moduleId/lessons/:lessonId')
-  deleteLesson(@Param('moduleId') moduleId: string, @Param('lessonId') lessonId: string) {
+  deleteLesson(
+    @Param('moduleId') moduleId: string,
+    @Param('lessonId') lessonId: string,
+  ) {
     return this.coursesService.deleteLesson(moduleId, lessonId);
   }
 }

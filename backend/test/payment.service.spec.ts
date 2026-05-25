@@ -22,7 +22,11 @@ describe('PaymentService verifyWithPortOne', () => {
       PORTONE_API_SECRET: '',
     });
 
-    const result = await (service as any).verifyWithPortOne('imp_test', 10000, 'AQ-1');
+    const result = await (service as any).verifyWithPortOne(
+      'imp_test',
+      10000,
+      'AQ-1',
+    );
     expect(result).toBe(false);
   });
 
@@ -34,7 +38,11 @@ describe('PaymentService verifyWithPortOne', () => {
       PAYMENT_DEV_BYPASS: 'true',
     });
 
-    const result = await (service as any).verifyWithPortOne('imp_test', 10000, 'AQ-1');
+    const result = await (service as any).verifyWithPortOne(
+      'imp_test',
+      10000,
+      'AQ-1',
+    );
     expect(result).toBe(true);
   });
 
@@ -45,7 +53,11 @@ describe('PaymentService verifyWithPortOne', () => {
       PORTONE_API_SECRET: '',
     });
 
-    const result = await (service as any).verifyWithPortOne('imp_test', 10000, 'AQ-1');
+    const result = await (service as any).verifyWithPortOne(
+      'imp_test',
+      10000,
+      'AQ-1',
+    );
     expect(result).toBe(false);
   });
 });

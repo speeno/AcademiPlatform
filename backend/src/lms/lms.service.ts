@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { EnrollmentStatus } from '@prisma/client';
 import { CmsService } from '../cms/cms.service';
@@ -22,7 +26,12 @@ export class LmsService {
               include: {
                 lessons: {
                   orderBy: { sortOrder: 'asc' },
-                  select: { id: true, title: true, lessonType: true, sortOrder: true },
+                  select: {
+                    id: true,
+                    title: true,
+                    lessonType: true,
+                    sortOrder: true,
+                  },
                 },
               },
             },
@@ -64,7 +73,12 @@ export class LmsService {
                 orderBy: { sortOrder: 'asc' },
                 include: {
                   videoAsset: {
-                    select: { durationSeconds: true, encodingStatus: true, sourceType: true, youtubeUrl: true },
+                    select: {
+                      durationSeconds: true,
+                      encodingStatus: true,
+                      sourceType: true,
+                      youtubeUrl: true,
+                    },
                   },
                 },
               },
@@ -87,9 +101,15 @@ export class LmsService {
   async updateProgress(
     lessonId: string,
     userId: string,
-    data: { watchedSeconds?: number; isCompleted?: boolean; completionRate?: number },
+    data: {
+      watchedSeconds?: number;
+      isCompleted?: boolean;
+      completionRate?: number;
+    },
   ) {
-    const lesson = await this.prisma.lesson.findUnique({ where: { id: lessonId } });
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+    });
     if (!lesson) throw new NotFoundException('강의를 찾을 수 없습니다.');
 
     const progress = await this.prisma.lessonProgress.upsert({

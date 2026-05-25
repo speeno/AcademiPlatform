@@ -1,7 +1,19 @@
 import {
-  Body, Controller, Delete, Get, Param, Patch, Post, Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
-import { InquiryStatus, PriceTargetType, UserRole, UserStatus } from '@prisma/client';
+import {
+  InquiryStatus,
+  PriceTargetType,
+  UserRole,
+  UserStatus,
+} from '@prisma/client';
 import { AdminService } from './admin.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -29,7 +41,10 @@ export class AdminController {
   }
 
   @Patch('users/:id/status')
-  updateUserStatus(@Param('id') id: string, @Body('status') status: UserStatus) {
+  updateUserStatus(
+    @Param('id') id: string,
+    @Body('status') status: UserStatus,
+  ) {
     return this.adminService.updateUserStatus(id, status);
   }
 
@@ -209,17 +224,31 @@ export class AdminController {
   }
 
   @Post('vouchers/campaigns')
-  createVoucherCampaign(@Body() data: { name: string; courseId?: string | null; isActive?: boolean }) {
+  createVoucherCampaign(
+    @Body()
+    data: {
+      name: string;
+      courseId?: string | null;
+      isActive?: boolean;
+    },
+  ) {
     return this.adminService.createVoucherCampaign(data);
   }
 
   @Patch('vouchers/campaigns/:id')
-  updateVoucherCampaign(@Param('id') id: string, @Body() data: { name?: string; courseId?: string | null; isActive?: boolean }) {
+  updateVoucherCampaign(
+    @Param('id') id: string,
+    @Body()
+    data: { name?: string; courseId?: string | null; isActive?: boolean },
+  ) {
     return this.adminService.updateVoucherCampaign(id, data);
   }
 
   @Post('vouchers/campaigns/:id/codes')
-  appendVoucherCodes(@Param('id') campaignId: string, @Body('codes') codes: string[]) {
+  appendVoucherCodes(
+    @Param('id') campaignId: string,
+    @Body('codes') codes: string[],
+  ) {
     return this.adminService.appendVoucherCodes(campaignId, codes);
   }
 
@@ -230,7 +259,12 @@ export class AdminController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.adminService.getVoucherGrants({ campaignId, userId, page, limit });
+    return this.adminService.getVoucherGrants({
+      campaignId,
+      userId,
+      page,
+      limit,
+    });
   }
 
   /* 가격 정책 */
@@ -241,7 +275,12 @@ export class AdminController {
     @Body() data: any,
     @CurrentUser() user: any,
   ) {
-    return this.adminService.updatePricingPolicy(targetType, targetId, data, user.id);
+    return this.adminService.updatePricingPolicy(
+      targetType,
+      targetId,
+      data,
+      user.id,
+    );
   }
 
   @Get('pricing/history')

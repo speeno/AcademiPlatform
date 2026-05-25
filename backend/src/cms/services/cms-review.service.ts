@@ -3,10 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  CmsContentStatus,
-  CmsReviewStatus,
-} from '@prisma/client';
+import { CmsContentStatus, CmsReviewStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CmsAccessService } from './cms-access.service';
 
@@ -124,37 +121,53 @@ export class CmsReviewService {
     if (payload.status === CmsReviewStatus.APPROVED) {
       const versionNo =
         request.version?.versionNo ?? request.item.latestVersionNo;
-      await this.prisma.contentItem.update({
-        where: { id: request.itemId },
-        data: {
-          status: CmsContentStatus.PUBLISHED,
-          publishedVersionNo: versionNo,
-          updatedById: operatorId,
-        },
-      });
-      await this.prisma.contentAuditLog.create({
-        data: {
-          itemId: request.itemId,
-          actorId: operatorId,
-          action: 'REVIEW_APPROVED',
-          payloadJson: { requestId, versionNo },
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.contentItem.update({
+          where: { id: request.itemId },
+          data: {
+            status: CmsContentStatus.PUBLISHED,
+            publishedVersionNo: versionNo,
+            updatedById: operatorId,
+          },
+        });
+        await tx.lesson.update({
+          where: { id: request.item.lessonId },
+          data: { contentStatus: 'PUBLISHED' },
+        });
+        await tx.contentAuditLog.create({
+          data: {
+            itemId: request.itemId,
+            actorId: operatorId,
+            action: 'REVIEW_APPROVED',
+            payloadJson: { requestId, versionNo, lessonStatus: 'PUBLISHED' },
+          },
+        });
       });
     } else {
-      await this.prisma.contentItem.update({
-        where: { id: request.itemId },
-        data: {
-          status: CmsContentStatus.REJECTED,
-          updatedById: operatorId,
-        },
-      });
-      await this.prisma.contentAuditLog.create({
-        data: {
-          itemId: request.itemId,
-          actorId: operatorId,
-          action: 'REVIEW_REJECTED',
-          payloadJson: { requestId, rejectReason: updated.rejectReason },
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.contentItem.update({
+          where: { id: request.itemId },
+          data: {
+            status: CmsContentStatus.REJECTED,
+            updatedById: operatorId,
+          },
+        });
+        await tx.lesson.update({
+          where: { id: request.item.lessonId },
+          data: { contentStatus: 'DRAFT' },
+        });
+        await tx.contentAuditLog.create({
+          data: {
+            itemId: request.itemId,
+            actorId: operatorId,
+            action: 'REVIEW_REJECTED',
+            payloadJson: {
+              requestId,
+              rejectReason: updated.rejectReason,
+              lessonStatus: 'DRAFT',
+            },
+          },
+        });
       });
     }
 

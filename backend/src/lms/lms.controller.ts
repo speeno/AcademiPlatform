@@ -17,7 +17,10 @@ export class LmsController {
   }
 
   @Get('courses/:id')
-  getCourseWithProgress(@Param('id') courseId: string, @CurrentUser() user: any) {
+  getCourseWithProgress(
+    @Param('id') courseId: string,
+    @CurrentUser() user: any,
+  ) {
     return this.lmsService.getCourseWithProgress(courseId, user.id);
   }
 
@@ -30,7 +33,12 @@ export class LmsController {
   updateProgress(
     @Param('id') lessonId: string,
     @CurrentUser() user: any,
-    @Body() data: { watchedSeconds?: number; isCompleted?: boolean; completionRate?: number },
+    @Body()
+    data: {
+      watchedSeconds?: number;
+      isCompleted?: boolean;
+      completionRate?: number;
+    },
   ) {
     return this.lmsService.updateProgress(lessonId, user.id, data);
   }

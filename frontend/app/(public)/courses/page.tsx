@@ -19,7 +19,20 @@ export const metadata: Metadata = {
   description: 'AI 자격 취득을 위한 교육과정 목록입니다.',
 };
 
-async function getCourses(): Promise<{ courses: any[]; total: number; loadError: boolean }> {
+interface PublicCourse {
+  id: string;
+  title: string;
+  status: string;
+  category?: string | null;
+  thumbnailUrl?: string | null;
+  learningPeriodDays?: number | null;
+  price?: number | null;
+  slug?: string | null;
+  instructor?: { name?: string | null } | null;
+  _count?: { enrollments?: number };
+}
+
+async function getCourses(): Promise<{ courses: PublicCourse[]; total: number; loadError: boolean }> {
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/courses?limit=12`,
@@ -52,6 +65,14 @@ export default async function CoursesPage() {
             교육과정
           </h1>
           <p className="text-muted-foreground">AI 자격 취득을 위한 체계적인 교육과정을 만나보세요.</p>
+          <div className="mt-4">
+            <Link href="/courses/harness-program">
+              <BrandButton variant="outline" size="sm">
+                Harness 기업 교육 프로그램 보기
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </BrandButton>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -69,7 +90,7 @@ export default async function CoursesPage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course: any) => {
+            {courses.map((course) => {
               const isUpcoming = course.status === 'UPCOMING';
               const card = (
                 <BrandCard hoverable={!isUpcoming} accent="blue" padding="none" className={`overflow-hidden h-full flex flex-col${isUpcoming ? ' opacity-75' : ''}`}>

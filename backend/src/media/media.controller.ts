@@ -1,5 +1,12 @@
 import {
-  Body, Controller, Get, Headers, Param, Post, Query, Res,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Query,
+  Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { UserRole } from '@prisma/client';
@@ -26,7 +33,11 @@ export class MediaController {
     @CurrentUser() user: any,
     @Res() res: Response,
   ) {
-    const keyBytes = await this.mediaService.getHlsKey(keyId, user.id, sessionToken);
+    const keyBytes = await this.mediaService.getHlsKey(
+      keyId,
+      user.id,
+      sessionToken,
+    );
     res.set('Content-Type', 'application/octet-stream');
     res.send(keyBytes);
   }
@@ -45,6 +56,10 @@ export class MediaController {
     @Body('fileName') fileName: string,
     @Body('contentType') contentType: string,
   ) {
-    return this.mediaService.getUploadPresignedUrl(lessonId, fileName, contentType);
+    return this.mediaService.getUploadPresignedUrl(
+      lessonId,
+      fileName,
+      contentType,
+    );
   }
 }

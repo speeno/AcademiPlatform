@@ -24,11 +24,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const message =
       exception instanceof HttpException
-        ? (exception.getResponse() as any)?.message ?? exception.message
+        ? ((exception.getResponse() as any)?.message ?? exception.message)
         : '서버 오류가 발생했습니다.';
 
     if (status >= 500) {
-      this.logger.error(`${request.method} ${request.url}`, exception instanceof Error ? exception.stack : String(exception));
+      this.logger.error(
+        `${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     }
 
     response.status(status).json({

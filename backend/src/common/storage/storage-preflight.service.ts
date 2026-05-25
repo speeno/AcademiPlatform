@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { getStorageMissingFields, resolveStorageConfig } from './storage-config';
+import {
+  getStorageMissingFields,
+  resolveStorageConfig,
+} from './storage-config';
 
 @Injectable()
 export class StoragePreflightService implements OnModuleInit {
@@ -9,11 +12,15 @@ export class StoragePreflightService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
 
   onModuleInit() {
-    const nodeEnv = (this.config.get<string>('NODE_ENV') ?? 'development').toLowerCase();
+    const nodeEnv = (
+      this.config.get<string>('NODE_ENV') ?? 'development'
+    ).toLowerCase();
     if (nodeEnv === 'test') return;
     // 배포 초기에는 S3/R2 미설정으로도 API가 기동되도록, 명시적 플래그일 때만 차단
     const isStrict =
-      (this.config.get<string>('STORAGE_PREFLIGHT_STRICT') ?? 'false').toLowerCase() === 'true';
+      (
+        this.config.get<string>('STORAGE_PREFLIGHT_STRICT') ?? 'false'
+      ).toLowerCase() === 'true';
 
     const storage = resolveStorageConfig(this.config);
     const missing = getStorageMissingFields(storage);
@@ -35,4 +42,3 @@ export class StoragePreflightService implements OnModuleInit {
     );
   }
 }
-

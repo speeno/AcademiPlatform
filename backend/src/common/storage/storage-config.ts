@@ -16,7 +16,9 @@ function pickFirst(...values: Array<string | undefined>): string {
   return '';
 }
 
-export function resolveStorageConfig(config: ConfigService): ResolvedStorageConfig {
+export function resolveStorageConfig(
+  config: ConfigService,
+): ResolvedStorageConfig {
   return {
     endpoint: pickFirst(
       config.get<string>('S3_ENDPOINT'),
@@ -42,12 +44,17 @@ export function resolveStorageConfig(config: ConfigService): ResolvedStorageConf
   };
 }
 
-export function getStorageMissingFields(storage: ResolvedStorageConfig): string[] {
+export function getStorageMissingFields(
+  storage: ResolvedStorageConfig,
+): string[] {
   const missing: string[] = [];
-  if (!storage.endpoint) missing.push('endpoint(S3_ENDPOINT 또는 AWS_S3_ENDPOINT)');
-  if (!storage.bucket) missing.push('bucket(S3_BUCKET 또는 AWS_S3_BUCKET_PRIVATE)');
-  if (!storage.accessKeyId) missing.push('accessKey(S3_ACCESS_KEY 또는 AWS_ACCESS_KEY_ID)');
-  if (!storage.secretAccessKey) missing.push('secretKey(S3_SECRET_KEY 또는 AWS_SECRET_ACCESS_KEY)');
+  if (!storage.endpoint)
+    missing.push('endpoint(S3_ENDPOINT 또는 AWS_S3_ENDPOINT)');
+  if (!storage.bucket)
+    missing.push('bucket(S3_BUCKET 또는 AWS_S3_BUCKET_PRIVATE)');
+  if (!storage.accessKeyId)
+    missing.push('accessKey(S3_ACCESS_KEY 또는 AWS_ACCESS_KEY_ID)');
+  if (!storage.secretAccessKey)
+    missing.push('secretKey(S3_SECRET_KEY 또는 AWS_SECRET_ACCESS_KEY)');
   return missing;
 }
-

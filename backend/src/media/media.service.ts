@@ -6,12 +6,19 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getSignedUrl as getCFSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { EnrollmentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import { ResolvedStorageConfig, resolveStorageConfig } from '../common/storage/storage-config';
+import {
+  ResolvedStorageConfig,
+  resolveStorageConfig,
+} from '../common/storage/storage-config';
 
 const MAX_CONCURRENT_SESSIONS = 1;
 const SESSION_TTL_SECONDS = 30 * 60;
@@ -44,7 +51,11 @@ export class MediaService {
   }
 
   // S3 업로드용 Presigned URL 발급 (원본 비공개 버킷)
-  async getUploadPresignedUrl(lessonId: string, fileName: string, contentType: string) {
+  async getUploadPresignedUrl(
+    lessonId: string,
+    fileName: string,
+    contentType: string,
+  ) {
     const bucket = this.storageConfig.bucket;
     if (!bucket) {
       throw new BadRequestException(
@@ -53,8 +64,14 @@ export class MediaService {
     }
     const key = `raw/${lessonId}/${Date.now()}_${fileName}`;
 
-    const command = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
-    const presignedUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    const presignedUrl = await getSignedUrl(this.s3, command, {
+      expiresIn: 3600,
+    });
 
     return { presignedUrl, s3Key: key };
   }
@@ -81,7 +98,10 @@ export class MediaService {
     }
 
     const asset = lesson.videoAsset;
-    if (!asset?.hlsPlaylistUrl) throw new BadRequestException('영상 준비 중입니다. 잠시 후 다시 시도해주세요.');
+    if (!asset?.hlsPlaylistUrl)
+      throw new BadRequestException(
+        '영상 준비 중입니다. 잠시 후 다시 시도해주세요.',
+      );
 
     // 동시 세션 제한
     const activeSessionKey = `video:session:${userId}:${lessonId}`;
@@ -110,7 +130,9 @@ export class MediaService {
         url: resource,
         keyPairId,
         privateKey,
-        dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRES * 1000).toISOString(),
+        dateLessThan: new Date(
+          Date.now() + SIGNED_URL_EXPIRES * 1000,
+        ).toISOString(),
       });
     }
 
@@ -123,7 +145,11 @@ export class MediaService {
       where: { sessionToken },
     });
 
-    if (!session || session.userId !== userId || new Date() > session.expiredAt) {
+    if (
+      !session ||
+      session.userId !== userId ||
+      new Date() > session.expiredAt
+    ) {
       throw new ForbiddenException('유효하지 않은 재생 세션입니다.');
     }
 

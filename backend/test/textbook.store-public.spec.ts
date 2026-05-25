@@ -152,7 +152,9 @@ describe('TextbookService.findByIdPublic (P2)', () => {
         findUnique: jest.fn().mockResolvedValue(book),
       },
       textbookAccess: {
-        findFirst: jest.fn().mockResolvedValue(hasAccess ? { id: 'access-1' } : null),
+        findFirst: jest
+          .fn()
+          .mockResolvedValue(hasAccess ? { id: 'access-1' } : null),
       },
     } as any;
     const config = {
@@ -176,7 +178,12 @@ describe('TextbookService.findByIdPublic (P2)', () => {
   });
 
   it('isStandalone이 아니면 404', async () => {
-    const { service } = buildDetailService({ ...baseBook, isStandalone: false }, false);
-    await expect(service.findByIdPublic('book-1')).rejects.toThrow('교재를 찾을 수 없습니다');
+    const { service } = buildDetailService(
+      { ...baseBook, isStandalone: false },
+      false,
+    );
+    await expect(service.findByIdPublic('book-1')).rejects.toThrow(
+      '교재를 찾을 수 없습니다',
+    );
   });
 });

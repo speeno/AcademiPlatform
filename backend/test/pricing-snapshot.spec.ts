@@ -66,15 +66,12 @@ export const PRICING_SNAPSHOT_GOLDEN_VECTORS = [
 ] as const;
 
 describe('calculatePricingSnapshot', () => {
-  it.each(PRICING_SNAPSHOT_GOLDEN_VECTORS)(
-    '$label',
-    ({ input, expected }) => {
-      const result = calculatePricingSnapshot(input);
-      expect(result.baseAmount).toBe(expected.baseAmount);
-      expect(result.discountAmount).toBe(expected.discountAmount);
-      expect(result.finalAmount).toBe(expected.finalAmount);
-    },
-  );
+  it.each(PRICING_SNAPSHOT_GOLDEN_VECTORS)('$label', ({ input, expected }) => {
+    const result = calculatePricingSnapshot(input);
+    expect(result.baseAmount).toBe(expected.baseAmount);
+    expect(result.discountAmount).toBe(expected.discountAmount);
+    expect(result.finalAmount).toBe(expected.finalAmount);
+  });
 
   it('NONE 할인은 salePrice(없으면 basePrice)를 그대로 반환한다', () => {
     const result = calculatePricingSnapshot({

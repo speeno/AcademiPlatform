@@ -4,7 +4,14 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { maskBookOffersForPublic } from '../common/pricing/public-price-policy';
 import { AdminService } from './admin.service';
 
-const PUBLIC_ALLOWED_KEYS = ['hero_banner', 'book_offers', 'shorts_gallery', 'shorts_display', 'referrer_groups', 'qualification_intros'];
+const PUBLIC_ALLOWED_KEYS = [
+  'hero_banner',
+  'book_offers',
+  'shorts_gallery',
+  'shorts_display',
+  'referrer_groups',
+  'qualification_intros',
+];
 
 @Controller('settings')
 export class PublicSettingsController {
