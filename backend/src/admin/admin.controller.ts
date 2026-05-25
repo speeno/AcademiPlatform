@@ -7,7 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   InquiryStatus,
   PriceTargetType,
@@ -72,6 +75,38 @@ export class AdminController {
   @Delete('notices/:id')
   deleteNotice(@Param('id') id: string) {
     return this.adminService.deleteNotice(id);
+  }
+
+  @Get('notices/:id/attachments')
+  listNoticeAttachments(@Param('id') id: string) {
+    return this.adminService.listNoticeAttachments(id);
+  }
+
+  @Post('notices/:id/attachments')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  uploadNoticeAttachment(
+    @Param('id') id: string,
+    @UploadedFile()
+    file:
+      | {
+          originalname?: string;
+          mimetype?: string;
+          size?: number;
+          buffer?: Buffer;
+        }
+      | undefined,
+  ) {
+    return this.adminService.uploadNoticeAttachment(id, file);
+  }
+
+  @Delete('notices/:id/attachments/:attachmentId')
+  deleteNoticeAttachment(
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+  ) {
+    return this.adminService.deleteNoticeAttachment(id, attachmentId);
   }
 
   /* FAQ */

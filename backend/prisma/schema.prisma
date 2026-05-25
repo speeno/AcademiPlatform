@@ -836,8 +836,25 @@ model Notice {
   updatedAt   DateTime   @updatedAt
 
   course      Course?    @relation(fields: [scopeId], references: [id])
+  attachments NoticeAttachment[]
 
   @@index([scopeType, scopeId, isPinned])
+}
+
+model NoticeAttachment {
+  id         String   @id @default(cuid())
+  noticeId   String
+  storageKey String?
+  localPath  String?
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  notice     Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+
+  @@index([noticeId, sortOrder])
 }
 
 model Faq {

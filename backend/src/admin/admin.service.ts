@@ -10,6 +10,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
+import { NoticeAttachmentService } from '../notices/notice-attachment.service';
 
 @Injectable()
 export class AdminService {
@@ -18,7 +19,10 @@ export class AdminService {
   private readonly REFERRER_GROUPS_KEY = 'referrer_groups';
   private readonly QUALIFICATION_INTROS_KEY = 'qualification_intros';
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private noticeAttachmentService: NoticeAttachmentService,
+  ) {}
 
   /* 대시보드 통계 */
   async getDashboardStats() {
@@ -124,6 +128,19 @@ export class AdminService {
         orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
         skip,
         take: limit,
+        include: {
+          attachments: {
+            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+            select: {
+              id: true,
+              fileName: true,
+              mimeType: true,
+              fileSize: true,
+              sortOrder: true,
+              createdAt: true,
+            },
+          },
+        },
       }),
       this.prisma.notice.count(),
     ]);
@@ -135,7 +152,30 @@ export class AdminService {
   }
 
   async deleteNotice(id: string) {
+    await this.noticeAttachmentService.removeAllForNotice(id);
     return this.prisma.notice.delete({ where: { id } });
+  }
+
+  async listNoticeAttachments(noticeId: string) {
+    return this.noticeAttachmentService.listForNotice(noticeId);
+  }
+
+  async uploadNoticeAttachment(
+    noticeId: string,
+    file:
+      | {
+          originalname?: string;
+          mimetype?: string;
+          size?: number;
+          buffer?: Buffer;
+        }
+      | undefined,
+  ) {
+    return this.noticeAttachmentService.upload(noticeId, file);
+  }
+
+  async deleteNoticeAttachment(noticeId: string, attachmentId: string) {
+    return this.noticeAttachmentService.remove(noticeId, attachmentId);
   }
 
   /* FAQ */

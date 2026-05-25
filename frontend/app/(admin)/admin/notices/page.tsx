@@ -18,6 +18,16 @@ interface Notice {
   isPinned: boolean;
   isPublished: boolean;
   createdAt: string;
+  attachments?: NoticeAttachment[];
+}
+
+interface NoticeAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  sortOrder: number;
+  createdAt: string;
 }
 
 interface ModalState {
@@ -27,11 +37,27 @@ interface ModalState {
 }
 
 export default function AdminNoticesPage() {
+  const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+  const allowedExtensions = new Set([
+    'pdf',
+    'doc',
+    'docx',
+    'xls',
+    'xlsx',
+    'ppt',
+    'pptx',
+    'hwp',
+    'txt',
+  ]);
+
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalState>({ open: false, mode: 'create' });
   const [form, setForm] = useState({ title: '', content: '', isPinned: false, isPublished: true });
   const [saving, setSaving] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<NoticeAttachment[]>([]);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -48,11 +74,14 @@ export default function AdminNoticesPage() {
 
   const openCreate = () => {
     setForm({ title: '', content: '', isPinned: false, isPublished: true });
+    setPendingFiles([]);
+    setExistingAttachments([]);
     setModal({ open: true, mode: 'create' });
   };
 
   const openEdit = async (n: Notice) => {
     let content = n.content ?? '';
+    let attachments = n.attachments ?? [];
     if (!content) {
       try {
         const res = await fetch(`${API_BASE}/admin/notices`, { headers: buildAuthHeader(false) });
@@ -61,11 +90,85 @@ export default function AdminNoticesPage() {
           const list: Notice[] = d.notices ?? d;
           const found = list.find((item) => item.id === n.id);
           if (found) content = found.content ?? '';
+          if (found) attachments = found.attachments ?? [];
         }
       } catch { /* ignore */ }
     }
+    setPendingFiles([]);
+    setExistingAttachments(attachments);
     setForm({ title: n.title, content, isPinned: n.isPinned, isPublished: n.isPublished });
     setModal({ open: true, mode: 'edit', data: n });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+
+    const validFiles: File[] = [];
+    for (const file of files) {
+      const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+      if (!allowedExtensions.has(extension)) {
+        toast.error(`${file.name}: 지원하지 않는 파일 형식입니다.`);
+        continue;
+      }
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        toast.error(`${file.name}: 첨부파일은 5MB 이하만 업로드할 수 있습니다.`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length > 0) {
+      setPendingFiles((prev) => [...prev, ...validFiles]);
+    }
+    event.currentTarget.value = '';
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!modal.data?.id || deletingAttachmentId) return;
+    setDeletingAttachmentId(attachmentId);
+    try {
+      const res = await fetch(
+        `${API_BASE}/admin/notices/${modal.data.id}/attachments/${attachmentId}`,
+        {
+          method: 'DELETE',
+          headers: buildAuthHeader(false),
+        },
+      );
+      if (res.ok) {
+        setExistingAttachments((prev) => prev.filter((item) => item.id !== attachmentId));
+        setNotices((prev) =>
+          prev.map((notice) =>
+            notice.id === modal.data?.id
+              ? {
+                  ...notice,
+                  attachments: (notice.attachments ?? []).filter(
+                    (item) => item.id !== attachmentId,
+                  ),
+                }
+              : notice,
+          ),
+        );
+        toast.success('첨부파일이 삭제되었습니다.');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message ?? '첨부파일 삭제에 실패했습니다.');
+      }
+    } catch {
+      toast.error('첨부파일 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeletingAttachmentId(null);
+    }
   };
 
   const handleSave = async () => {
@@ -76,14 +179,39 @@ export default function AdminNoticesPage() {
       const method = modal.mode === 'create' ? 'POST' : 'PATCH';
       const res = await fetch(url, { method, headers: buildAuthHeader(), body: JSON.stringify(form) });
       if (res.ok) {
+        const savedNotice: Notice = await res.json().catch(() => ({ id: modal.data?.id ?? '' } as Notice));
+        const noticeId = savedNotice.id || modal.data?.id;
+        if (!noticeId) {
+          toast.error('공지 식별자를 찾을 수 없습니다.');
+          return;
+        }
+
+        for (const file of pendingFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          const uploadRes = await fetch(`${API_BASE}/admin/notices/${noticeId}/attachments`, {
+            method: 'POST',
+            headers: buildAuthHeader(false),
+            body: formData,
+          });
+          if (!uploadRes.ok) {
+            const err = await uploadRes.json().catch(() => ({}));
+            throw new Error(err.message ?? `${file.name} 업로드에 실패했습니다.`);
+          }
+        }
+
         toast.success(modal.mode === 'create' ? '공지가 등록되었습니다.' : '공지가 수정되었습니다.');
+        setPendingFiles([]);
+        setExistingAttachments([]);
         setModal({ open: false, mode: 'create' });
         load();
       } else {
         const err = await res.json().catch(() => ({}));
         toast.error(err.message ?? '저장에 실패했습니다.');
       }
-    } catch { toast.error('저장 중 오류가 발생했습니다.'); }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '저장 중 오류가 발생했습니다.');
+    }
     finally { setSaving(false); }
   };
 
@@ -151,6 +279,61 @@ export default function AdminNoticesPage() {
                   onChange={(html) => setForm((p) => ({ ...p, content: html }))}
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">첨부 문서</label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  파일당 5MB 이하, PDF/DOC/DOCX/XLS/XLSX/PPT/PPTX/HWP/TXT
+                </p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.txt"
+                  onChange={handleFileSelect}
+                  className="block w-full border rounded-lg px-3 py-2 text-sm"
+                  disabled={saving}
+                />
+                {existingAttachments.length > 0 && (
+                  <ul className="mt-3 space-y-2 border rounded-lg p-3 bg-muted/20">
+                    {existingAttachments.map((item) => (
+                      <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="truncate">
+                          {item.fileName} ({formatFileSize(item.fileSize)})
+                        </span>
+                        <button
+                          type="button"
+                          className="text-red-500 text-xs"
+                          disabled={deletingAttachmentId === item.id || saving}
+                          onClick={() => handleDeleteAttachment(item.id)}
+                        >
+                          {deletingAttachmentId === item.id ? '삭제 중...' : '삭제'}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {pendingFiles.length > 0 && (
+                  <ul className="mt-3 space-y-2 border rounded-lg p-3">
+                    {pendingFiles.map((file, index) => (
+                      <li
+                        key={`${file.name}-${file.size}-${index}`}
+                        className="flex items-center justify-between gap-3 text-sm"
+                      >
+                        <span className="truncate">
+                          {file.name} ({formatFileSize(file.size)})
+                        </span>
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground"
+                          onClick={() => removePendingFile(index)}
+                          disabled={saving}
+                        >
+                          제외
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={form.isPinned} onChange={(e) => setForm((p) => ({ ...p, isPinned: e.target.checked }))} />
@@ -163,7 +346,17 @@ export default function AdminNoticesPage() {
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <BrandButton variant="ghost" size="sm" onClick={() => setModal({ open: false, mode: 'create' })}>취소</BrandButton>
+              <BrandButton
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setPendingFiles([]);
+                  setExistingAttachments([]);
+                  setModal({ open: false, mode: 'create' });
+                }}
+              >
+                취소
+              </BrandButton>
               <BrandButton variant="primary" size="sm" loading={saving} onClick={handleSave}>저장</BrandButton>
             </div>
           </div>

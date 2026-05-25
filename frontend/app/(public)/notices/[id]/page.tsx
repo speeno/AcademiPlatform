@@ -1,11 +1,27 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, Paperclip } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+
+type NoticeAttachment = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+};
+
+type NoticeDetail = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  publishedAt?: string | null;
+  attachments?: NoticeAttachment[];
+};
 
 async function getNotice(id: string) {
   try {
@@ -13,10 +29,16 @@ async function getNotice(id: string) {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
-    return res.json();
+    return (await res.json()) as NoticeDetail;
   } catch {
     return null;
   }
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -63,6 +85,30 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
               className="prose prose-sm max-w-none"
               dangerouslySetInnerHTML={{ __html: notice.content ?? '' }}
             />
+
+            {(notice.attachments?.length ?? 0) > 0 && (
+              <div className="mt-8 pt-6 border-t">
+                <h2 className="text-sm font-semibold text-foreground mb-3">첨부파일</h2>
+                <ul className="space-y-2">
+                  {notice.attachments?.map((attachment) => (
+                    <li key={attachment.id}>
+                      <a
+                        href={`${API}/notices/${notice.id}/attachments/${attachment.id}/download`}
+                        className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm hover:bg-muted/30"
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <Paperclip className="w-4 h-4 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{attachment.fileName}</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {formatFileSize(attachment.fileSize)}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 text-center">
