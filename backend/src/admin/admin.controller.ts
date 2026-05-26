@@ -198,6 +198,11 @@ export class AdminController {
     return this.adminService.createShortsItem(data);
   }
 
+  @Post('shorts-gallery/regenerate-thumbnails')
+  regenerateShortsThumbnails() {
+    return this.adminService.regenerateShortsThumbnails();
+  }
+
   @Patch('shorts-gallery/:id')
   updateShortsItem(@Param('id') id: string, @Body() data: any) {
     return this.adminService.updateShortsItem(id, data);

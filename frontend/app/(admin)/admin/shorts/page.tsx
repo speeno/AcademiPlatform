@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Save, Trash2, Settings } from 'lucide-react';
+import { Plus, Save, Trash2, Settings, ImageIcon } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { buildAuthHeader } from '@/lib/auth';
 import { API_BASE } from '@/lib/api-base';
@@ -35,6 +35,7 @@ export default function AdminShortsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingDisplay, setSavingDisplay] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const load = async () => {
     try {
@@ -108,6 +109,32 @@ export default function AdminShortsPage() {
     }
   };
 
+  const regenerateThumbnails = async () => {
+    if (!confirm('YouTube 항목의 썸네일·링크를 고해상도 URL로 일괄 갱신합니다. 계속할까요?')) {
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/shorts-gallery/regenerate-thumbnails`, {
+        method: 'POST',
+        headers: buildAuthHeader(false),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+      const updated = typeof data.updated === 'number' ? data.updated : 0;
+      await load();
+      toast.success(
+        updated > 0
+          ? `썸네일 ${updated}건을 고해상도로 갱신했습니다.`
+          : '이미 고해상도 썸네일이 적용되어 있습니다.',
+      );
+    } catch {
+      toast.error('썸네일 재생성에 실패했습니다.');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const saveDisplay = async () => {
     setSavingDisplay(true);
     try {
@@ -140,10 +167,21 @@ export default function AdminShortsPage() {
           <h1 className="text-heading text-brand-blue">홍보영상 관리</h1>
           <p className="text-sm text-muted-foreground mt-1">갤러리 페이지 및 메인/교육과정 페이지에 노출할 홍보 영상을 관리합니다.</p>
         </div>
-        <BrandButton variant="primary" size="sm" onClick={addItem}>
-          <Plus className="w-4 h-4 mr-1" />
-          영상 추가
-        </BrandButton>
+        <div className="flex flex-wrap gap-2">
+          <BrandButton
+            variant="outline"
+            size="sm"
+            loading={regenerating}
+            onClick={regenerateThumbnails}
+          >
+            <ImageIcon className="w-4 h-4 mr-1" />
+            썸네일 일괄 재생성
+          </BrandButton>
+          <BrandButton variant="primary" size="sm" onClick={addItem}>
+            <Plus className="w-4 h-4 mr-1" />
+            영상 추가
+          </BrandButton>
+        </div>
       </div>
 
       {items.map((item, idx) => (

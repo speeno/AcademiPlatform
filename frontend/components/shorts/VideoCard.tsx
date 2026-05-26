@@ -1,6 +1,8 @@
 'use client';
 
 import { PlayCircle } from 'lucide-react';
+import { buildYoutubeShortsLinkUrl } from '@/lib/youtube-shorts';
+import { YoutubeThumbnailImage } from './YoutubeThumbnailImage';
 
 export interface VideoItem {
   id: string;
@@ -12,18 +14,10 @@ export interface VideoItem {
   isActive?: boolean;
 }
 
-function resolveThumb(item: VideoItem): string {
-  if (item.thumbnailUrl) return item.thumbnailUrl;
-  if (item.type === 'youtube' && item.videoId) {
-    return `https://img.youtube.com/vi/${item.videoId}/0.jpg`;
-  }
-  return '';
-}
-
 function resolveLink(item: VideoItem): string {
   if (item.linkUrl) return item.linkUrl;
   if (item.type === 'youtube' && item.videoId) {
-    return `https://youtube.com/shorts/${item.videoId}`;
+    return buildYoutubeShortsLinkUrl(item.videoId);
   }
   return '#';
 }
@@ -34,10 +28,10 @@ const platformBadge: Record<string, { label: string; bg: string; color: string }
 };
 
 export function VideoCard({ item }: { item: VideoItem }) {
-  const thumb = resolveThumb(item);
   const link = resolveLink(item);
   const badge = platformBadge[item.type] ?? platformBadge.youtube;
   const isVertical = item.type === 'youtube';
+  const instagramThumb = item.type === 'instagram' ? (item.thumbnailUrl ?? '').trim() : '';
 
   return (
     <a
@@ -49,11 +43,20 @@ export function VideoCard({ item }: { item: VideoItem }) {
       <div
         className={`relative bg-brand-blue-dark overflow-hidden ${isVertical ? 'aspect-[9/16]' : 'aspect-square'}`}
       >
-        {thumb ? (
-          <img
-            src={thumb}
+        {item.type === 'youtube' && item.videoId ? (
+          <YoutubeThumbnailImage
+            videoId={item.videoId}
+            storedUrl={item.thumbnailUrl}
             alt={item.title}
             className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
+          />
+        ) : instagramThumb ? (
+          <img
+            src={instagramThumb}
+            alt={item.title}
+            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--gradient-logo)' }}>

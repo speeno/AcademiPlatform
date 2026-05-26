@@ -7,6 +7,10 @@ import {
 import { PrismaService } from '../common/prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import {
+  normalizeShortsYoutubeItem,
+  regenerateShortsGalleryItems,
+} from '../lib/youtube-shorts';
+import {
   BookVoucherCodeStatus,
   DiscountType,
   InquiryStatus,
@@ -399,7 +403,7 @@ export class AdminService {
 
   async createShortsItem(data: any) {
     const items = await this.getShortsGallery();
-    const item = {
+    const item = normalizeShortsYoutubeItem({
       id: randomUUID(),
       type: data.type ?? 'youtube',
       videoId: data.videoId ?? '',
@@ -408,7 +412,7 @@ export class AdminService {
       linkUrl: data.linkUrl ?? '',
       isActive: data.isActive !== false,
       createdAt: new Date().toISOString(),
-    };
+    });
     items.push(item);
     await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(items));
     return item;
@@ -418,13 +422,23 @@ export class AdminService {
     const items = await this.getShortsGallery();
     const idx = items.findIndex((o: any) => o.id === id);
     if (idx < 0) throw new NotFoundException('홍보영상을 찾을 수 없습니다.');
-    items[idx] = {
+    items[idx] = normalizeShortsYoutubeItem({
       ...items[idx],
       ...patch,
       updatedAt: new Date().toISOString(),
-    };
+    });
     await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(items));
     return items[idx];
+  }
+
+  /** 운영 DB 등 쉘 없이 관리 화면에서 호출 */
+  async regenerateShortsThumbnails() {
+    const items = await this.getShortsGallery();
+    const { items: next, updated } = regenerateShortsGalleryItems(items);
+    if (updated > 0) {
+      await this.updateSetting(this.SHORTS_GALLERY_KEY, JSON.stringify(next));
+    }
+    return { total: items.length, updated, items: next };
   }
 
   async deleteShortsItem(id: string) {
