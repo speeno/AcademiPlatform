@@ -7,7 +7,7 @@ import { isPaymentModuleEnabled } from './payment-env';
  * - 전 환경 공통: JWT_SECRET, JWT_REFRESH_SECRET (Auth 부팅 자체가 불가)
  * - 프로덕션(NODE_ENV=production):
  *   - DATABASE_URL: 부팅 시 DB 미연결을 빠르게 노출
- *   - PAYMENT_MODULE_ENABLED=true(기본)일 때만 PORTONE_* 필수
+ *   - PAYMENT_MODULE_ENABLED=true 일 때만 PORTONE_* 필수 (기본 false)
  *   - VIEWER_TOKEN_SECRET 또는 JWT_SECRET: 교재 뷰어 토큰 서명
  * - PAYMENT_MODULE_ENABLED=false: PortOne 미설정 허용, 결제 API는 런타임 503
  */

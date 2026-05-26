@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { isPaymentModuleEnabled } from '../../config/payment-env';
 
 export interface PortOnePaymentInfo {
   status: string;
@@ -39,6 +40,9 @@ export class PortOneClient {
     expectedAmount: number,
     expectedOrderNo?: string,
   ): Promise<boolean> {
+    if (!isPaymentModuleEnabled()) {
+      return false;
+    }
     if (!this.hasCredentials()) {
       if (this.isDevBypassEnabled()) {
         this.logger.warn(
@@ -46,8 +50,8 @@ export class PortOneClient {
         );
         return true;
       }
-      this.logger.error(
-        '포트원 API 키가 설정되지 않았습니다. 프로덕션에서는 결제 검증이 거부됩니다.',
+      this.logger.warn(
+        '포트원 API 키가 없어 결제 검증을 수행하지 않습니다. PAYMENT_MODULE_ENABLED=false 이거나 키를 설정하세요.',
       );
       return false;
     }
@@ -61,6 +65,11 @@ export class PortOneClient {
   }
 
   async cancel(impUid: string, amount: number, reason: string): Promise<void> {
+    if (!isPaymentModuleEnabled()) {
+      throw new BadRequestException(
+        '결제 기능이 비활성화되어 포트원 환불을 호출할 수 없습니다.',
+      );
+    }
     if (!this.hasCredentials() || !impUid) {
       if (this.isDevBypassEnabled()) {
         this.logger.warn(
@@ -112,7 +121,7 @@ export class PortOneClient {
   private async fetchPayment(
     impUid: string,
   ): Promise<PortOnePaymentInfo | null> {
-    if (!this.hasCredentials()) return null;
+    if (!isPaymentModuleEnabled() || !this.hasCredentials()) return null;
 
     try {
       const accessToken = await this.requestAccessToken();

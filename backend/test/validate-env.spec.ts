@@ -93,6 +93,18 @@ describe('validateRequiredEnv (P0)', () => {
     expect(() => validateRequiredEnv()).not.toThrow();
   });
 
+  it('프로덕션에서 PAYMENT_MODULE_ENABLED 미설정 시 기본 비활성(PortOne 불필요)', () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.PAYMENT_MODULE_ENABLED;
+    process.env.JWT_SECRET = 'a-secret';
+    process.env.JWT_REFRESH_SECRET = 'b-secret';
+    process.env.DATABASE_URL = 'postgres://x';
+    delete process.env.PORTONE_API_KEY;
+    delete process.env.PORTONE_API_SECRET;
+    delete process.env.PORTONE_WEBHOOK_SECRET;
+    expect(() => validateRequiredEnv()).not.toThrow();
+  });
+
   it('프로덕션 PAYMENT_MODULE_ENABLED=false 이면 PortOne 없이 통과', () => {
     process.env.NODE_ENV = 'production';
     process.env.PAYMENT_MODULE_ENABLED = 'false';
