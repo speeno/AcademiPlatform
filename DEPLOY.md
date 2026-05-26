@@ -319,35 +319,53 @@ REDIS_URL=redis://default:PASSWORD@HOST:PORT
 
 ---
 
-## 9. Render 무료 슬립 보완(keep-alive)
+## 9. Render 무료 슬립·DB 연결 keepalive
 
-무료 플랜에서 유휴 슬립을 줄이기 위해 GitHub Actions 스케줄러를 사용합니다.
+무료 플랜에서 유휴 슬립을 줄이기 위해 **외부** GitHub Actions ping과 **내부** DB keepalive를 함께 사용합니다.
 
-### 9-1. 워크플로우
+| 증상 | 원인 | 대응 |
+|------|------|------|
+| 첫 페이지/API 전체 ~50초 | Web Service 콜드스타트 (Free 15분 슬립) | GitHub keepalive 5분 + 유료 플랜 |
+| Web은 빠른데 DB API만 ~50초 | pg 연결 풀 유휴·끊김 | 내부 `DB_KEEPALIVE_*` + `/api/health`의 `SELECT 1` |
+
+### 9-1. 외부 keepalive (GitHub Actions)
 
 - 파일: `.github/workflows/render-keepalive.yml`
-- 주기: 10분 간격(`*/10 * * * *`) + 수동 실행(`workflow_dispatch`)
-- 호출 경로: `/api/health`
+- 주기: 5분 간격(`*/5 * * * *`) + 수동 실행(`workflow_dispatch`)
+- 호출: **백엔드** `GET /api/health` (응답에 `"db":"ok"`, `dbLatencyMs` 포함)
 
-### 9-2. 설정
+### 9-2. 내부 DB keepalive (백엔드)
 
-GitHub Repository `Settings -> Secrets and variables -> Actions`에 아래 시크릿 추가:
+- `DB_KEEPALIVE_ENABLED`: production 기본 `true`, `false`로 비활성화
+- `DB_KEEPALIVE_INTERVAL_MS`: 기본 `240000` (4분), 최소 `60000`
+- 동작: `SELECT 1`만 실행 (트래픽 최소). 3초 초과 시 Render 로그에 warn
 
-- `RENDER_KEEPALIVE_URL`: `https://<render-service>.onrender.com/api/health`
+### 9-3. 설정
 
-시크릿이 없으면 기본값(`https://academiq-backend.onrender.com/api/health`)을 사용합니다.
+GitHub `Settings -> Secrets -> Actions`:
 
-### 9-3. 운영 점검
+- `RENDER_KEEPALIVE_URL`: `https://<backend-service>.onrender.com/api/health`  
+  (프론트/Vercel URL이 아닌 **Render Web Service** URL)
 
-- Actions 실행 기록에서 `status=200` 여부 확인
-- 비정상 응답(`503`, `5xx`) 발생 시 Render 서비스 상태(중지/suspend) 우선 확인
-- 24시간 기준 실패율 및 응답 지연(ms) 추이를 확인
+시크릿이 없으면 기본값 `https://academiq-backend.onrender.com/api/health`를 사용합니다.
 
-### 9-4. 한계와 주의사항
+Render Web Service 환경변수 (선택):
 
-- keep-alive는 콜드스타트를 완화할 뿐, 무료 플랜에서 always-on을 보장하지 않습니다.
-- Render 정책/레이트리밋 변경 시 동작이 달라질 수 있습니다.
-- 완전한 상시 가동이 필요하면 유료 플랜 전환이 근본 대응입니다.
+- `DB_KEEPALIVE_ENABLED=true`
+- `DB_KEEPALIVE_INTERVAL_MS=240000`
+
+### 9-4. 운영 점검
+
+- Actions: HTTP 200 **및** body `"db":"ok"` 확인
+- `curl https://<backend>/api/health` → `dbLatencyMs`가 수 ms~수백 ms 수준인지 확인
+- Render 로그: `[DbKeepAliveService] DB ping slow` 반복 시 Postgres 상태·Internal URL 확인
+- `DATABASE_URL`은 Render **Internal Database URL** 사용 (Web Service와 동일 리전)
+
+### 9-5. 한계
+
+- Web Service가 슬립 중이면 내부 interval도 멈춤 → 외부 keepalive 필수
+- Free Postgres 30일 만료·유지보수 재시작은 ping으로 막을 수 없음
+- always-on이 필요하면 Web/DB 유료 플랜 전환이 근본 대응
 
 ---
 

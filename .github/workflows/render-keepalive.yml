@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          TARGET_URL="${KEEPALIVE_URL:-https://academiplatform.onrender.com/api/health}"
+          TARGET_URL="${KEEPALIVE_URL:-https://academiq-backend.onrender.com/api/health}"
           echo "Target: ${TARGET_URL}"
           max_attempts=4
           attempt=1
@@ -28,15 +28,24 @@ jobs:
               --write-out "%{http_code}" --max-time 25 "${TARGET_URL}" || true)
             end_ms=$(date +%s%3N)
             latency_ms=$((end_ms - start_ms))
-            body_sample=$(head -c 300 /tmp/keepalive_response.txt || true)
+            body_sample=$(head -c 500 /tmp/keepalive_response.txt || true)
 
             echo "attempt=${attempt}/${max_attempts} status=${status_code} latency_ms=${latency_ms}"
             echo "${body_sample}"
             echo ""
 
-            if [ "${status_code}" = "200" ]; then
+            db_ok=0
+            if echo "${body_sample}" | grep -q '"db"[[:space:]]*:[[:space:]]*"ok"'; then
+              db_ok=1
+            fi
+
+            if [ "${status_code}" = "200" ] && [ "${db_ok}" -eq 1 ]; then
               success=1
               break
+            fi
+
+            if [ "${status_code}" = "200" ] && [ "${db_ok}" -ne 1 ]; then
+              echo "HTTP 200 but DB ping not ok — check dbLatencyMs in response"
             fi
 
             if echo "${body_sample}" | tr '[:upper:]' '[:lower:]' | grep -q "suspended by its owner"; then
@@ -44,13 +53,11 @@ jobs:
               exit 1
             fi
 
-            # cold start/transient failure may recover on retry
             sleep 20
             attempt=$((attempt + 1))
           done
 
           if [ "${success}" -ne 1 ]; then
-            echo "Keepalive failed after ${max_attempts} attempts"
+            echo "Keepalive failed after ${max_attempts} attempts (need HTTP 200 and db:ok)"
             exit 1
           fi
-

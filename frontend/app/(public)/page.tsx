@@ -4,10 +4,10 @@ import { ArrowRight, Video } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
 import type { Metadata } from 'next';
-import { HeroBanner } from '@/components/hero/HeroBanner';
-import { API_BASE } from '@/lib/api-base';
+import { HeroBanner, type HeroBannerData } from '@/components/hero/HeroBanner';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
 import { MarketingHighlight } from '@/components/marketing/MarketingHighlight';
+import { fetchPublicSettings } from '@/lib/public-settings';
 
 export const metadata: Metadata = {
   title: 'AcademiQ — 실무 AI 교육·컨설팅',
@@ -93,38 +93,42 @@ const homeFaqPreview = [
 
 async function getShortsData() {
   try {
-    const [galleryRes, displayRes] = await Promise.all([
-      fetch(`${API_BASE}/settings/public/shorts_gallery`, { next: { revalidate: 30 } }),
-      fetch(`${API_BASE}/settings/public/shorts_display`, { next: { revalidate: 30 } }),
-    ]);
+    const values = await fetchPublicSettings(
+      ['shorts_gallery', 'shorts_display', 'hero_banner'],
+      30,
+    );
     let items: any[] = [];
     let display = { showOnMain: true, mainMaxItems: 6 };
-    if (galleryRes.ok) {
-      const g = await galleryRes.json().catch(() => ({}));
-      items = Array.isArray(g?.value) ? g.value.filter((v: any) => v?.isActive !== false) : [];
+    if (Array.isArray(values.shorts_gallery)) {
+      items = values.shorts_gallery.filter((v: any) => v?.isActive !== false);
     }
-    if (displayRes.ok) {
-      const d = await displayRes.json().catch(() => ({}));
-      if (d?.value && typeof d.value === 'object') {
-        display = { ...display, ...d.value };
-      } else if (typeof d?.value === 'string') {
-        try {
-          display = { ...display, ...JSON.parse(d.value) };
-        } catch {}
-      }
+    if (values.shorts_display && typeof values.shorts_display === 'object') {
+      display = { ...display, ...values.shorts_display };
     }
-    return { items, display };
+    const heroBanner: HeroBannerData | null =
+      values.hero_banner && typeof values.hero_banner === 'object'
+        ? (values.hero_banner as HeroBannerData)
+        : null;
+    return { items, display, heroBanner };
   } catch {
-    return { items: [], display: { showOnMain: true, mainMaxItems: 6 } };
+    return {
+      items: [],
+      display: { showOnMain: true, mainMaxItems: 6 },
+      heroBanner: null,
+    };
   }
 }
 
 export default async function HomePage() {
-  const { items: shortsItems, display: shortsDisplay } = await getShortsData();
+  const {
+    items: shortsItems,
+    display: shortsDisplay,
+    heroBanner,
+  } = await getShortsData();
 
   return (
     <div>
-      <HeroBanner />
+      <HeroBanner bannerValue={heroBanner} />
 
       <section className="border-y border-border bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

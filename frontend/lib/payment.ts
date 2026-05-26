@@ -1,6 +1,8 @@
 import { buildAuthHeader } from '@/lib/auth';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
+const PORTONE_SCRIPT_SRC = 'https://cdn.iamport.kr/v1/iamport.js';
+let portoneScriptPromise: Promise<void> | null = null;
 
 declare global {
   interface Window {
@@ -20,6 +22,39 @@ declare global {
 }
 
 export type CheckoutTargetType = 'ENROLLMENT' | 'EXAM_APPLICATION' | 'TEXTBOOK';
+
+function ensurePortOneScript(): Promise<void> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('브라우저 환경에서만 결제를 시작할 수 있습니다.'));
+  }
+  if (window.IMP) return Promise.resolve();
+  if (portoneScriptPromise) return portoneScriptPromise;
+
+  portoneScriptPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${PORTONE_SCRIPT_SRC}"]`,
+    );
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener(
+        'error',
+        () => reject(new Error('PortOne 스크립트를 불러오지 못했습니다.')),
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = PORTONE_SCRIPT_SRC;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () =>
+      reject(new Error('PortOne 스크립트를 불러오지 못했습니다.'));
+    document.head.appendChild(script);
+  });
+
+  return portoneScriptPromise;
+}
 
 function isMockPaymentEnabled() {
   if (process.env.NEXT_PUBLIC_PAYMENT_MOCK === 'true') return true;
@@ -142,30 +177,40 @@ export async function runPortOneCheckout(input: {
         impUid: string;
         orderNo: string;
       }>((resolve, reject) => {
-        const IMP = window.IMP;
-        if (!IMP) {
-          reject(new Error('PortOne 스크립트를 불러오지 못했습니다.'));
-          return;
-        }
-        IMP.init(orderData.impCode);
-        IMP.request_pay(
-          {
-            pg: 'html5_inicis',
-            pay_method: 'card',
-            merchant_uid: orderData.orderNo,
-            name: input.name,
-            amount: orderData.amount,
-            buyer_email: input.buyerEmail ?? '',
-            buyer_name: input.buyerName ?? '',
-          },
-          (rsp) => {
-            if (!rsp.success || !rsp.imp_uid || !rsp.merchant_uid) {
-              reject(new Error(rsp.error_msg ?? '결제가 취소되었거나 실패했습니다.'));
+        ensurePortOneScript()
+          .then(() => {
+            const IMP = window.IMP;
+            if (!IMP) {
+              reject(new Error('PortOne 스크립트를 불러오지 못했습니다.'));
               return;
             }
-            resolve({ impUid: rsp.imp_uid, orderNo: rsp.merchant_uid });
-          },
-        );
+            IMP.init(orderData.impCode);
+            IMP.request_pay(
+              {
+                pg: 'html5_inicis',
+                pay_method: 'card',
+                merchant_uid: orderData.orderNo,
+                name: input.name,
+                amount: orderData.amount,
+                buyer_email: input.buyerEmail ?? '',
+                buyer_name: input.buyerName ?? '',
+              },
+              (rsp) => {
+                if (!rsp.success || !rsp.imp_uid || !rsp.merchant_uid) {
+                  reject(new Error(rsp.error_msg ?? '결제가 취소되었거나 실패했습니다.'));
+                  return;
+                }
+                resolve({ impUid: rsp.imp_uid, orderNo: rsp.merchant_uid });
+              },
+            );
+          })
+          .catch((error: unknown) => {
+            reject(
+              error instanceof Error
+                ? error
+                : new Error('PortOne 스크립트를 불러오지 못했습니다.'),
+            );
+          });
       });
 
   const verifyRes = await fetch(`${API}/payments/verify`, {

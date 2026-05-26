@@ -11,13 +11,10 @@ import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 import { TextbookPurchaseButton } from '@/components/store/TextbookPurchaseButton';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
-import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 import {
   ONLINE_TEXTBOOK_STORE_AVAILABLE,
   ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
 } from '@/lib/online-textbook-store';
-
-export const dynamic = 'force-dynamic';
 
 interface StoreTextbookDetail {
   id: string;
@@ -34,7 +31,7 @@ async function getTextbookDetail(id: string): Promise<StoreTextbookDetail | null
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/textbooks/${id}/public`,
-      { next: { revalidate: 30 }, headers: await getServerAuthHeaders() },
+      { next: { revalidate: 30 } },
       8000,
     );
     if (res.status === 404) return null;

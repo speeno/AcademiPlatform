@@ -7,8 +7,8 @@ import { Menu, X, BookOpen, LogIn, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandButton } from '@/components/ui/brand-button';
 import { Logo } from './Logo';
-import { buildAuthHeader, clearAccessToken, subscribeAuthState } from '@/lib/auth';
-import { API_BASE } from '@/lib/api-base';
+import { clearAccessToken } from '@/lib/auth';
+import { useAuthContext } from '@/lib/auth-context';
 
 const navItems = [
   { label: '서비스', href: '/services' },
@@ -24,12 +24,13 @@ const navItems = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const auth = useAuthContext();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [userRole, setUserRole] = useState('');
+  const authLoading = auth?.isLoggedIn == null;
+  const isAuthenticated = auth?.isLoggedIn === true;
+  const userName = auth?.me?.name ?? '';
+  const userEmail = auth?.me?.email ?? '';
+  const userRole = auth?.me?.role ?? '';
 
   useEffect(() => {
     setMobileOpen(false);
@@ -43,51 +44,6 @@ export function Navbar() {
       document.body.style.overflow = original;
     };
   }, [mobileOpen]);
-
-  useEffect(() => {
-    let active = true;
-
-    const loadMe = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/auth/me`, {
-          credentials: 'include',
-          headers: buildAuthHeader(false),
-        });
-        if (!active) return;
-
-        if (!res.ok) {
-          setIsAuthenticated(false);
-          setUserName('');
-          setUserEmail('');
-          setUserRole('');
-          return;
-        }
-
-        const me = await res.json();
-        setIsAuthenticated(true);
-        setUserName(me?.name ?? '');
-        setUserEmail(me?.email ?? '');
-        setUserRole(me?.role ?? '');
-      } catch {
-        if (!active) return;
-        setIsAuthenticated(false);
-        setUserName('');
-        setUserEmail('');
-        setUserRole('');
-      } finally {
-        if (active) setAuthLoading(false);
-      }
-    };
-
-    loadMe();
-    const unsubscribe = subscribeAuthState(() => {
-      if (active) loadMe();
-    });
-    return () => {
-      active = false;
-      unsubscribe();
-    };
-  }, []);
 
   const isAdmin = useMemo(
     () => userRole === 'SUPER_ADMIN' || userRole === 'OPERATOR',
@@ -103,10 +59,6 @@ export function Navbar() {
 
   const handleLogout = () => {
     clearAccessToken();
-    setIsAuthenticated(false);
-    setUserName('');
-    setUserEmail('');
-    setUserRole('');
     setMobileOpen(false);
   };
 

@@ -7,14 +7,11 @@ import { PageShell } from '@/components/layout/PageShell';
 import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
-import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 import { TextbookStoreClient, type StoreTextbook, type BookOffer } from './TextbookStoreClient';
 import {
   ONLINE_TEXTBOOK_STORE_AVAILABLE,
   ONLINE_TEXTBOOK_UNAVAILABLE_LABEL,
 } from '@/lib/online-textbook-store';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '교재 구매',
@@ -27,7 +24,7 @@ async function getStoreTextbooks(): Promise<{ books: StoreTextbook[]; loadError:
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/textbooks/store/public`,
-      { next: { revalidate: 30 }, headers: await getServerAuthHeaders() },
+      { next: { revalidate: 30 } },
       8000,
     );
     if (!res.ok) return { books: [], loadError: true };
@@ -42,7 +39,7 @@ async function getBookOffers(): Promise<{ offers: BookOffer[]; loadError: boolea
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/settings/public/book_offers`,
-      { next: { revalidate: 30 }, headers: await getServerAuthHeaders() },
+      { next: { revalidate: 30 } },
       8000,
     );
     if (!res.ok) return { offers: [], loadError: true };

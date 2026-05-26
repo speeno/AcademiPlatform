@@ -8,9 +8,6 @@ import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
-import { getServerAuthHeaders } from '@/lib/server-api-fetch';
-
-export const dynamic = 'force-dynamic';
 
 interface QualificationEntry {
   keywords: string[];
@@ -71,7 +68,7 @@ async function getExamSessions(): Promise<{ sessions: any[]; loadError: boolean 
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/exam/sessions`,
-      { next: { revalidate: 60 }, headers: await getServerAuthHeaders() },
+      { next: { revalidate: 60 } },
       8000,
     );
     if (!res.ok) return { sessions: [], loadError: true };

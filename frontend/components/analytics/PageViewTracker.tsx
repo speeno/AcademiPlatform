@@ -51,34 +51,48 @@ export function PageViewTracker() {
     if (pathname === prevPath.current) return;
     prevPath.current = pathname;
 
-    try {
-      const ua = navigator.userAgent;
-      const payload = JSON.stringify({
-        path: pathname,
-        sessionId: getSessionId(),
-        userId: getUserId(),
-        userAgent: ua,
-        browser: parseBrowser(ua),
-        deviceType: parseDevice(ua),
-        referrer: document.referrer || null,
-      });
+    const sendPageView = () => {
+      try {
+        const ua = navigator.userAgent;
+        const payload = JSON.stringify({
+          path: pathname,
+          sessionId: getSessionId(),
+          userId: getUserId(),
+          userAgent: ua,
+          browser: parseBrowser(ua),
+          deviceType: parseDevice(ua),
+          referrer: document.referrer || null,
+        });
 
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(
-          `${API_BASE}/analytics/pageview`,
-          new Blob([payload], { type: 'application/json' }),
-        );
-      } else {
-        fetch(`${API_BASE}/analytics/pageview`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: payload,
-          keepalive: true,
-        }).catch(() => {});
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(
+            `${API_BASE}/analytics/pageview`,
+            new Blob([payload], { type: 'application/json' }),
+          );
+        } else {
+          fetch(`${API_BASE}/analytics/pageview`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {
+        // silent fail
       }
-    } catch {
-      // silent fail
-    }
+    };
+
+    const timer = window.setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        (window as Window & { requestIdleCallback: (callback: () => void) => number }).requestIdleCallback(sendPageView);
+      } else {
+        sendPageView();
+      }
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [pathname]);
 
   return null;

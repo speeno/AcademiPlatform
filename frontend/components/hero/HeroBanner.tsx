@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { API_BASE } from '@/lib/api-base';
 
 export interface HeroSlide {
   id: string;
@@ -24,7 +23,7 @@ export interface HeroSlide {
   isActive: boolean;
 }
 
-interface HeroBannerData {
+export interface HeroBannerData {
   slides: HeroSlide[];
 }
 
@@ -143,6 +142,20 @@ function normalizeSlide(input: Partial<HeroSlide>, idx: number): HeroSlide {
   return sanitizeHeroSlide(normalized);
 }
 
+export function getActiveHeroSlides(
+  bannerValue?: HeroBannerData | null,
+): HeroSlide[] {
+  const candidates = bannerValue?.slides?.length
+    ? bannerValue.slides
+    : TEMPLATE_HERO_SLIDES;
+  const normalized = candidates
+    .map((slide, idx) => normalizeSlide(slide, idx))
+    .filter((slide) => slide.isActive);
+  return normalized.length > 0
+    ? normalized
+    : TEMPLATE_HERO_SLIDES.map((slide, idx) => normalizeSlide(slide, idx));
+}
+
 function renderTitle(raw: string) {
   const lines = raw.split('\n');
   return lines.map((line, i) => {
@@ -165,24 +178,17 @@ function renderTitle(raw: string) {
   });
 }
 
-export function HeroBanner() {
-  const [slides, setSlides] = useState<HeroSlide[]>(TEMPLATE_HERO_SLIDES);
+interface HeroBannerProps {
+  bannerValue?: HeroBannerData | null;
+}
+
+export function HeroBanner({ bannerValue }: HeroBannerProps) {
+  const slides = getActiveHeroSlides(bannerValue);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    fetch(`${API_BASE}/settings/public/hero_banner`)
-      .then((r) => r.json())
-      .then((data) => {
-        const banner = data?.value as HeroBannerData | null;
-        if (banner?.slides?.length) {
-          const active = banner.slides
-            .map((s, idx) => normalizeSlide(s, idx))
-            .filter((s) => s.isActive);
-          if (active.length > 0) setSlides(active);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    setCurrent(0);
+  }, [slides.length]);
 
   const activeSlides = slides;
   const total = activeSlides.length;

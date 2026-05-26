@@ -103,8 +103,8 @@ export class CoursesService {
   }
 
   async findBySlug(slug: string, viewerId?: string) {
-    const course = await this.prisma.course.findFirst({
-      where: { slug, status: CourseStatus.ACTIVE },
+    const course = await this.prisma.course.findUnique({
+      where: { slug },
       include: {
         instructor: { select: { id: true, name: true } },
         modules: {
@@ -141,7 +141,9 @@ export class CoursesService {
         _count: { select: { enrollments: true } },
       },
     });
-    if (!course) throw new NotFoundException('교육과정을 찾을 수 없습니다.');
+    if (!course || course.status !== CourseStatus.ACTIVE) {
+      throw new NotFoundException('교육과정을 찾을 수 없습니다.');
+    }
     return maskCourseForPublic(course, viewerId);
   }
 

@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { Public } from './common/decorators/public.decorator';
 import { PrismaService } from './common/prisma/prisma.service';
@@ -11,21 +12,20 @@ export class AppController {
   ) {}
 
   @Public()
+  @SkipThrottle()
   @Get('health')
   async health(): Promise<{
     status: string;
     db: 'ok' | 'down';
+    dbLatencyMs: number;
     timestamp: string;
   }> {
-    let db: 'ok' | 'down' = 'ok';
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-    } catch {
-      db = 'down';
-    }
+    const ping = await this.prisma.pingDb();
+    const db = ping.ok ? 'ok' : 'down';
     return {
       status: db === 'ok' ? 'ok' : 'degraded',
       db,
+      dbLatencyMs: ping.latencyMs,
       timestamp: new Date().toISOString(),
     };
   }

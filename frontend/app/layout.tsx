@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
+import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+
+const notoSansKr = Noto_Sans_KR({
+  subsets: ['latin'],
+  weight: ['400', '500', '700', '800'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -33,17 +40,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <head>
-        {/* Pretendard 가변 폰트 — CSS @import url()은 Turbopack에서 오류 발생, <link>로 대체 */}
-        <link
-          rel="stylesheet"
-          as="style"
-          crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-        />
-        <script src="https://cdn.iamport.kr/v1/iamport.js" />
-      </head>
-      <body className="min-h-screen flex flex-col antialiased">
+      <body className={`${notoSansKr.className} min-h-screen flex flex-col antialiased`}>
         <TooltipProvider>
           {children}
           <Toaster richColors position="top-right" />

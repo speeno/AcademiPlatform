@@ -4,8 +4,6 @@ import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
 import { getServerApiBase } from '@/lib/api-base';
 import { PageShell } from '@/components/layout/PageShell';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata: Metadata = {
   title: '자주 묻는 질문 (FAQ)',
   description: 'AcademiQ 자주 묻는 질문과 답변을 확인하세요.',

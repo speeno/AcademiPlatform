@@ -326,6 +326,21 @@ export class AdminService {
     return Object.fromEntries(settings.map((s) => [s.key, s.value]));
   }
 
+  async getSettingValue(key: string) {
+    const setting = await this.prisma.systemSetting.findUnique({ where: { key } });
+    return setting?.value ?? null;
+  }
+
+  async getSettingValues(keys: string[]) {
+    if (keys.length === 0) return {};
+    const uniqueKeys = Array.from(new Set(keys));
+    const settings = await this.prisma.systemSetting.findMany({
+      where: { key: { in: uniqueKeys } },
+      select: { key: true, value: true },
+    });
+    return Object.fromEntries(settings.map((s) => [s.key, s.value]));
+  }
+
   async updateSetting(key: string, value: string) {
     return this.prisma.systemSetting.upsert({
       where: { key },

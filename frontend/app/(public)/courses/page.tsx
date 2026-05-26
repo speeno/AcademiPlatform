@@ -10,10 +10,7 @@ import type { Metadata } from 'next';
 import { getServerApiBase } from '@/lib/api-base';
 import { resolveCourseThumbnailUrl } from '@/lib/course-thumbnail';
 import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
-import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '교육과정',
@@ -37,7 +34,7 @@ async function getCourses(): Promise<{ courses: PublicCourse[]; total: number; l
   try {
     const res = await fetchWithTimeout(
       `${getServerApiBase()}/courses?limit=12`,
-      { next: { revalidate: 60 }, headers: await getServerAuthHeaders() },
+      { next: { revalidate: 60 } },
       8000,
     );
     if (!res.ok) return { courses: [], total: 0, loadError: true };

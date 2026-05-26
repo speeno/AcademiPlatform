@@ -5,11 +5,11 @@ import { PrismaService } from './common/prisma/prisma.service';
 
 describe('AppController', () => {
   let appController: AppController;
-  let prismaMock: { $queryRaw: jest.Mock };
+  let prismaMock: { pingDb: jest.Mock };
 
   beforeEach(async () => {
     prismaMock = {
-      $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+      pingDb: jest.fn().mockResolvedValue({ ok: true, latencyMs: 5 }),
     };
 
     const app: TestingModule = await Test.createTestingModule({
@@ -30,16 +30,24 @@ describe('AppController', () => {
     it('returns ok when DB ping succeeds', async () => {
       const result = await appController.health();
       expect(result).toEqual(
-        expect.objectContaining({ status: 'ok', db: 'ok' }),
+        expect.objectContaining({
+          status: 'ok',
+          db: 'ok',
+          dbLatencyMs: 5,
+        }),
       );
-      expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(prismaMock.pingDb).toHaveBeenCalledTimes(1);
     });
 
     it('returns degraded when DB ping fails', async () => {
-      prismaMock.$queryRaw.mockRejectedValueOnce(new Error('boom'));
+      prismaMock.pingDb.mockResolvedValueOnce({ ok: false, latencyMs: -1 });
       const result = await appController.health();
       expect(result).toEqual(
-        expect.objectContaining({ status: 'degraded', db: 'down' }),
+        expect.objectContaining({
+          status: 'degraded',
+          db: 'down',
+          dbLatencyMs: -1,
+        }),
       );
     });
   });

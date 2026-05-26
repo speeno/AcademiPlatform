@@ -1,18 +1,20 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import { cache } from 'react';
 import { Clock, Users, BookOpen, PlayCircle, FileText, ChevronDown, Award, Video } from 'lucide-react';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { PageShell } from '@/components/layout/PageShell';
 import EnrollButton from './EnrollButton';
-import { API_BASE, getServerApiBase } from '@/lib/api-base';
+import { getServerApiBase } from '@/lib/api-base';
 import { resolveCourseThumbnailUrl } from '@/lib/course-thumbnail';
 import { getServerAuthHeaders } from '@/lib/server-api-fetch';
 import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
+import { fetchPublicSettings } from '@/lib/public-settings';
 
-async function getCourse(slug: string) {
+const getCourse = cache(async (slug: string) => {
   try {
     const res = await fetch(`${getServerApiBase()}/courses/${slug}`, {
       next: { revalidate: 60 },
@@ -24,7 +26,7 @@ async function getCourse(slug: string) {
   } catch {
     return null;
   }
-}
+});
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -56,20 +58,14 @@ const lessonTypeLabel: Record<string, string> = {
 
 async function getShortsForCourse() {
   try {
-    const [galleryRes, displayRes] = await Promise.all([
-      fetch(`${API_BASE}/settings/public/shorts_gallery`, { next: { revalidate: 30 } }),
-      fetch(`${API_BASE}/settings/public/shorts_display`, { next: { revalidate: 30 } }),
-    ]);
+    const values = await fetchPublicSettings(['shorts_gallery', 'shorts_display'], 30);
     let items: any[] = [];
     let show = true;
-    if (galleryRes.ok) {
-      const g = await galleryRes.json().catch(() => ({}));
-      items = Array.isArray(g?.value) ? g.value.filter((v: any) => v?.isActive !== false) : [];
+    if (Array.isArray(values.shorts_gallery)) {
+      items = values.shorts_gallery.filter((v: any) => v?.isActive !== false);
     }
-    if (displayRes.ok) {
-      const d = await displayRes.json().catch(() => ({}));
-      const val = typeof d?.value === 'string' ? (() => { try { return JSON.parse(d.value); } catch { return {}; } })() : (d?.value ?? {});
-      show = val.showOnCourseDetail !== false;
+    if (values.shorts_display && typeof values.shorts_display === 'object') {
+      show = values.shorts_display.showOnCourseDetail !== false;
     }
     return { items, show };
   } catch {

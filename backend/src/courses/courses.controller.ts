@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
 import { CourseStatus, LessonType, UserRole } from '@prisma/client';
 import { CoursesService } from './courses.service';
@@ -25,18 +26,33 @@ import {
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { Response } from 'express';
 
 @Controller('courses')
 export class CoursesController {
   constructor(private coursesService: CoursesService) {}
+
+  private setPublicCacheHeader(res: Response, hasUser: boolean) {
+    if (hasUser) {
+      res.setHeader('Cache-Control', 'private, max-age=30');
+      res.setHeader('Vary', 'Cookie, Authorization');
+      return;
+    }
+    res.setHeader(
+      'Cache-Control',
+      'public, max-age=30, s-maxage=60, stale-while-revalidate=120',
+    );
+  }
 
   /* 공개 API */
   @Public()
   @Get()
   findAll(
     @Query() filter: CourseFilterDto,
+    @Res({ passthrough: true }) res: Response,
     @CurrentUser() user?: { id: string },
   ) {
+    this.setPublicCacheHeader(res, !!user?.id);
     return this.coursesService.findAll(filter, user?.id);
   }
 
@@ -202,8 +218,10 @@ export class CoursesController {
   @Get(':slug')
   findBySlug(
     @Param('slug') slug: string,
+    @Res({ passthrough: true }) res: Response,
     @CurrentUser() user?: { id: string },
   ) {
+    this.setPublicCacheHeader(res, !!user?.id);
     return this.coursesService.findBySlug(slug, user?.id);
   }
 
