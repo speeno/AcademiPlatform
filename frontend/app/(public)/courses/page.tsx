@@ -1,174 +1,41 @@
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
-import { Clock, Users, BookOpen, ArrowRight } from 'lucide-react';
-import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
-import { BrandBadge } from '@/components/ui/brand-badge';
+import { ArrowRight } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
-import { PriceDisplay } from '@/components/ui/price-display';
-import type { Metadata } from 'next';
-import { getServerApiBase } from '@/lib/api-base';
-import { resolveCourseThumbnailUrl } from '@/lib/course-thumbnail';
-import { fetchWithTimeout } from '@/lib/fetch-with-timeout';
+import { CoursesListClient } from '@/components/courses/CoursesListClient';
 import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: '교육과정',
   description: 'AI 자격 취득을 위한 교육과정 목록입니다.',
 };
 
-interface PublicCourse {
-  id: string;
-  title: string;
-  status: string;
-  category?: string | null;
-  thumbnailUrl?: string | null;
-  learningPeriodDays?: number | null;
-  price?: number | null;
-  slug?: string | null;
-  instructor?: { name?: string | null } | null;
-  _count?: { enrollments?: number };
-}
-
-async function getCourses(): Promise<{ courses: PublicCourse[]; total: number; loadError: boolean }> {
-  try {
-    const res = await fetchWithTimeout(
-      `${getServerApiBase()}/courses?limit=12`,
-      { next: { revalidate: 60 } },
-      8000,
-    );
-    if (!res.ok) return { courses: [], total: 0, loadError: true };
-    const data = await res.json();
-    return {
-      courses: Array.isArray(data?.courses) ? data.courses : [],
-      total: typeof data?.total === 'number' ? data.total : 0,
-      loadError: false,
-    };
-  } catch {
-    return { courses: [], total: 0, loadError: true };
-  }
-}
-
-export default async function CoursesPage() {
-  const { courses, loadError } = await getCourses();
-
+export default function CoursesPage() {
   return (
     <>
-    <PublicAuthRefresh />
-    <div>
-      {/* 헤더 */}
-      <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-5xl mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-brand-blue" >
-            교육과정
-          </h1>
-          <p className="text-muted-foreground">AI 자격 취득을 위한 체계적인 교육과정을 만나보세요.</p>
-          <div className="mt-4">
-            <Link href="/courses/harness-program">
-              <BrandButton variant="outline" size="sm">
-                Harness 기업 교육 프로그램 보기
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </BrandButton>
-            </Link>
+      <PublicAuthRefresh />
+      <div>
+        <section className="bg-hero-gradient py-14 border-b">
+          <div className="max-w-5xl mx-auto px-4">
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-brand-blue">교육과정</h1>
+            <p className="text-muted-foreground">AI 자격 취득을 위한 체계적인 교육과정을 만나보세요.</p>
+            <div className="mt-4">
+              <Link href="/courses/harness-program">
+                <BrandButton variant="outline" size="sm">
+                  Harness 기업 교육 프로그램 보기
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </BrandButton>
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="py-12 bg-white">
-        <div className="max-w-5xl mx-auto px-4">
-          {/* 과정 목록 */}
-          {loadError ? (
-            <div className="rounded-xl border bg-white p-10 text-center text-muted-foreground">
-              <p className="text-foreground font-medium">교육과정 정보를 일시적으로 불러올 수 없습니다.</p>
-              <p className="text-sm mt-1">잠시 후 새로고침해 주세요.</p>
-            </div>
-          ) : courses.length === 0 ? (
-            <div className="rounded-xl border bg-white p-10 text-center text-muted-foreground">
-              현재 공개된 교육과정이 없습니다.
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => {
-              const isUpcoming = course.status === 'UPCOMING';
-              const thumbnailSrc = resolveCourseThumbnailUrl(course.thumbnailUrl, {
-                server: true,
-              });
-              const card = (
-                <BrandCard hoverable={!isUpcoming} accent="blue" padding="none" className={`overflow-hidden h-full flex flex-col${isUpcoming ? ' opacity-75' : ''}`}>
-                  <div className="relative h-48 overflow-hidden bg-muted flex-shrink-0">
-                    {thumbnailSrc ? (
-                      <Image
-                        src={thumbnailSrc}
-                        alt={course.title}
-                        width={400}
-                        height={192}
-                        unoptimized
-                        className="w-full h-full object-cover object-top"
-                      />
-                    ) : (
-                      <div
-                        className="h-full flex items-center justify-center"
-                        style={{ background: 'var(--gradient-logo)' }}
-                      >
-                        <BookOpen className="w-10 h-10 text-white opacity-60" />
-                      </div>
-                    )}
-                    {isUpcoming && (
-                      <div className="absolute top-3 right-3">
-                        <BrandBadge variant="orange" className="text-xs font-bold shadow-sm">예정</BrandBadge>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-5 flex flex-col flex-1">
-                    {course.category && (
-                      <BrandBadge variant="blue" className="mb-2 self-start">{course.category}</BrandBadge>
-                    )}
-                    <BrandCardTitle className="mb-2 line-clamp-2">{course.title}</BrandCardTitle>
-                    <p className="text-xs text-muted-foreground mb-3">강사: {course.instructor?.name ?? '-'}</p>
-
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
-                      {course.learningPeriodDays && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" /> {course.learningPeriodDays}일
-                        </span>
-                      )}
-                      {!isUpcoming && (
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" /> {course._count?.enrollments ?? 0}명 수강 중
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-auto flex items-center justify-between">
-                      {isUpcoming ? (
-                        <span className="text-sm font-medium text-muted-foreground">가격 미정</span>
-                      ) : (
-                        <PriceDisplay
-                          price={course.price ?? 0}
-                          className="text-lg font-extrabold text-brand-orange"
-                          
-                        />
-                      )}
-                      <span className={cn('text-xs font-medium', isUpcoming ? 'text-muted-foreground' : 'text-brand-blue')}>
-                        {isUpcoming ? '준비 중' : '상세 보기 →'}
-                      </span>
-                    </div>
-                  </div>
-                </BrandCard>
-              );
-
-              return isUpcoming ? (
-                <div key={course.id} className="cursor-default">{card}</div>
-              ) : (
-                <Link key={course.id} href={`/courses/${course.slug ?? course.id}`}>{card}</Link>
-              );
-            })}
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
+        <section className="py-12 bg-white">
+          <div className="max-w-5xl mx-auto px-4">
+            <CoursesListClient />
+          </div>
+        </section>
+      </div>
     </>
   );
 }

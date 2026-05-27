@@ -103,8 +103,9 @@ export DATABASE_URL='postgresql://academiqdb_09uu_user:...@dpg-....render.com:54
 
 ### 2-3b. Web Service 일시중지 해제
 
-`https://academiq-backend.onrender.com` 이 **Service Suspended** 이면 배포·DB 연결과 무관하게 API가 응답하지 않습니다.  
-Render 대시보드 → `academiq-backend` → **Resume** (또는 Suspend 해제).
+`https://academiq-backend.onrender.com` 이 **Service Suspended** 이면 API가 응답하지 않습니다.  
+운영 Live 서비스는 **`academiplatform`** (`https://academiplatform.onrender.com`) — Vercel `NEXT_PUBLIC_API_URL`을 여기로 맞추세요.  
+`academiq-backend`를 다시 쓰려면 Render 대시보드에서 **Resume** 후 URL을 통일합니다.
 
 ### 2-4. 환경변수 설정
 
@@ -209,10 +210,12 @@ Vercel 대시보드 → Project → `Settings` → `Environment Variables`:
 
 | 키 | 값 |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | `https://academiq-backend.onrender.com/api` |
-| `NEXT_PUBLIC_SITE_URL` | `https://academiq.vercel.app` |
+| `NEXT_PUBLIC_API_URL` | `https://academiplatform.onrender.com/api` |
+| `NEXT_PUBLIC_SITE_URL` | `https://academiq.life` (또는 Vercel 기본 URL) |
 
-> Render 백엔드 도메인은 배포 후 Render 대시보드에서 확인
+> **Live 백엔드:** Render Web Service **`academiplatform`** (`https://academiplatform.onrender.com`).  
+> `academiq-backend`가 **Service Suspended**이면 API가 503 HTML을 반환해 시험·교육과정 목록이 비어 보입니다.  
+> 코드에 legacy URL 자동 대체가 있으나, Vercel env는 위 Live URL로 맞추는 것을 권장합니다.
 
 ### 3-3. 배포
 
@@ -244,7 +247,7 @@ FRONTEND_URL=https://academiq.vercel.app
 | 타입 | 이름 | 값 | 프록시 |
 |------|------|-----|--------|
 | `CNAME` | `@` or `www` | `cname.vercel-dns.com` | ✅ Orange |
-| `CNAME` | `api` | `academiq-backend.onrender.com` | ✅ Orange |
+| `CNAME` | `api` | `academiplatform.onrender.com` | ✅ Orange |
 
 ### 5-3. Vercel 커스텀 도메인
 
@@ -347,7 +350,14 @@ GitHub `Settings -> Secrets -> Actions`:
 - `RENDER_KEEPALIVE_URL`: `https://<backend-service>.onrender.com/api/health`  
   (프론트/Vercel URL이 아닌 **Render Web Service** URL)
 
-시크릿이 없으면 기본값 `https://academiq-backend.onrender.com/api/health`를 사용합니다.
+시크릿이 없으면 기본값 `https://academiplatform.onrender.com/api/health`를 사용합니다.  
+워크플로 `curl --max-time`은 **90초** (Free tier 콜드스타트 대응).
+
+### 9-6. Free tier 콜드스타트 (~50초)와 프론트 UX
+
+- Render Free Web Service는 유휴 ~15분 후 슬립 → 첫 API 요청에 **50~73초** 걸릴 수 있음.
+- 5분 keepalive는 **빈도 감소**용이며, 첫 방문 직후 슬립이면 한 번은 지연 가능.
+- `/exam`, `/courses`는 클라이언트 fetch(최대 90초) + 「무료 서버 준비 중, 최대 약 50초」 안내를 표시함.
 
 Render Web Service 환경변수 (선택):
 
