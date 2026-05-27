@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          TARGET_URL="${KEEPALIVE_URL:-https://academiq-backend.onrender.com/api/health}"
+          TARGET_URL="${KEEPALIVE_URL:-https://academiplatform.onrender.com/api/health}"
           echo "Target: ${TARGET_URL}"
           max_attempts=4
           attempt=1
@@ -25,7 +25,7 @@ jobs:
           while [ "${attempt}" -le "${max_attempts}" ]; do
             start_ms=$(date +%s%3N)
             status_code=$(curl --location --silent --show-error --output /tmp/keepalive_response.txt \
-              --write-out "%{http_code}" --max-time 25 "${TARGET_URL}" || true)
+              --write-out "%{http_code}" --max-time 90 "${TARGET_URL}" || true)
             end_ms=$(date +%s%3N)
             latency_ms=$((end_ms - start_ms))
             body_sample=$(head -c 500 /tmp/keepalive_response.txt || true)
