@@ -8,51 +8,13 @@ import { HeroBanner, type HeroBannerData } from '@/components/hero/HeroBanner';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
 import { MarketingHighlight } from '@/components/marketing/MarketingHighlight';
 import { fetchPublicSettings } from '@/lib/public-settings';
+import { coreServiceCards } from '@/lib/core-services';
 
 export const metadata: Metadata = {
   title: 'AcademiQ — 실무 AI 교육·컨설팅',
   description:
     '기업·개인을 위한 실무형 AI 교육, 컨설팅, 업무 자동화. 학습부터 현장 적용·자격 경로까지 AcademiQ에서 시작하세요.',
 };
-
-const coreServices = [
-  {
-    title: '기업 교육',
-    desc: '직무별 맞춤 커리큘럼과 B2B 운영. 팀 단위 실무 역량을 빠르게 올립니다.',
-    href: '/services/corporate',
-    accent: 'blue' as const,
-  },
-  {
-    title: '개인·실무 교육',
-    desc: '온라인·라이브 강의로 AI 활용 역량을 키우고, 업무에 바로 적용합니다.',
-    href: '/courses',
-    accent: 'orange' as const,
-  },
-  {
-    title: 'AI 컨설팅·도입',
-    desc: '진단·설계·실행까지. 조직에 맞는 AI 도입과 업무 자동화를 지원합니다.',
-    href: '/services/consulting',
-    accent: 'sky' as const,
-  },
-  {
-    title: '라이브·콘텐츠',
-    desc: '설명회·라이브 세션과 AI Tip 영상으로 최신 실무 인사이트를 제공합니다.',
-    href: '/live',
-    accent: 'green' as const,
-  },
-  {
-    title: 'AI 홈페이지',
-    desc: 'AI 기반 홈페이지 제작·운영 상담. 브랜드에 맞는 웹사이트를 설계합니다.',
-    href: '/services/ai-website',
-    accent: 'blue' as const,
-  },
-  {
-    title: '영상 제작 상담',
-    desc: '홍보·교육·마케팅 영상 기획부터 제작까지, 목적에 맞는 영상을 상담합니다.',
-    href: '/services/video-production',
-    accent: 'orange' as const,
-  },
-];
 
 const steps = [
   { num: '01', iconSrc: '/icons/icon-edu.svg', label: '진단·상담', desc: '목표·현황 파악 및 맞춤 경로 안내' },
@@ -151,7 +113,7 @@ export default async function HomePage() {
             <div>
               <h2 className="text-3xl font-extrabold text-brand-blue">핵심 서비스</h2>
               <p className="text-caption mt-1">
-                기업·개인·컨설팅·콘텐츠 — 필요한 경로를 바로 선택하세요
+                기업·개인·자격증·Harness — 필요한 경로를 바로 선택하세요
               </p>
             </div>
             <Link
@@ -162,7 +124,7 @@ export default async function HomePage() {
             </Link>
           </header>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {coreServices.map((service) => (
+            {coreServiceCards.map((service) => (
               <Link key={service.title} href={service.href} className="block h-full">
                 <BrandCard
                   accent={service.accent}
@@ -302,7 +264,7 @@ export default async function HomePage() {
                 variant="outline"
                 className="min-h-11 border-2 border-white text-white bg-transparent hover:bg-white/10 hover:text-white focus-visible:ring-white"
               >
-                교육과정 보기
+                자격증교육과정 보기
               </BrandButton>
             </Link>
             <Link href="/exam">

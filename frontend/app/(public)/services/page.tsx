@@ -17,6 +17,7 @@ import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PageShell } from '@/components/layout/PageShell';
 import { Section } from '@/components/layout/Section';
+import { coreServiceCards } from '@/lib/core-services';
 
 export const metadata: Metadata = {
   title: '핵심 서비스',
@@ -24,22 +25,39 @@ export const metadata: Metadata = {
     '기업 교육, 개인 실무 교육, AI 컨설팅·도입, 라이브·콘텐츠, AI 홈페이지·영상 제작까지. AcademiQ 핵심 서비스를 한 페이지에서 확인하세요.',
 };
 
+const isoCard = coreServiceCards[0];
+const harnessCard = coreServiceCards[1];
+
 const services = [
   {
     icon: Award,
     accent: 'orange' as const,
     iconBg: 'bg-brand-orange-subtle',
     iconColor: 'text-brand-orange',
-    title: 'ISO/IEC 17024 AI 국제자격증',
-    summary:
-      '국제 표준 기반 AI 개인 자격 인증 체계. 교육·시험·자격 경로를 AcademiQ에서 한 번에 연결합니다.',
+    title: isoCard.title,
+    summary: isoCard.desc,
     bullets: [
       '자격증 개요·취득 이점 안내',
       '자격증 교육과정 수강 → 시험 접수 연계',
       '라이브 설명회·AI Tip 콘텐츠로 학습 지원',
     ],
-    href: '/about/qualification',
+    href: isoCard.href,
     cta: '국제자격증 소개 보기',
+  },
+  {
+    icon: Workflow,
+    accent: 'blue' as const,
+    iconBg: 'bg-brand-blue-subtle',
+    iconColor: 'text-brand-blue',
+    title: harnessCard.title,
+    summary: harnessCard.desc,
+    bullets: [
+      '기업 AX 전환·Agent Skills 실무 설계',
+      '오프라인·온라인 실시간 워크숍 운영',
+      'ISO/IEC 17024 자격 교육과정과 별도 프로그램',
+    ],
+    href: harnessCard.href,
+    cta: 'Harness 프로그램 보기',
   },
   {
     icon: Building2,
