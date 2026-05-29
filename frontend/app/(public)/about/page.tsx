@@ -6,7 +6,7 @@ import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '소개',
+  title: '국제자격증소개',
   description: 'ISO/IEC 17024 기반 AI 자격 교육 기관 AcademiQ를 소개합니다.',
 };
 
@@ -74,7 +74,7 @@ export default function AboutPage() {
       <section className="bg-hero-gradient py-16 border-b">
         <PageShell size="content" flush className="text-center">
           <h1 className="text-4xl font-extrabold mb-4 text-brand-blue">
-            AcademiQ <span className="text-brand-orange">소개</span>
+            AcademiQ <span className="text-brand-orange">국제자격증소개</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             ISO/IEC 17024 국제 표준 기반의 AI 자격 교육 플랫폼.<br />

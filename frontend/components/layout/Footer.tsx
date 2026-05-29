@@ -1,30 +1,32 @@
 import Link from 'next/link';
 import { LogoHorizontal } from './Logo';
 import { Mail } from 'lucide-react';
+import { FooterRoleEntry } from './FooterRoleEntry';
 
 const footerLinks = {
   서비스: [
     { label: '핵심 서비스 한눈에', href: '/services' },
+    { label: 'ISO/IEC 17024 AI 국제자격증', href: '/about/qualification' },
     { label: '기업 교육', href: '/services/corporate' },
+    { label: 'Harness 기업 교육', href: '/courses/harness-program' },
     { label: 'AI 컨설팅·도입', href: '/services/consulting' },
     { label: 'AI 홈페이지', href: '/services/ai-website' },
     { label: '영상 제작 상담', href: '/services/video-production' },
-    { label: '교육과정 보기', href: '/courses' },
     { label: '라이브·콘텐츠', href: '/live' },
   ],
-  소개: [
+  국제자격증소개: [
     { label: 'ISO/IEC 17024 자격증 개요', href: '/about/qualification' },
     { label: '자격 취득 이점', href: '/about/benefits' },
     { label: '활용 분야', href: '/about/fields' },
     { label: '기관 소개', href: '/about/organization' },
     { label: '대표 강사 소개', href: '/about/instructors' },
   ],
-  교육과정: [
-    { label: '과정 목록', href: '/courses' },
-    { label: '수강 신청', href: '/courses#enroll' },
-    { label: 'AI Tip 영상', href: '/shorts' },
+  자격증교육과정: [
+    { label: '자격증 과정 목록', href: '/courses' },
+    { label: '시험 접수', href: '/exam' },
     { label: '교재 구매', href: '/store/textbooks' },
     { label: '내 교재 열람', href: '/textbooks' },
+    { label: 'AI Tip 영상', href: '/shorts' },
   ],
   시험접수: [
     { label: '시험 안내', href: '/about/exam' },
@@ -96,7 +98,8 @@ export function Footer() {
               맨도롱북스 | 사업자등록번호: 706-99-02056 | 대표자: 전미헌
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4">
+            <FooterRoleEntry />
             <Link href="/terms" className="hover:text-white transition-colors">
               이용약관
             </Link>

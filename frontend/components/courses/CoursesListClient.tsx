@@ -24,6 +24,15 @@ export type PublicCourse = {
   _count?: { enrollments?: number };
 };
 
+export function isHarnessCourse(course: PublicCourse): boolean {
+  const thumb = course.thumbnailUrl ?? '';
+  if (thumb.includes('/covers/harness-')) return true;
+  const title = course.title.toLowerCase();
+  if (title.includes('harness') || title.includes('하네스')) return true;
+  const cat = (course.category ?? '').toLowerCase();
+  return cat.includes('harness') || cat.includes('하네스');
+}
+
 function parseCourses(json: unknown): PublicCourse[] {
   const data = json as { courses?: unknown };
   return Array.isArray(data?.courses) ? (data.courses as PublicCourse[]) : [];
@@ -72,14 +81,20 @@ function CoursesLoadError({
   );
 }
 
-export function CoursesListClient() {
+export function CoursesListClient({
+  excludeHarness = false,
+  emptyMessage = '현재 공개된 교육과정이 없습니다.',
+}: {
+  excludeHarness?: boolean;
+  emptyMessage?: string;
+}) {
   const { status, data: courses, elapsedSeconds, retry } = useSlowApiFetch({
     path: '/courses?limit=12',
     parse: parseCourses,
   });
 
   const loading = status === 'loading' || status === 'idle';
-  const list = courses ?? [];
+  const list = (courses ?? []).filter((c) => (excludeHarness ? !isHarnessCourse(c) : true));
 
   if (loading) {
     return <ApiWarmupNotice elapsedSeconds={elapsedSeconds} className="rounded-xl border bg-white p-10" />;
@@ -94,7 +109,7 @@ export function CoursesListClient() {
   if (list.length === 0) {
     return (
       <div className="rounded-xl border bg-white p-10 text-center text-muted-foreground">
-        현재 공개된 교육과정이 없습니다.
+        {emptyMessage}
       </div>
     );
   }

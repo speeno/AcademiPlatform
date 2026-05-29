@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
   ArrowRight,
+  Award,
   Building2,
   GraduationCap,
   Lightbulb,
@@ -24,6 +25,22 @@ export const metadata: Metadata = {
 };
 
 const services = [
+  {
+    icon: Award,
+    accent: 'orange' as const,
+    iconBg: 'bg-brand-orange-subtle',
+    iconColor: 'text-brand-orange',
+    title: 'ISO/IEC 17024 AI 국제자격증',
+    summary:
+      '국제 표준 기반 AI 개인 자격 인증 체계. 교육·시험·자격 경로를 AcademiQ에서 한 번에 연결합니다.',
+    bullets: [
+      '자격증 개요·취득 이점 안내',
+      '자격증 교육과정 수강 → 시험 접수 연계',
+      '라이브 설명회·AI Tip 콘텐츠로 학습 지원',
+    ],
+    href: '/about/qualification',
+    cta: '국제자격증 소개 보기',
+  },
   {
     icon: Building2,
     accent: 'blue' as const,
@@ -49,10 +66,10 @@ const services = [
     bullets: [
       '직무 시나리오 기반 커리큘럼',
       '결제 후 즉시 학습 시작',
-      '필요 시 자격·시험 경로 연계',
+      'ISO/IEC 17024 자격·시험 경로 연계',
     ],
     href: '/courses',
-    cta: '교육과정 둘러보기',
+    cta: '자격증교육과정 둘러보기',
   },
   {
     icon: Lightbulb,
@@ -134,17 +151,22 @@ export default function ServicesPage() {
             <span className="text-brand-orange">업무 성과</span>로 연결합니다
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            기업 교육·개인 실무 교육·AI 컨설팅·라이브 콘텐츠 — 필요한 경로를 골라 시작하세요.
+            ISO/IEC 17024 AI 국제자격증·기업 교육·AI 컨설팅·라이브 콘텐츠 — 필요한 경로를 골라 시작하세요.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/contact">
+            <Link href="/about/qualification">
               <BrandButton variant="primary" size="lg">
-                무료 상담 신청 <ArrowRight className="w-4 h-4" />
+                국제자격증 소개 <ArrowRight className="w-4 h-4" />
+              </BrandButton>
+            </Link>
+            <Link href="/contact">
+              <BrandButton variant="outline" size="lg">
+                무료 상담 신청
               </BrandButton>
             </Link>
             <Link href="/courses">
               <BrandButton variant="outline" size="lg">
-                교육과정 보기
+                자격증교육과정 보기
               </BrandButton>
             </Link>
           </div>
@@ -256,7 +278,7 @@ export default function ServicesPage() {
                 variant="outline"
                 className="min-h-11 border-2 border-white text-white bg-transparent hover:bg-white/10 hover:text-white focus-visible:ring-white"
               >
-                교육과정 보기
+                자격증교육과정 보기
               </BrandButton>
             </Link>
           </div>

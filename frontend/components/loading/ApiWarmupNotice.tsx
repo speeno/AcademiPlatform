@@ -11,7 +11,7 @@ export function ApiWarmupNotice({ elapsedSeconds, className }: ApiWarmupNoticePr
   return (
     <div className={className ?? 'text-center py-20 text-muted-foreground'}>
       <Loader2 className="w-12 h-12 mx-auto mb-3 animate-spin text-brand-blue opacity-70" />
-      <p className="text-foreground font-medium">무료 서버를 준비 중입니다.</p>
+      <p className="text-foreground font-medium">서버를 시작 중입니다.</p>
       <p className="text-sm mt-2 max-w-md mx-auto">
         첫 접속 시 <span className="font-semibold text-foreground">최대 약 50초</span> 걸릴 수 있습니다.
         잠시만 기다려 주세요.
