@@ -47,7 +47,7 @@ function sanitizeHeroSlide(slide: HeroSlide): HeroSlide {
 
 export const HARNESS_AX_HERO_SLIDE: HeroSlide = {
   id: 'default-harness-ax',
-  backgroundImage: '/covers/harness-nondev-1w.png',
+  backgroundImage: '/images/promos/hero-slide-2.png',
   overlayOpacity: 0.62,
   badge: '기업 AX 전환 · Harness·Agent Skills',
   title: '팀 단위 **AX 전환**,\nHarness로\n실무 자동화를 설계하세요',
@@ -68,7 +68,7 @@ export const HARNESS_AX_HERO_SLIDE: HeroSlide = {
 export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'default-1',
-    backgroundImage: '/images/promos/hero-promo-corporate.webp',
+    backgroundImage: '/images/promos/hero-slide-1.png',
     overlayOpacity: 0.58,
     badge: '기업과 개인을 위한 실무형 AI 교육·컨설팅 플랫폼',
     title: 'AI를 배우는 것을 넘어,\n실제 **업무 성과**로\n연결하세요',
@@ -77,7 +77,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     primaryButton: { text: '무료 상담 신청', href: '/contact' },
     secondaryButton: { text: '교육과정 보기', href: '/courses' },
     promoCard: {
-      image: '/images/promos/hero-promo-corporate.webp',
+      image: '/images/promos/hero-slide-1.png',
       title: '기업·개인 맞춤 실무 교육',
       description: '직무별 커리큘럼과 컨설팅으로 AI를 업무 성과로 연결합니다.',
       href: '/contact',
@@ -88,7 +88,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
   HARNESS_AX_HERO_SLIDE,
   {
     id: 'default-2',
-    backgroundImage: '/images/promos/hero-promo-corporate.webp',
+    backgroundImage: '/images/promos/hero-slide-3.png',
     overlayOpacity: 0.58,
     badge: '기업 맞춤 AI 실무 교육',
     title: '임직원 AI 역량,\n지금 **업그레이드**',
@@ -96,7 +96,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     primaryButton: { text: '도입 상담하기', href: '/contact' },
     secondaryButton: null,
     promoCard: {
-      image: '/images/promos/hero-promo-corporate.webp',
+      image: '/images/promos/hero-slide-3.png',
       title: '기업교육 B2B 프로그램',
       description: '현업 적용 중심의 팀 단위 실무 교육을 제공합니다.',
       href: '/contact',
@@ -106,7 +106,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
   },
   {
     id: 'default-3',
-    backgroundImage: '/images/promos/hero-promo-certification.webp',
+    backgroundImage: '/images/promos/hero-slide-4.png',
     overlayOpacity: 0.62,
     badge: '공신력 있는 자격 경로 (ISO/IEC 17024)',
     title: '학습과 성과를\n**자격**으로\n증명하세요',
