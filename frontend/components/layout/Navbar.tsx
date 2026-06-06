@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Menu, X, LogIn, LogOut } from 'lucide-react';
+import { BookOpen, Menu, Shield, UserRound, X, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandButton } from '@/components/ui/brand-button';
 import { Logo } from './Logo';
@@ -23,7 +23,16 @@ export function Navbar() {
   const isAuthenticated = auth?.isLoggedIn === true;
   const userName = auth?.me?.name ?? '';
   const userEmail = auth?.me?.email ?? '';
+  const userRole = auth?.me?.role ?? '';
   const displayName = (userName || userEmail.split('@')[0] || '회원').trim();
+  const isAdmin = userRole === 'SUPER_ADMIN' || userRole === 'OPERATOR';
+  const isInstructor = userRole === 'INSTRUCTOR';
+  const roleEntry = isAdmin
+    ? { href: '/admin/dashboard', label: '관리자', Icon: Shield }
+    : isInstructor
+      ? { href: '/classroom/instructor/cms', label: '강사 CMS', Icon: UserRound }
+      : { href: '/classroom', label: '내 강의실', Icon: BookOpen };
+  const RoleEntryIcon = roleEntry.Icon;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -48,15 +57,15 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-[72px] items-center gap-3">
           <div className="flex items-center shrink-0">
-            <div className="lg:hidden">
+            <div className="xl:hidden">
               <Logo size="xs" />
             </div>
-            <div className="hidden lg:block">
-              <Logo size="md" />
+            <div className="hidden xl:block">
+              <Logo size="sm" />
             </div>
           </div>
 
-          <nav className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-1">
+          <nav className="hidden xl:flex min-w-0 flex-1 items-center justify-center gap-0.5">
             {publicNavItems.map((item) => (
               <Link key={item.href} href={item.href} className={publicNavLinkClass}>
                 <span>{item.label}</span>
@@ -65,7 +74,7 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="hidden shrink-0 lg:flex items-center gap-2">
+          <div className="hidden shrink-0 xl:flex items-center gap-2">
             {authLoading ? (
               <Button
                 variant="outline"
@@ -77,7 +86,17 @@ export function Navbar() {
               </Button>
             ) : isAuthenticated ? (
               <>
-                <span className="max-w-[7rem] truncate px-1 text-sm font-semibold text-foreground xl:max-w-[10rem]">
+                <Link href={roleEntry.href}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-brand-blue text-brand-blue hover:bg-brand-blue-subtle"
+                  >
+                    <RoleEntryIcon className="w-4 h-4 mr-1" />
+                    {roleEntry.label}
+                  </Button>
+                </Link>
+                <span className="max-w-[5.5rem] truncate px-1 text-xs font-semibold text-foreground 2xl:max-w-[9rem] 2xl:text-sm">
                   {displayName}님
                 </span>
                 <Button
@@ -106,7 +125,7 @@ export function Navbar() {
           </div>
 
           <button
-            className="ml-auto lg:hidden min-h-12 min-w-12 p-2 rounded-md text-muted-foreground hover:bg-brand-blue-subtle hover:text-brand-blue"
+            className="ml-auto xl:hidden min-h-12 min-w-12 p-2 rounded-md text-muted-foreground hover:bg-brand-blue-subtle hover:text-brand-blue"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
             aria-expanded={mobileOpen}
@@ -122,7 +141,7 @@ export function Navbar() {
       {mobileOpen && (
         <div
           id="mobile-nav-panel"
-          className="lg:hidden border-t border-border bg-background px-4 py-3 space-y-1 max-h-[75vh] overflow-y-auto"
+          className="xl:hidden border-t border-border bg-background px-4 py-3 space-y-1 max-h-[75vh] overflow-y-auto"
         >
           {publicNavItems.map((item) => (
             <Link
@@ -142,6 +161,12 @@ export function Navbar() {
             ) : isAuthenticated ? (
               <>
                 <div className="px-2 text-sm text-muted-foreground">{displayName}님 로그인됨</div>
+                <Link href={roleEntry.href} onClick={() => setMobileOpen(false)}>
+                  <Button variant="outline" className="w-full border-brand-blue text-brand-blue">
+                    <RoleEntryIcon className="w-4 h-4 mr-1" />
+                    {roleEntry.label}
+                  </Button>
+                </Link>
                 <Button variant="outline" className="w-full border-brand-blue text-brand-blue" onClick={handleLogout}>
                   <LogOut className="w-4 h-4 mr-1" />
                   로그아웃

@@ -60,6 +60,29 @@ export class NotifyService {
     });
   }
 
+  async sendExamResult(
+    to: string,
+    userName: string,
+    examName: string,
+    totalScore: number,
+    maxScore: number,
+    resultStatus: string,
+  ) {
+    const passed = resultStatus === 'PASSED';
+    await this.send({
+      type: 'email',
+      to,
+      subject: `[AcademiQ] ${examName} 시험 결과가 공개되었습니다.`,
+      body: `
+        <p>${userName}님, 안녕하세요.</p>
+        <p><strong>${examName}</strong> 시험 결과가 공개되었습니다.</p>
+        <p>점수: <strong>${totalScore} / ${maxScore}</strong></p>
+        <p>결과: <strong>${passed ? '합격' : '불합격'}</strong></p>
+        <p>자세한 내용은 마이페이지에서 확인해 주세요.</p>
+      `,
+    });
+  }
+
   async sendPaymentConfirm(
     to: string,
     userName: string,

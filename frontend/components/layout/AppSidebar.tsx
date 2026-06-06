@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
-import { Logo } from './Logo';
+import { Logo, LogoHorizontal } from './Logo';
 import { cn } from '@/lib/utils';
 
 export interface SidebarNavItem {
@@ -108,9 +108,25 @@ export function AppSidebar({
 
   return (
     <aside className={containerClasses} style={style}>
-      <div className={cn('p-4 border-b', dividerClasses)}>
-        <Logo size="sm" href={homeHref} />
-        {eyebrow ? <p className={cn('text-xs mt-1 ml-0.5', eyebrowClasses)}>{eyebrow}</p> : null}
+      <div className={cn('border-b', dividerClasses, isDark ? 'px-4 py-3' : 'p-4')}>
+        {isDark ? (
+          <Link
+            href={homeHref ?? '/admin/dashboard'}
+            onClick={handleNavigate}
+            className="block w-full min-w-0 hover:opacity-95 transition-opacity"
+          >
+            <div className="rounded-2xl bg-white px-3 py-2.5 shadow-[0_4px_14px_rgba(0,0,0,0.12)]">
+              <LogoHorizontal height={38} fluid />
+            </div>
+          </Link>
+        ) : (
+          <Logo size="sm" href={homeHref ?? '/'} onClick={handleNavigate} />
+        )}
+        {eyebrow ? (
+          <p className={cn('text-xs mt-1.5', isDark ? 'font-medium' : 'ml-0.5', eyebrowClasses)}>
+            {eyebrow}
+          </p>
+        ) : null}
       </div>
 
       <nav className="flex-1 py-4 overflow-y-auto">

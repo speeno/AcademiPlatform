@@ -18,6 +18,7 @@ interface LogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
   href?: string;
+  onClick?: () => void;
 }
 
 const sizeMap = {
@@ -32,6 +33,7 @@ export function Logo({
   size = 'md',
   className,
   href = '/',
+  onClick,
 }: LogoProps) {
   const { width, height } = sizeMap[size];
   const src = variant === 'symbol' ? '/logo/logo-mark-v4.png' : '/logo/logo-main-v5.png';
@@ -52,7 +54,11 @@ export function Logo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-flex items-center hover:opacity-90 transition-opacity">
+      <Link
+        href={href}
+        onClick={onClick}
+        className="inline-flex items-center hover:opacity-90 transition-opacity"
+      >
         {logoContent}
       </Link>
     );
@@ -66,12 +72,15 @@ export function LogoHorizontal({
   className,
   height = 52,
   showSlogan = true,
+  fluid = false,
 }: {
   className?: string;
   height?: number;
   showSlogan?: boolean;
+  /** 사이드바 등 좁은 영역 — 컨테이너 너비에 맞춰 비율 유지 */
+  fluid?: boolean;
 }) {
-  const ratio = showSlogan ? 930 / 221 : 930 / 221;
+  const ratio = 930 / 221;
   const width = Math.round(ratio * height);
 
   return (
@@ -80,8 +89,8 @@ export function LogoHorizontal({
       alt={showSlogan ? 'AcademiQ AI & Certification Training' : 'AcademiQ'}
       width={width}
       height={height}
-      className={cn('object-contain shrink-0', className)}
-      style={{ width: `${width}px`, height: `${height}px` }}
+      className={cn('object-contain shrink-0', fluid && 'h-auto w-full max-w-full', className)}
+      style={fluid ? undefined : { width: `${width}px`, height: `${height}px` }}
       unoptimized
     />
   );

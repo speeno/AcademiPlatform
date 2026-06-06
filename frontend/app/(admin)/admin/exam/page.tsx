@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Pencil, Plus, Users } from 'lucide-react';
+import { FileQuestion, Pencil, Plus, ShieldCheck, SquarePen, Users } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
@@ -42,6 +42,14 @@ interface Session {
   priceValidFrom?: string | null;
   priceValidUntil?: string | null;
   capacity: number | null;
+  examMode?: string;
+  examWindowStart?: string | null;
+  examWindowEnd?: string | null;
+  durationMinutes?: number | null;
+  lateEntryMinutes?: number;
+  requireFullscreen?: boolean;
+  requireWebcam?: boolean;
+  passingScore?: number;
   _count: { applications: number };
 }
 
@@ -54,6 +62,14 @@ type SessionForm = {
   place: string;
   capacity: string;
   status: string;
+  examMode: string;
+  examWindowStart: string;
+  examWindowEnd: string;
+  durationMinutes: string;
+  lateEntryMinutes: string;
+  requireFullscreen: boolean;
+  requireWebcam: boolean;
+  passingScore: string;
   currency: string;
   basePrice: string;
   reason: string;
@@ -69,6 +85,14 @@ function buildDefaultForm(): SessionForm {
     place: '',
     capacity: '',
     status: 'UPCOMING',
+    examMode: 'OFFLINE',
+    examWindowStart: '',
+    examWindowEnd: '',
+    durationMinutes: '60',
+    lateEntryMinutes: '0',
+    requireFullscreen: false,
+    requireWebcam: false,
+    passingScore: '60',
     currency: 'KRW',
     basePrice: '',
     reason: '',
@@ -135,6 +159,14 @@ export default function AdminExamPage() {
       place: session.place ?? '',
       capacity: String(session.capacity ?? ''),
       status: session.status,
+      examMode: session.examMode ?? 'OFFLINE',
+      examWindowStart: session.examWindowStart?.slice(0, 16) ?? '',
+      examWindowEnd: session.examWindowEnd?.slice(0, 16) ?? '',
+      durationMinutes: String(session.durationMinutes ?? 60),
+      lateEntryMinutes: String(session.lateEntryMinutes ?? 0),
+      requireFullscreen: !!session.requireFullscreen,
+      requireWebcam: !!session.requireWebcam,
+      passingScore: String(session.passingScore ?? 60),
       currency: session.currency ?? 'KRW',
       basePrice: String(unifiedAmount),
       reason: '',
@@ -155,6 +187,14 @@ export default function AdminExamPage() {
         place: form.place || null,
         capacity: form.capacity ? Number(form.capacity) : undefined,
         status: form.status,
+        examMode: form.examMode,
+        examWindowStart: form.examWindowStart || null,
+        examWindowEnd: form.examWindowEnd || null,
+        durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null,
+        lateEntryMinutes: Number(form.lateEntryMinutes || 0),
+        requireFullscreen: form.requireFullscreen,
+        requireWebcam: form.requireWebcam,
+        passingScore: Number(form.passingScore || 60),
         fee: unifiedAmount,
       };
 
@@ -244,6 +284,16 @@ export default function AdminExamPage() {
       className: 'w-20',
     },
     {
+      key: 'mode',
+      header: '방식',
+      cell: (s) => (
+        <BrandBadge variant={s.examMode === 'ONLINE' ? 'blue' : 'default'} className="text-xs">
+          {s.examMode === 'ONLINE' ? '온라인' : s.examMode === 'HYBRID' ? '혼합' : '오프라인'}
+        </BrandBadge>
+      ),
+      className: 'w-20',
+    },
+    {
       key: 'count',
       header: '접수자',
       cell: (s) => (
@@ -271,16 +321,27 @@ export default function AdminExamPage() {
       key: 'actions',
       header: '관리',
       cell: (s) => (
-        <button
-          type="button"
-          onClick={() => openEdit(s)}
-          className="rounded p-1.5 hover:bg-muted"
-          aria-label="회차 수정"
-        >
-          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-1">
+          <Link href={`/admin/exam/${s.id}/paper`} className="rounded p-1.5 hover:bg-muted" aria-label="시험지">
+            <FileQuestion className="h-3.5 w-3.5 text-brand-blue" />
+          </Link>
+          <Link href={`/admin/exam/${s.id}/proctor`} className="rounded p-1.5 hover:bg-muted" aria-label="감독">
+            <ShieldCheck className="h-3.5 w-3.5 text-brand-blue" />
+          </Link>
+          <Link href={`/admin/exam/${s.id}/grading`} className="rounded p-1.5 hover:bg-muted" aria-label="채점">
+            <SquarePen className="h-3.5 w-3.5 text-brand-blue" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => openEdit(s)}
+            className="rounded p-1.5 hover:bg-muted"
+            aria-label="회차 수정"
+          >
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </div>
       ),
-      className: 'w-12',
+      className: 'w-24',
     },
   ];
 
@@ -323,7 +384,7 @@ export default function AdminExamPage() {
                   <label className="mb-1 block text-sm font-medium">{label}</label>
                   <input
                     type={type}
-                    value={form[key as keyof SessionForm]}
+                    value={String(form[key as keyof SessionForm] ?? '')}
                     onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
                     placeholder={placeholder}
                     className="w-full rounded-lg border px-3 py-2 text-sm"
@@ -344,6 +405,78 @@ export default function AdminExamPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="mt-1 space-y-4 border-t pt-4">
+                <p className="text-sm font-semibold">온라인 시험 설정</p>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">시험 방식</label>
+                  <select
+                    value={form.examMode}
+                    onChange={(e) => setForm((prev) => ({ ...prev, examMode: e.target.value }))}
+                    className="w-full rounded-lg border bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="OFFLINE">오프라인</option>
+                    <option value="ONLINE">온라인</option>
+                    <option value="HYBRID">혼합</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">응시 시작</label>
+                    <input
+                      type="datetime-local"
+                      value={form.examWindowStart}
+                      onChange={(e) => setForm((prev) => ({ ...prev, examWindowStart: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">응시 종료</label>
+                    <input
+                      type="datetime-local"
+                      value={form.examWindowEnd}
+                      onChange={(e) => setForm((prev) => ({ ...prev, examWindowEnd: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">제한 시간(분)</label>
+                    <input
+                      type="number"
+                      value={form.durationMinutes}
+                      onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">합격 기준(%)</label>
+                    <input
+                      type="number"
+                      value={form.passingScore}
+                      onChange={(e) => setForm((prev) => ({ ...prev, passingScore: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.requireFullscreen}
+                      onChange={(e) => setForm((prev) => ({ ...prev, requireFullscreen: e.target.checked }))}
+                    />
+                    전체화면 필수
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.requireWebcam}
+                      onChange={(e) => setForm((prev) => ({ ...prev, requireWebcam: e.target.checked }))}
+                    />
+                    웹캠 스냅샷 필수
+                  </label>
+                </div>
               </div>
 
               <div className="mt-1 space-y-4 border-t pt-4">

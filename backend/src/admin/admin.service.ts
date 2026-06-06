@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import {
   normalizeShortsYoutubeItem,
   regenerateShortsGalleryItems,
@@ -20,6 +21,16 @@ import {
 } from '@prisma/client';
 import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
 import { NoticeAttachmentService } from '../notices/notice-attachment.service';
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
+
+function generateTemporaryPassword(): string {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let suffix = '';
+  for (let i = 0; i < 8; i += 1) {
+    suffix += chars[randomInt(chars.length)];
+  }
+  return `Aq${suffix}`;
+}
 
 @Injectable()
 export class AdminService {
@@ -153,6 +164,56 @@ export class AdminService {
     }
 
     return this.prisma.user.update({ where: { id: userId }, data: { role } });
+  }
+
+  async resetUserPassword(
+    userId: string,
+    dto: ResetUserPasswordDto,
+    actor: { id: string; role: UserRole },
+  ) {
+    if (actor.id === userId) {
+      throw new ForbiddenException('본인 비밀번호는 여기서 초기화할 수 없습니다.');
+    }
+
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, role: true },
+    });
+    if (!target) throw new NotFoundException('회원을 찾을 수 없습니다.');
+
+    if (
+      target.role === UserRole.SUPER_ADMIN &&
+      actor.role !== UserRole.SUPER_ADMIN
+    ) {
+      throw new ForbiddenException(
+        '최고관리자 비밀번호는 최고관리자만 초기화할 수 있습니다.',
+      );
+    }
+
+    const plainPassword = dto.password?.trim() || generateTemporaryPassword();
+    const passwordHash = await bcrypt.hash(plainPassword, 12);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          userId: actor.id,
+          action: 'USER_PASSWORD_RESET',
+          targetType: 'User',
+          targetId: userId,
+          detail: { targetEmail: target.email, targetName: target.name },
+        },
+      }),
+    ]);
+
+    return {
+      userId: target.id,
+      email: target.email,
+      temporaryPassword: plainPassword,
+    };
   }
 
   /* 공지사항 */

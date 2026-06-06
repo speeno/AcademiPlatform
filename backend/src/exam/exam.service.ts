@@ -288,6 +288,12 @@ export class ExamService {
       roundName: true,
       examAt: true,
       place: true,
+      examMode: true,
+      examWindowStart: true,
+      examWindowEnd: true,
+      durationMinutes: true,
+      requireFullscreen: true,
+      requireWebcam: true,
       fee: true,
       basePrice: true,
       salePrice: true,
@@ -308,9 +314,31 @@ export class ExamService {
       referrerCode: true,
       paymentId: true,
       paymentStatus: true,
+      examEligibility: true,
       appliedAt: true,
       updatedAt: true,
       examSession: { select: sessionSelect },
+      attempts: {
+        select: {
+          id: true,
+          status: true,
+          startedAt: true,
+          expiresAt: true,
+          submittedAt: true,
+          result: {
+            select: {
+              id: true,
+              status: true,
+              totalScore: true,
+              maxScore: true,
+              percentage: true,
+              publishedAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
     } as const;
 
     const linked = await this.prisma.examApplication.findMany({
@@ -358,6 +386,7 @@ export class ExamService {
         examSession: session
           ? { ...session, fee: displayFee ?? session.fee, displayFee }
           : session,
+        attempt: app.attempts[0] ?? null,
         depositAccount: this.resolveDepositAccount(
           app.formJson,
           app.referrerCode,
@@ -501,7 +530,13 @@ export class ExamService {
   }
 
   private normalizeSessionData(data: any) {
-    const dateFields = ['examAt', 'applyStartAt', 'applyEndAt'] as const;
+    const dateFields = [
+      'examAt',
+      'applyStartAt',
+      'applyEndAt',
+      'examWindowStart',
+      'examWindowEnd',
+    ] as const;
     const result = { ...data };
     for (const field of dateFields) {
       if (typeof result[field] === 'string' && result[field]) {
@@ -513,6 +548,11 @@ export class ExamService {
       result.capacity = Number(result.capacity) || null;
     if (result.basePrice !== undefined && typeof result.basePrice === 'string')
       result.basePrice = Number(result.basePrice);
+    for (const field of ['durationMinutes', 'lateEntryMinutes', 'passingScore']) {
+      if (result[field] !== undefined && result[field] !== null && result[field] !== '') {
+        result[field] = Number(result[field]);
+      }
+    }
     return result;
   }
 
@@ -533,6 +573,29 @@ export class ExamService {
           idPhotoFileName: true,
           idPhotoMimeType: true,
           idPhotoSize: true,
+          examEligibility: true,
+          attempts: {
+            select: {
+              id: true,
+              status: true,
+              startedAt: true,
+              expiresAt: true,
+              submittedAt: true,
+              warningCount: true,
+              result: {
+                select: {
+                  id: true,
+                  status: true,
+                  totalScore: true,
+                  maxScore: true,
+                  percentage: true,
+                  publishedAt: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
           user: { select: { id: true, name: true, email: true, phone: true } },
         },
       }),
@@ -544,6 +607,7 @@ export class ExamService {
       applications: applications.map((application) => ({
         ...application,
         hasIdPhoto: (application.idPhotoSize ?? 0) > 0,
+        attempt: application.attempts[0] ?? null,
       })),
       total,
       page,

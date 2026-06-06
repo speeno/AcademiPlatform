@@ -20,6 +20,7 @@ import {
 import { AdminService } from './admin.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 
 @Roles(UserRole.OPERATOR)
 @Controller('admin')
@@ -58,6 +59,15 @@ export class AdminController {
     @CurrentUser() actor: { id: string; role: UserRole },
   ) {
     return this.adminService.updateUserRole(id, role, actor);
+  }
+
+  @Post('users/:id/reset-password')
+  resetUserPassword(
+    @Param('id') id: string,
+    @Body() dto: ResetUserPasswordDto,
+    @CurrentUser() actor: { id: string; role: UserRole },
+  ) {
+    return this.adminService.resetUserPassword(id, dto, actor);
   }
 
   /* 공지사항 */

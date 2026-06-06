@@ -26,6 +26,7 @@ import { QnaModule } from './qna/qna.module';
 import { NoticesModule } from './notices/notices.module';
 import { InstructorPostsModule } from './instructor-posts/instructor-posts.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { OnlineExamModule } from './online-exam/online-exam.module';
 
 @Module({
   controllers: [AppController],
@@ -39,6 +40,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     MediaModule,
     TextbookModule,
     ExamModule,
+    OnlineExamModule,
     PaymentModule,
     IntroModule,
     NotifyModule,

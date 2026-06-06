@@ -27,6 +27,7 @@ export default function AdminUsersPage() {
   const [myRole, setMyRole] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [resettingPassword, setResettingPassword] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -90,6 +91,53 @@ export default function AdminUsersPage() {
     } catch { /* ignore */ } finally { setUpdatingRole(null); }
   };
 
+  const handlePasswordReset = async (user: User) => {
+    const passwordLocked =
+      myId === user.id ||
+      (user.role === 'SUPER_ADMIN' && myRole !== 'SUPER_ADMIN');
+    if (passwordLocked) return;
+
+    if (!window.confirm(`${user.name}(${user.email}) 회원의 비밀번호를 초기화할까요?`)) {
+      return;
+    }
+
+    const customPassword = window.prompt(
+      '새 비밀번호(8자 이상, 영문+숫자). 비우면 임시 비밀번호가 자동 생성됩니다.',
+      '',
+    );
+    if (customPassword === null) return;
+
+    setResettingPassword(user.id);
+    try {
+      const body = customPassword.trim()
+        ? { password: customPassword.trim() }
+        : {};
+      const res = await apiFetchWithAuth(`/admin/users/${user.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = typeof err?.message === 'string'
+          ? err.message
+          : Array.isArray(err?.message)
+            ? err.message.join(', ')
+            : '비밀번호 초기화에 실패했습니다.';
+        window.alert(msg);
+        return;
+      }
+      const data = await res.json();
+      window.alert(
+        `비밀번호가 초기화되었습니다.\n\n회원: ${user.email}\n새 비밀번호: ${data.temporaryPassword}\n\n안전한 채널로 전달 후 로그인 시 변경을 안내해 주세요.`,
+      );
+    } catch {
+      window.alert('비밀번호 초기화에 실패했습니다.');
+    } finally {
+      setResettingPassword(null);
+    }
+  };
+
   const columns: DataTableColumn<User>[] = [
     { key: 'name', header: '이름', cell: (u) => <span className="font-medium">{u.name}</span> },
     { key: 'email', header: '이메일', cell: (u) => <span className="text-xs text-muted-foreground">{u.email}</span>, hideOnMobile: true },
@@ -127,16 +175,32 @@ export default function AdminUsersPage() {
     { key: 'createdAt', header: '가입일', cell: (u) => <span className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString('ko-KR')}</span>, hideOnMobile: true },
     {
       key: 'actions', header: '관리', cell: (u) => (
-        <select
-          value={u.status}
-          disabled={updatingStatus === u.id}
-          onChange={(e) => handleStatusChange(u.id, e.target.value)}
-          className="text-xs border rounded px-2 py-1 bg-white"
-        >
-          <option value="ACTIVE">정상</option>
-          <option value="DORMANT">휴면</option>
-          <option value="SUSPENDED">정지</option>
-        </select>
+        <div className="flex flex-col gap-1.5 min-w-[7.5rem]">
+          <select
+            value={u.status}
+            disabled={updatingStatus === u.id}
+            onChange={(e) => handleStatusChange(u.id, e.target.value)}
+            className="text-xs border rounded px-2 py-1 bg-white"
+          >
+            <option value="ACTIVE">정상</option>
+            <option value="DORMANT">휴면</option>
+            <option value="SUSPENDED">정지</option>
+          </select>
+          <BrandButton
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-[11px] whitespace-nowrap"
+            disabled={
+              resettingPassword === u.id ||
+              myId === u.id ||
+              (u.role === 'SUPER_ADMIN' && myRole !== 'SUPER_ADMIN')
+            }
+            loading={resettingPassword === u.id}
+            onClick={() => handlePasswordReset(u)}
+          >
+            비밀번호 초기화
+          </BrandButton>
+        </div>
       ),
     },
   ];

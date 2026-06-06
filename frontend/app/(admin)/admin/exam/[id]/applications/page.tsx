@@ -26,6 +26,8 @@ interface Application {
   formJson?: Record<string, any>;
   hasIdPhoto?: boolean;
   idPhotoFileName?: string | null;
+  examEligibility?: string;
+  attempt?: { id: string; status: string; warningCount?: number; result?: { status: string; totalScore: number; maxScore: number; publishedAt?: string | null } | null } | null;
   user: { name: string; email: string; phone: string | null } | null;
   payment: { amount: number; paymentStatus: string } | null;
 }
@@ -72,6 +74,20 @@ export default function ExamApplicationsPage() {
     } catch { /* ignore */ } finally { setUpdatingId(null); }
   };
 
+  const handleEligibilityChange = async (appId: string, eligibility: string) => {
+    setUpdatingId(appId);
+    try {
+      const res = await fetch(`${API_BASE}/online-exam/admin/applications/${appId}/eligibility`, {
+        method: 'PATCH',
+        headers: buildAuthHeader(),
+        body: JSON.stringify({ eligibility }),
+      });
+      if (res.ok) {
+        setApps((p) => p.map((a) => a.id === appId ? { ...a, examEligibility: eligibility } : a));
+      }
+    } catch { /* ignore */ } finally { setUpdatingId(null); }
+  };
+
   const handleDownloadIdPhoto = async (app: Application) => {
     setDownloadingId(app.id);
     try {
@@ -111,11 +127,11 @@ export default function ExamApplicationsPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 border-b">
-            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '증명사진', '상태', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}</tr>
+            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '증명사진', '상태', '온라인 승인', '응시', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y">
             {apps.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-12 text-muted-foreground">접수자가 없습니다.</td></tr>
+              <tr><td colSpan={11} className="text-center py-12 text-muted-foreground">접수자가 없습니다.</td></tr>
             ) : apps.map((a) => {
               const si = statusInfo[a.status] ?? { label: a.status, variant: 'default' as const };
               return (
@@ -141,6 +157,21 @@ export default function ExamApplicationsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3"><BrandBadge variant={si.variant} className="text-xs">{si.label}</BrandBadge></td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={a.examEligibility ?? 'PENDING'}
+                      disabled={updatingId === a.id}
+                      onChange={(e) => handleEligibilityChange(a.id, e.target.value)}
+                      className="text-xs border rounded px-2 py-1 bg-white"
+                    >
+                      <option value="PENDING">대기</option>
+                      <option value="APPROVED">승인</option>
+                      <option value="REJECTED">반려</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {a.attempt ? `${a.attempt.status}${a.attempt.warningCount ? ` / 경고 ${a.attempt.warningCount}` : ''}` : '-'}
+                  </td>
                   <td className="px-4 py-3">
                     <select
                       value={a.status}

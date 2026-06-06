@@ -3,15 +3,19 @@ import type { NextRequest } from 'next/server';
 
 const protectedPrefixes = ['/classroom', '/mypage', '/textbooks', '/admin'];
 
-/** 시험 목록(/exam)은 공개, 접수 폼(/exam/:id/apply)만 로그인 필요 */
-function isExamApplyPath(pathname: string): boolean {
-  return /^\/exam\/[^/]+\/apply\/?$/.test(pathname);
+/** 시험 목록(/exam)은 공개, 접수/로비/응시실만 로그인 필요 */
+function isProtectedExamPath(pathname: string): boolean {
+  return (
+    /^\/exam\/[^/]+\/apply\/?$/.test(pathname) ||
+    /^\/exam\/[^/]+\/lobby\/?$/.test(pathname) ||
+    /^\/exam\/attempt\/[^/]+\/?$/.test(pathname)
+  );
 }
 
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const isProtected =
-    isExamApplyPath(pathname) ||
+    isProtectedExamPath(pathname) ||
     protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
   if (!isProtected) {

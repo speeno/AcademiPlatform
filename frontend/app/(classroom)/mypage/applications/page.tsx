@@ -24,14 +24,20 @@ const statusLabel: Record<string, { label: string; variant: 'default' | 'blue' |
 interface Application {
   id: string;
   status: string;
+  examEligibility?: string;
   appliedAt: string;
   referrerCode?: string | null;
   depositAccount?: DepositAccountInfo;
+  attempt?: { id: string; status: string; result?: { status: string; publishedAt?: string | null } | null } | null;
   examSession?: {
+    id: string;
     qualificationName: string;
     roundName: string;
     examAt: string;
     place: string | null;
+    examMode?: string;
+    examWindowStart?: string | null;
+    examWindowEnd?: string | null;
     fee: number;
     displayFee?: number | null;
   } | null;
@@ -119,16 +125,38 @@ export default function ApplicationsPage() {
                     {app.depositAccount && (
                       <ApplicationDepositSummary account={app.depositAccount} />
                     )}
+                    {app.attempt?.result?.publishedAt && (
+                      <div className="mt-3 rounded-lg border border-brand-blue/20 bg-brand-blue-subtle p-3 text-xs text-brand-blue">
+                        시험 결과: {app.attempt.result.status === 'PASSED' ? '합격' : '불합격'}
+                      </div>
+                    )}
                   </div>
                   {app.status === 'APPLIED' && (
-                    <BrandButton
-                      variant="danger"
-                      size="sm"
-                      loading={cancellingId === app.id}
-                      onClick={() => handleCancel(app.id)}
-                    >
-                      <XCircle className="w-3.5 h-3.5 mr-1" /> 취소
-                    </BrandButton>
+                    <div className="flex flex-col gap-2">
+                      {app.examSession?.examMode !== 'OFFLINE' && app.examEligibility === 'APPROVED' && (
+                        <BrandButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => {
+                            if (app.attempt?.status === 'IN_PROGRESS') {
+                              router.push(`/exam/attempt/${app.attempt.id}`);
+                            } else {
+                              router.push(`/exam/${app.examSession!.id}/lobby`);
+                            }
+                          }}
+                        >
+                          {app.attempt?.status === 'IN_PROGRESS' ? '응시 이어가기' : '시험 입장'}
+                        </BrandButton>
+                      )}
+                      <BrandButton
+                        variant="danger"
+                        size="sm"
+                        loading={cancellingId === app.id}
+                        onClick={() => handleCancel(app.id)}
+                      >
+                        <XCircle className="w-3.5 h-3.5 mr-1" /> 취소
+                      </BrandButton>
+                    </div>
                   )}
                 </div>
               </div>
