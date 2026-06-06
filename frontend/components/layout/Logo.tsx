@@ -21,10 +21,10 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  xs: { width: 120, height: 22 },
-  sm: { width: 161, height: 30 },
-  md: { width: 268, height: 60 },
-  lg: { width: 269, height: 50 },
+  xs: { width: 155, height: 37 },
+  sm: { width: 173, height: 41 },
+  md: { width: 210, height: 50 },
+  lg: { width: 245, height: 59 },
 };
 
 export function Logo({
@@ -34,7 +34,7 @@ export function Logo({
   href = '/',
 }: LogoProps) {
   const { width, height } = sizeMap[size];
-  const src = variant === 'symbol' ? '/logo/logo-mark-v3.png' : '/logo/logo-main-v4.png';
+  const src = variant === 'symbol' ? '/logo/logo-mark-v4.png' : '/logo/logo-main-v5.png';
   const imgWidth = variant === 'symbol' ? Math.round(height * 0.9) : width;
 
   const logoContent = (
@@ -64,18 +64,19 @@ export function Logo({
 /* ── LogoHorizontal (Footer, Auth 레이아웃) ──────────────── */
 export function LogoHorizontal({
   className,
-  height = 45,
+  height = 52,
   showSlogan = true,
 }: {
   className?: string;
   height?: number;
   showSlogan?: boolean;
 }) {
-  const width = Math.round((1024 / 288) * height);
+  const ratio = showSlogan ? 930 / 221 : 930 / 221;
+  const width = Math.round(ratio * height);
 
   return (
     <Image
-      src="/logo/logo-horizontal-v3.png"
+      src={showSlogan ? '/logo/logo-horizontal-v4.png' : '/logo/logo-main-v5.png'}
       alt={showSlogan ? 'AcademiQ AI & Certification Training' : 'AcademiQ'}
       width={width}
       height={height}
@@ -90,7 +91,7 @@ export function LogoHorizontal({
 export function LogoFull({ className }: { className?: string }) {
   return (
     <Image
-      src="/logo/logo-main-v4.png"
+      src="/logo/logo-main-v5.png"
       alt="AcademiQ AI & Certification Training"
       width={1024}
       height={288}

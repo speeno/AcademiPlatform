@@ -6,44 +6,37 @@
 
 /* ─── AcademiQ 브랜드 컬러 토큰 ─────────────────────────────────────────── */
 :root {
-  /* Primary — 로얄 블루 ("Academi" 텍스트, 졸업모자) */
-  --brand-blue:         #1A3F9C;
-  --brand-blue-dark:    #122D74;
-  --brand-blue-light:   #2E56BB;
-  --brand-blue-subtle:  #EBF0FB;
+  /* Primary — 디자인 가이드 v5 */
+  --brand-blue:         #073B78;
+  --brand-blue-dark:    #042B5C;
+  --brand-blue-light:   #1E5AA8;
+  --brand-blue-subtle:  #EAF2F8;
 
-  /* Accent — 오렌지 ("Q" 텍스트, 궤도 링, CTA) */
-  --brand-orange:        #F5A023;
-  --brand-orange-dark:   #D4850D;
-  --brand-orange-light:  #FFB830;
-  --brand-orange-subtle: #FEF3E0;
+  /* Accent — Teal */
+  --brand-orange:        #08A9A5;
+  --brand-orange-dark:   #067F7C;
+  --brand-orange-light:  #28C3BE;
+  --brand-orange-subtle: #EAF7F7;
 
-  /* Secondary — 스카이 블루 */
-  --brand-sky:        #3AADE8;
-  --brand-sky-dark:   #2280BB;
-  --brand-sky-subtle: #E8F4FB;
+  /* Secondary */
+  --brand-sky:        #0E8EC2;
+  --brand-sky-dark:   #0A6E96;
+  --brand-sky-subtle: #EAF4F8;
 
-  /* Logo gradient 중간값 */
-  --brand-green: #5AB85C;
-  --brand-lime:  #A8C840;
+  --brand-green: #58B947;
+  --brand-lime:  #7DE2D1;
 
   /* Logo 5색 그라디언트 */
-  --gradient-logo: linear-gradient(90deg,
-    #1A6EC5 0%,
-    #3AADE8 25%,
-    #5AB85C 50%,
-    #A8C840 75%,
-    #F5A023 100%
-  );
+  --gradient-logo: linear-gradient(135deg, #073B78 0%, #08A9A5 60%, #58B947 100%);
 
   /* Hero 배경 그라디언트 */
-  --gradient-hero: linear-gradient(135deg, #EBF0FB 0%, #E8F4FB 100%);
+  --gradient-hero: radial-gradient(circle at 20% 10%, rgba(125, 226, 209, 0.28), transparent 36%), #F8FAFC;
 
   /* Text */
-  --text-primary:   #111827;
-  --text-secondary: #4B5563;
-  --text-muted:     #9CA3AF;
-  --text-slogan:    #6B7280;
+  --text-primary:   #102033;
+  --text-secondary: #536171;
+  --text-muted:     #66778A;
+  --text-slogan:    #536171;
 
   /* shadcn/ui 변수 — AcademiQ 브랜드로 오버라이드 */
   --background: oklch(1 0 0);
@@ -54,7 +47,7 @@
   --popover-foreground: oklch(0.14 0.02 264);
 
   /* Primary: 로얄 블루 #1A3F9C */
-  --primary: oklch(0.37 0.17 264);
+  --primary: oklch(0.36 0.14 252);
   --primary-foreground: oklch(1 0 0);
 
   /* Secondary: 연한 배경 계열 */
@@ -66,7 +59,7 @@
   --muted-foreground: oklch(0.55 0 0);
 
   /* Accent: 오렌지 #F5A023 */
-  --accent: oklch(0.73 0.16 56);
+  --accent: oklch(0.68 0.13 201);
   --accent-foreground: oklch(1 0 0);
 
   /* Destructive */
@@ -74,14 +67,14 @@
 
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.37 0.17 264);
+  --ring: oklch(0.68 0.13 201);
 
   /* Chart — 로고 그라디언트 5색 */
-  --chart-1: oklch(0.45 0.16 264);  /* Deep Blue  #1A6EC5 */
-  --chart-2: oklch(0.65 0.14 220);  /* Sky Blue   #3AADE8 */
-  --chart-3: oklch(0.65 0.14 145);  /* Green      #5AB85C */
-  --chart-4: oklch(0.72 0.14 120);  /* Lime       #A8C840 */
-  --chart-5: oklch(0.73 0.16 56);   /* Orange     #F5A023 */
+  --chart-1: oklch(0.36 0.14 252);
+  --chart-2: oklch(0.68 0.13 201);
+  --chart-3: oklch(0.69 0.15 143);
+  --chart-4: oklch(0.83 0.11 181);
+  --chart-5: oklch(0.50 0.09 247);
 
   --radius: 0.625rem;
 
@@ -171,22 +164,22 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* AcademiQ 브랜드 커스텀 컬러 */
-  --color-brand-blue:          #1A3F9C;
-  --color-brand-blue-dark:     #122D74;
-  --color-brand-blue-light:    #2E56BB;
-  --color-brand-blue-subtle:   #EBF0FB;
+  --color-brand-blue:          var(--brand-blue);
+  --color-brand-blue-dark:     var(--brand-blue-dark);
+  --color-brand-blue-light:    var(--brand-blue-light);
+  --color-brand-blue-subtle:   var(--brand-blue-subtle);
 
-  --color-brand-orange:        #F5A023;
-  --color-brand-orange-dark:   #D4850D;
-  --color-brand-orange-light:  #FFB830;
-  --color-brand-orange-subtle: #FEF3E0;
+  --color-brand-orange:        var(--brand-orange);
+  --color-brand-orange-dark:   var(--brand-orange-dark);
+  --color-brand-orange-light:  var(--brand-orange-light);
+  --color-brand-orange-subtle: var(--brand-orange-subtle);
 
-  --color-brand-sky:           #3AADE8;
-  --color-brand-sky-dark:      #2280BB;
-  --color-brand-sky-subtle:    #E8F4FB;
+  --color-brand-sky:           var(--brand-sky);
+  --color-brand-sky-dark:      var(--brand-sky-dark);
+  --color-brand-sky-subtle:    var(--brand-sky-subtle);
 
-  --color-brand-green:         #5AB85C;
-  --color-brand-lime:          #A8C840;
+  --color-brand-green:         var(--brand-green);
+  --color-brand-lime:          var(--brand-lime);
 
   /* 폰트 */
   --font-sans: 'Pretendard Variable', 'Inter', system-ui, sans-serif;
@@ -284,30 +277,60 @@
   ::-webkit-scrollbar-thumb:hover {
     background: var(--brand-blue-subtle);
   }
+
+  a:focus-visible,
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--brand-orange);
+    outline-offset: 2px;
+  }
 }
 
 /* 브랜드 배너 그라디언트 유틸리티 */
 .bg-banner-gradient {
-  background: linear-gradient(
-    110deg,
-    #0F2771 0%,
-    #1A3F9C 25%,
-    #1A9AC5 50%,
-    #5AB85C 70%,
-    #F5A023 100%
-  );
+  background: linear-gradient(135deg, #042B5C 0%, #073B78 52%, #08A9A5 100%);
 }
 
 .bg-join-gradient {
-  background: linear-gradient(90deg, #5AB85C 0%, #F5A023 100%);
+  background: linear-gradient(90deg, #08A9A5 0%, #58B947 100%);
 }
 
 /* Hero 배너 어두운 오버레이 — 배경 이미지 가독성 향상 */
 .bg-hero-overlay {
-  background: linear-gradient(
-    to right,
-    #0A1A4A 0%,
-    #0F2771 50%,
-    #0A2A50 100%
-  );
+  background: linear-gradient(to right, #042B5C 0%, #073B78 55%, #0A5778 100%);
+}
+
+/* 공개 페이지 hero/cta 시각 통일 */
+section.bg-hero-gradient {
+  position: relative;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(125, 226, 209, 0.24), transparent 38%),
+    radial-gradient(circle at 84% 12%, rgba(8, 169, 165, 0.12), transparent 36%),
+    #f8fafc;
+}
+
+section.bg-hero-gradient h1 {
+  letter-spacing: -0.03em;
+}
+
+section.bg-hero-gradient p {
+  color: var(--text-secondary);
+}
+
+/* 가이드 기반 보조 요소 */
+.bullet-node {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: var(--brand-orange);
+  box-shadow: 0 0 0 4px rgba(8, 169, 165, 0.14);
+}
+
+.step-number {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--gradient-logo);
+  color: #fff;
+  font-weight: 800;
 }

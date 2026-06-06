@@ -16,8 +16,8 @@ const introMenuItems = [
     icon: Award,
     title: 'ISO/IEC 17024 자격증 개요',
     desc: '국제 표준 기반의 AI 개인 자격 인증 체계와 공신력을 확인하세요.',
-    color: 'var(--brand-blue)',
-    bg: 'var(--brand-blue-subtle)',
+    iconClass: 'text-brand-blue bg-brand-blue-subtle',
+    linkClass: 'text-brand-blue',
     accent: 'blue' as const,
   },
   {
@@ -25,8 +25,8 @@ const introMenuItems = [
     icon: TrendingUp,
     title: '자격 취득 이점',
     desc: '객관적 역량 인증부터 경쟁력 향상까지, 취득의 가치를 알아보세요.',
-    color: 'var(--brand-orange)',
-    bg: 'var(--brand-orange-subtle)',
+    iconClass: 'text-brand-orange bg-brand-orange-subtle',
+    linkClass: 'text-brand-orange',
     accent: 'orange' as const,
   },
   {
@@ -34,8 +34,8 @@ const introMenuItems = [
     icon: Briefcase,
     title: '자격 취득 후 활동 분야',
     desc: '교육, 창업, 코칭, 마케팅 등 다양한 분야에서의 활용처를 확인하세요.',
-    color: 'var(--brand-green)',
-    bg: '#E8F6EF',
+    iconClass: 'text-brand-green bg-brand-green/10',
+    linkClass: 'text-brand-green',
     accent: 'green' as const,
   },
   {
@@ -43,8 +43,8 @@ const introMenuItems = [
     icon: BookOpen,
     title: '시험 안내',
     desc: '응시 절차, 준비물, 일정 안내를 확인하고 시험을 준비하세요.',
-    color: 'var(--brand-sky)',
-    bg: 'var(--brand-sky-subtle)',
+    iconClass: 'text-brand-sky bg-brand-sky-subtle',
+    linkClass: 'text-brand-sky',
     accent: 'sky' as const,
   },
   {
@@ -52,8 +52,8 @@ const introMenuItems = [
     icon: Globe,
     title: '기관 소개',
     desc: '운영 기관의 철학, 강사진, 파트너십을 소개합니다.',
-    color: 'var(--brand-blue-light)',
-    bg: 'var(--brand-blue-subtle)',
+    iconClass: 'text-brand-blue-light bg-brand-blue-subtle',
+    linkClass: 'text-brand-blue-light',
     accent: 'blue' as const,
   },
   {
@@ -61,8 +61,8 @@ const introMenuItems = [
     icon: Users,
     title: '대표 강사 소개',
     desc: 'AcademiQ 대표 강사의 전문성과 주요 이력을 확인하세요.',
-    color: 'var(--brand-green)',
-    bg: '#E8F6EF',
+    iconClass: 'text-brand-green bg-brand-green/10',
+    linkClass: 'text-brand-green',
     accent: 'green' as const,
   },
 ];
@@ -92,15 +92,12 @@ export default function AboutPage() {
               return (
                 <Link key={item.href} href={item.href}>
                   <BrandCard accent={item.accent} hoverable padding="lg" className="h-full">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                      style={{ backgroundColor: item.bg }}
-                    >
-                      <Icon className="w-6 h-6" style={{ color: item.color }} />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${item.iconClass}`}>
+                      <Icon className="w-6 h-6" />
                     </div>
                     <h3 className="font-bold text-foreground mb-2">{item.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.desc}</p>
-                    <div className="flex items-center text-sm font-medium" style={{ color: item.color }}>
+                    <div className={`flex items-center text-sm font-medium ${item.linkClass}`}>
                       자세히 보기 <ArrowRight className="w-4 h-4 ml-1" />
                     </div>
                   </BrandCard>

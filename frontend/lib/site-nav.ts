@@ -12,7 +12,7 @@ export const publicNavItems = [
 ] as const;
 
 export const publicNavLinkClass =
-  'shrink-0 whitespace-nowrap rounded-md px-2 py-2 text-xs font-bold text-muted-foreground transition-colors hover:bg-brand-blue-subtle hover:text-brand-blue xl:px-3 xl:text-sm';
+  'group relative shrink-0 whitespace-nowrap rounded-md px-2 py-2 text-xs font-bold text-muted-foreground transition-colors hover:text-brand-blue xl:px-3 xl:text-sm';
 
 export const publicNavMobileLinkClass =
-  'block px-3 py-2 text-sm font-bold text-muted-foreground hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle';
+  'block min-h-12 px-3 py-3 text-sm font-bold text-muted-foreground hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle';

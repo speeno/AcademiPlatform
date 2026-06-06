@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Video } from 'lucide-react';
 import { API_BASE } from '@/lib/api-base';
 import { ShortsGalleryClient } from './ShortsGalleryClient';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = {
   title: 'AI Tip 영상 | AcademiQ',
@@ -27,7 +28,7 @@ export default async function ShortsPage() {
   return (
     <div>
       <section className="bg-hero-gradient py-14 border-b">
-        <div className="max-w-5xl mx-auto px-4 text-center">
+        <PageShell size="content" flush className="text-center">
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-5 border border-brand-blue text-brand-blue bg-brand-blue-subtle"
           >
@@ -40,11 +41,11 @@ export default async function ShortsPage() {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             AI 활용 팁 영상을 확인하세요.
           </p>
-        </div>
+        </PageShell>
       </section>
 
       <section className="py-12 bg-white">
-        <div className="max-w-6xl mx-auto px-4">
+        <PageShell size="wide" flush>
           {items.length === 0 ? (
             <div className="rounded-xl border bg-white p-10 text-center text-muted-foreground">
               현재 등록된 영상이 없습니다.
@@ -52,7 +53,7 @@ export default async function ShortsPage() {
           ) : (
             <ShortsGalleryClient items={items} />
           )}
-        </div>
+        </PageShell>
       </section>
     </div>
   );

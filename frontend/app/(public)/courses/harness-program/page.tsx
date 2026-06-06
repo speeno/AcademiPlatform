@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ArrowRight, BookOpen, Briefcase, Users } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = {
   title: 'Harness 기업 교육 프로그램',
@@ -18,7 +19,7 @@ export default function HarnessProgramPage() {
   return (
     <div>
       <section className="border-b bg-hero-gradient py-14">
-        <div className="mx-auto max-w-5xl px-4">
+        <PageShell size="content" flush>
           <p className="text-sm font-semibold text-brand-orange mb-2">기업 맞춤 교육</p>
           <h1 className="text-3xl md:text-4xl font-extrabold text-brand-blue">
             Harness · Agent Skills 프로그램
@@ -34,20 +35,23 @@ export default function HarnessProgramPage() {
               <BrandButton variant="ghost" size="sm">교육 문의</BrandButton>
             </Link>
           </div>
-        </div>
+        </PageShell>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-4 px-4 py-10 md:grid-cols-2">
-        {TRACKS.map((track) => (
-          <BrandCard key={track.title} accent="blue" padding="md">
-            <p className="text-lg font-bold text-foreground">{track.title}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{track.desc}</p>
-          </BrandCard>
-        ))}
+      <section className="py-10">
+        <PageShell size="content" flush className="grid gap-4 md:grid-cols-2">
+          {TRACKS.map((track) => (
+            <BrandCard key={track.title} accent="blue" padding="md">
+              <p className="text-lg font-bold text-foreground">{track.title}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{track.desc}</p>
+            </BrandCard>
+          ))}
+        </PageShell>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 pb-12">
-        <div className="rounded-xl border bg-white p-6">
+      <section className="pb-12">
+        <PageShell size="content" flush>
+          <div className="rounded-xl border bg-white p-6">
           <h2 className="text-xl font-bold text-foreground">구성</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             <div className="rounded-lg border p-4 text-sm">
@@ -66,7 +70,8 @@ export default function HarnessProgramPage() {
           <Link href="/courses" className="mt-5 inline-flex items-center text-sm font-semibold text-brand-blue">
             AcademiQ 과정 확인 <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
-        </div>
+          </div>
+        </PageShell>
       </section>
     </div>
   );

@@ -206,7 +206,7 @@ export function HeroBanner({ bannerValue }: HeroBannerProps) {
   if (!slide) return null;
 
   return (
-    <section className="relative overflow-hidden min-h-[380px] sm:min-h-[440px] md:min-h-[500px] lg:min-h-[560px] flex items-center">
+    <section className="relative overflow-hidden min-h-[420px] sm:min-h-[480px] md:min-h-[540px] lg:min-h-[600px] flex items-center">
       {/* 배경 이미지 */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-700"
@@ -219,12 +219,12 @@ export function HeroBanner({ bannerValue }: HeroBannerProps) {
       />
 
       {/* 콘텐츠 */}
-      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 md:py-20 lg:py-28">
+      <div className="relative w-full max-w-[1200px] mx-auto px-5 md:px-8 lg:px-12 py-10 sm:py-14 md:py-20 lg:py-28">
         <div className="grid lg:grid-cols-2 gap-6 md:gap-10 lg:gap-12 items-center">
           <div>
             {slide.badge && (
-              <span className="inline-flex max-w-full items-center gap-1.5 px-2 py-0.5 sm:px-2.5 rounded-full text-[10px] sm:text-xs font-semibold mb-2 sm:mb-3 bg-white/10 border border-white/20 text-white line-clamp-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-white/70 shrink-0" />
+              <span className="inline-flex max-w-full items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold mb-2 sm:mb-3 bg-white/15 border border-white/30 text-white line-clamp-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-orange shrink-0" />
                 {slide.badge}
               </span>
             )}
@@ -239,14 +239,14 @@ export function HeroBanner({ bannerValue }: HeroBannerProps) {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               {slide.primaryButton && (
                 <Link href={slide.primaryButton.href} className="w-full sm:w-auto">
-                  <button className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full text-white font-bold text-sm sm:text-base shadow-lg hover:opacity-90 transition-opacity bg-join-gradient">
+                  <button className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full text-white font-bold text-sm sm:text-base shadow-[0_12px_28px_rgba(7,59,120,0.2)] hover:translate-y-[-1px] transition-all bg-logo-gradient">
                     {slide.primaryButton.text} <ArrowRight className="w-4 h-4 shrink-0" />
                   </button>
                 </Link>
               )}
               {slide.secondaryButton && (
                 <Link href={slide.secondaryButton.href} className="w-full sm:w-auto">
-                  <button className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full border-2 border-white text-white font-bold text-sm sm:text-base hover:bg-white/10 transition-colors backdrop-blur-sm">
+                  <button className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full border border-white/60 bg-white/10 text-white font-bold text-sm sm:text-base hover:bg-white/20 transition-colors backdrop-blur-sm">
                     {slide.secondaryButton.text}
                   </button>
                 </Link>

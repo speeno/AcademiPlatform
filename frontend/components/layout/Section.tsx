@@ -13,9 +13,9 @@ interface SectionProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
 }
 
 const spacingClasses: Record<SectionSpacing, string> = {
-  sm: 'py-6',
-  md: 'py-12',
-  lg: 'py-16 md:py-20',
+  sm: 'py-8',
+  md: 'py-16',
+  lg: 'py-20 md:py-24',
 };
 
 /**
@@ -36,7 +36,7 @@ export function Section({
   return (
     <section className={cn(spacingClasses[spacing], className)} {...props}>
       {(title || description || actions) && (
-        <header className="mb-6 flex flex-col gap-2 md:mb-8 md:flex-row md:items-end md:justify-between">
+        <header className="mb-8 flex flex-col gap-2 md:mb-10 md:flex-row md:items-end md:justify-between">
           <div>
             {title ? <h2 className="text-subheading text-foreground">{title}</h2> : null}
             {description ? <p className="text-caption mt-1">{description}</p> : null}

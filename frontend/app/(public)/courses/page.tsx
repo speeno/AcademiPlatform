@@ -4,6 +4,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
 import { CoursesListClient } from '@/components/courses/CoursesListClient';
 import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
+import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -17,16 +18,16 @@ export default function CoursesPage() {
       <PublicAuthRefresh />
       <div>
         <section className="bg-hero-gradient py-14 border-b">
-          <div className="max-w-5xl mx-auto px-4">
+          <PageShell size="content" flush>
             <h1 className="text-3xl md:text-4xl font-extrabold mb-3 text-brand-blue">자격증교육과정</h1>
             <p className="text-muted-foreground">
               ISO/IEC 17024 기반 AI 국제자격증 취득을 위한 체계적인 교육과정을 만나보세요.
             </p>
-          </div>
+          </PageShell>
         </section>
 
         <section className="py-12 bg-white">
-          <div className="max-w-5xl mx-auto px-4">
+          <PageShell size="content" flush>
             <h2 className="text-xl font-bold text-foreground mb-2">ISO/IEC 17024 자격증 교육과정</h2>
             <p className="text-sm text-muted-foreground mb-6">
               국제 표준 기반 자격증 취득을 목표로 하는 공식 교육 과정입니다.
@@ -35,11 +36,11 @@ export default function CoursesPage() {
               excludeHarness
               emptyMessage="현재 공개된 자격증 교육과정이 없습니다."
             />
-          </div>
+          </PageShell>
         </section>
 
         <section className="py-12 bg-muted/30 border-t">
-          <div className="max-w-5xl mx-auto px-4">
+          <PageShell size="content" flush>
             <h2 className="text-xl font-bold text-foreground mb-2">Harness 기업 교육 프로그램</h2>
             <p className="text-sm text-muted-foreground mb-4">
               기업 AX 전환·실무 자동화를 위한 별도 교육 프로그램입니다. 자격증 교육과정과는 구분됩니다.
@@ -67,7 +68,7 @@ export default function CoursesPage() {
                 </BrandButton>
               </Link>
             </BrandCard>
-          </div>
+          </PageShell>
         </section>
       </div>
     </>

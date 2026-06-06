@@ -11,9 +11,9 @@ interface PageShellProps extends HTMLAttributes<HTMLDivElement> {
 
 const sizeClasses: Record<ShellSize, string> = {
   narrow: 'max-w-2xl',
-  content: 'max-w-4xl',
-  default: 'max-w-6xl',
-  wide: 'max-w-7xl',
+  content: 'max-w-5xl',
+  default: 'max-w-[1180px]',
+  wide: 'max-w-[1200px]',
   full: 'max-w-none',
 };
 
@@ -33,8 +33,8 @@ export function PageShell({
   return (
     <div
       className={cn(
-        'mx-auto w-full px-4 sm:px-6 lg:px-8',
-        flush ? '' : 'py-8 md:py-10',
+        'mx-auto w-full px-5 md:px-8 lg:px-12',
+        flush ? '' : 'py-10 md:py-12',
         sizeClasses[size],
         className,
       )}

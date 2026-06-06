@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { HeroBanner, type HeroBannerData } from '@/components/hero/HeroBanner';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
 import { MarketingHighlight } from '@/components/marketing/MarketingHighlight';
+import { PageShell } from '@/components/layout/PageShell';
 import { fetchPublicSettings } from '@/lib/public-settings';
 import { coreServiceCards } from '@/lib/core-services';
 
@@ -93,22 +94,22 @@ export default async function HomePage() {
       <HeroBanner bannerValue={heroBanner} />
 
       <section className="border-y border-border bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <PageShell size="wide" flush className="py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
             {stats.map((s) => (
-              <div key={s.label}>
-                <p className="text-3xl font-extrabold text-brand-orange">{s.value}</p>
+              <div key={s.label} className="rounded-2xl border border-border bg-white px-4 py-5 shadow-[0_8px_20px_rgba(4,43,92,0.05)]">
+                <p className="text-3xl font-extrabold text-brand-blue">{s.value}</p>
                 <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
               </div>
             ))}
           </div>
-        </div>
+        </PageShell>
       </section>
 
       <MarketingHighlight />
 
       <section className="py-16 md:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageShell size="wide" flush>
           <header className="mb-6 flex flex-col gap-2 md:mb-8 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-3xl font-extrabold text-brand-blue">핵심 서비스</h2>
@@ -129,7 +130,7 @@ export default async function HomePage() {
                 <BrandCard
                   accent={service.accent}
                   padding="lg"
-                  className="h-full flex flex-col transition-shadow hover:shadow-md"
+                  className="h-full flex flex-col"
                 >
                   <BrandCardTitle className="text-lg mb-2">{service.title}</BrandCardTitle>
                   <p className="flex-1 text-sm text-muted-foreground leading-relaxed">{service.desc}</p>
@@ -140,12 +141,12 @@ export default async function HomePage() {
               </Link>
             ))}
           </div>
-        </div>
+        </PageShell>
       </section>
 
       {shortsDisplay.showOnMain && shortsItems.length > 0 && (
         <section className="py-16 bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PageShell size="wide" flush>
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center bg-brand-blue-subtle">
@@ -164,12 +165,12 @@ export default async function HomePage() {
               </Link>
             </div>
             <MainShortsSection items={shortsItems} maxItems={shortsDisplay.mainMaxItems} autoPlay />
-          </div>
+          </PageShell>
         </section>
       )}
 
       <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageShell size="wide" flush>
           <div className="text-center mb-12">
             <h2 className="text-3xl font-extrabold mb-3 text-brand-blue">이렇게 시작하세요</h2>
             <p className="text-muted-foreground">진단부터 학습·실행·성과까지 4단계로 이어집니다</p>
@@ -181,7 +182,7 @@ export default async function HomePage() {
                 top: '36px',
                 left: '12.5%',
                 right: '12.5%',
-                background: 'linear-gradient(90deg, #1A3F9C, #1A9AC5, #5AB85C, #F5A023)',
+                background: 'linear-gradient(90deg, #073B78, #08A9A5, #58B947)',
               }}
             />
             {steps.map((step) => (
@@ -201,11 +202,11 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-        </div>
+        </PageShell>
       </section>
 
       <section className="py-16 md:py-20 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PageShell size="wide" flush>
           <header className="mb-6 flex flex-col gap-2 md:mb-8 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-3xl font-extrabold text-brand-blue">자주 묻는 질문</h2>
@@ -234,7 +235,7 @@ export default async function HomePage() {
               </details>
             ))}
           </div>
-        </div>
+        </PageShell>
       </section>
 
       <section className="py-16 bg-banner-gradient relative overflow-hidden">
@@ -251,7 +252,9 @@ export default async function HomePage() {
         </svg>
         <div className="relative max-w-3xl mx-auto px-4 text-center text-white">
           <h2 className="text-3xl font-extrabold mb-3">지금 바로 시작하세요</h2>
-          <p className="text-white/80 mb-8">실무 AI 교육·컨설팅, AcademiQ와 함께 업무 성과로 연결하세요</p>
+          <p className="text-white/80 mb-8">
+            교육 신청부터 시험 접수까지 하나의 플랫폼에서. ISO/IEC 17024 기반 AI 자격 교육을 체계적으로 준비하세요.
+          </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link href="/contact">
               <BrandButton size="lg" className="min-h-11 shadow-lg">

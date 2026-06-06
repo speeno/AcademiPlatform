@@ -11,18 +11,18 @@ interface BrandCardProps extends HTMLAttributes<HTMLDivElement> {
 
 const accentStyles: Record<CardAccent, string> = {
   none:   '',
-  blue:   'border-t-2 border-t-brand-blue',
-  orange: 'border-t-2 border-t-brand-orange',
-  sky:    'border-t-2 border-t-brand-sky',
-  green:  'border-t-2 border-t-brand-green',
-  logo:   'border-t-2 border-t-transparent [border-image:var(--gradient-logo)_1]',
+  blue:   'before:bg-brand-blue',
+  orange: 'before:bg-brand-orange',
+  sky:    'before:bg-brand-sky',
+  green:  'before:bg-brand-green',
+  logo:   'before:bg-[var(--gradient-logo)]',
 };
 
 const paddingStyles: Record<string, string> = {
   none: '',
-  sm: 'p-4',
-  md: 'p-5',
-  lg: 'p-6',
+  sm: 'p-5',
+  md: 'p-6',
+  lg: 'p-7',
 };
 
 export function BrandCard({
@@ -36,9 +36,11 @@ export function BrandCard({
   return (
     <div
       className={cn(
-        'bg-card rounded-xl border border-border shadow-sm',
+        'relative overflow-hidden bg-card rounded-3xl border border-border shadow-[0_18px_44px_rgba(4,43,92,0.06)]',
+        'before:absolute before:left-0 before:top-0 before:h-1 before:w-full',
         accentStyles[accent],
-        hoverable && 'cursor-pointer transition-all duration-200 hover:shadow-md hover:border-brand-sky',
+        hoverable &&
+          'cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(4,43,92,0.10)] hover:border-brand-orange/40',
         paddingStyles[padding],
         className,
       )}

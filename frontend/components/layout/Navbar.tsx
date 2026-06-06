@@ -44,9 +44,9 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-white/88 backdrop-blur-xl supports-[backdrop-filter]:bg-white/82">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 sm:h-16 items-center gap-3">
+        <div className="flex h-[72px] items-center gap-3">
           <div className="flex items-center shrink-0">
             <div className="lg:hidden">
               <Logo size="xs" />
@@ -56,10 +56,11 @@ export function Navbar() {
             </div>
           </div>
 
-          <nav className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-0.5">
+          <nav className="hidden lg:flex min-w-0 flex-1 items-center justify-center gap-1">
             {publicNavItems.map((item) => (
               <Link key={item.href} href={item.href} className={publicNavLinkClass}>
-                {item.label}
+                <span>{item.label}</span>
+                <span className="absolute left-2 right-2 -bottom-0.5 h-0.5 scale-x-0 rounded-full bg-brand-orange transition-transform duration-200 group-hover:scale-x-100" />
               </Link>
             ))}
           </nav>
@@ -105,7 +106,7 @@ export function Navbar() {
           </div>
 
           <button
-            className="ml-auto lg:hidden p-2 rounded-md text-muted-foreground hover:bg-brand-blue-subtle hover:text-brand-blue"
+            className="ml-auto lg:hidden min-h-12 min-w-12 p-2 rounded-md text-muted-foreground hover:bg-brand-blue-subtle hover:text-brand-blue"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
             aria-expanded={mobileOpen}
@@ -116,12 +117,12 @@ export function Navbar() {
         </div>
       </div>
 
-      <div className="h-0.5 w-full bg-logo-gradient" />
+      <div className="h-px w-full bg-logo-gradient opacity-60" />
 
       {mobileOpen && (
         <div
           id="mobile-nav-panel"
-          className="lg:hidden border-t border-border bg-background px-4 py-3 space-y-1 max-h-[70vh] overflow-y-auto"
+          className="lg:hidden border-t border-border bg-background px-4 py-3 space-y-1 max-h-[75vh] overflow-y-auto"
         >
           {publicNavItems.map((item) => (
             <Link

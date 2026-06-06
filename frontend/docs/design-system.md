@@ -10,6 +10,23 @@
 
 모든 색상·여백·반경 토큰은 [`frontend/app/globals.css`](../app/globals.css) `:root` 블록에만 정의합니다. 페이지·컴포넌트에서는 **Tailwind 클래스로만** 사용합니다.
 
+### 1.0 2026 v5 브랜드 팔레트
+
+신규 로고/샘플 기준 기본값은 아래를 사용합니다.
+
+| 역할 | 토큰 | 값 |
+|------|------|----|
+| Primary Navy | `--brand-blue` | `#073B78` |
+| Deep Navy | `--brand-blue-dark` | `#042B5C` |
+| Teal Accent | `--brand-orange` | `#08A9A5` |
+| Cert Green | `--brand-green` | `#58B947` |
+| Mint | `--brand-lime` | `#7DE2D1` |
+| Surface Background | `--background`/`--muted` | `#F8FAFC` 계열 |
+
+주의:
+- `brand-orange`는 명칭 유지 목적이며 실제 값은 Teal(`#08A9A5`)로 운영한다.
+- CTA는 `bg-[var(--gradient-logo)]` 또는 `bg-brand-blue`를 우선 사용한다.
+
 ### 1.1 색상 토큰 → 클래스 매핑
 
 | CSS 변수 | Tailwind 클래스 | 용도 |

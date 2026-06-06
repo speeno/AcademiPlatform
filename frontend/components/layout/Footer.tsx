@@ -43,21 +43,18 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-brand-blue-dark text-white/85">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
+    <footer className="bg-[#042B5C] text-white/85">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-14">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 sm:gap-8">
           {/* 브랜드 — 모바일에서도 표시 */}
           <div className="md:col-span-3 lg:col-span-1">
-            <div className="mb-3">
-              <LogoHorizontal
-                height={32}
-                className="!h-8 sm:!h-[38px] lg:!h-[45px] w-auto"
-              />
+            <div className="mb-3 inline-flex max-w-full rounded-xl bg-white/95 px-2.5 py-1.5 shadow-sm">
+              <LogoHorizontal height={40} className="!h-8 sm:!h-[38px] lg:!h-[40px] w-auto max-w-full" />
             </div>
             <p className="text-xs sm:text-sm text-white/80 mb-2 leading-relaxed">
               기업·개인을 위한 실무형 AI 교육·컨설팅 플랫폼입니다.
             </p>
-            <p className="text-xs sm:text-sm italic mb-3 sm:mb-4 text-brand-sky">
+            <p className="text-xs sm:text-sm italic mb-3 sm:mb-4 text-[#7DE2D1]">
               Learn · Certify · Succeed
             </p>
             <div className="space-y-2 text-xs sm:text-sm text-white/70">
@@ -89,7 +86,7 @@ export function Footer() {
         </div>
 
         {/* 로고 그라디언트 구분선 */}
-        <div className="mt-4 md:mt-6 sm:mt-8 lg:mt-10 mb-4 sm:mb-6 h-px bg-logo-gradient opacity-40" />
+        <div className="mt-4 md:mt-6 sm:mt-8 lg:mt-10 mb-4 sm:mb-6 h-px bg-logo-gradient opacity-60" />
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-3 text-[10px] sm:text-xs text-white/60">
           <div className="text-center md:text-left">
