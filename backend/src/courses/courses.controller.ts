@@ -104,11 +104,18 @@ export class CoursesController {
   @Get('admin/list')
   getAdminList(
     @Query('status') status?: CourseStatus,
+    @Query('category') category?: string,
     @Query('search') search?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.coursesService.getAdminCourses({ status, search, page, limit });
+    return this.coursesService.getAdminCourses({
+      status,
+      category,
+      search,
+      page,
+      limit,
+    });
   }
 
   @Roles(UserRole.OPERATOR)

@@ -77,6 +77,8 @@ export const EMPTY_FORM: CourseForm = {
   tagsText: '',
 };
 
+export const COURSE_CATEGORY_ALL = '';
+
 export const STATUS_OPTIONS: Array<{ value: CourseStatus; label: string }> = [
   { value: 'DRAFT', label: 'DRAFT (초안)' },
   { value: 'UPCOMING', label: 'UPCOMING (예정)' },

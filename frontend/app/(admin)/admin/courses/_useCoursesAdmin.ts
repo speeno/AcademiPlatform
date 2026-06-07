@@ -10,7 +10,8 @@ import {
 } from './_types';
 
 export function useCoursesAdmin() {
-  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [allCourses, setAllCourses] = useState<CourseItem[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [instructors, setInstructors] = useState<{ id: string; name: string; email: string }[]>([]);
   const [modules, setModules] = useState<ModuleItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,9 +27,32 @@ export function useCoursesAdmin() {
   const selectedIdRef = useRef(selectedId);
   selectedIdRef.current = selectedId;
 
+  const categoryOptions = useMemo(() => {
+    const names = new Set<string>();
+    allCourses.forEach((course) => {
+      const name = course.category?.trim();
+      if (name) names.add(name);
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b, 'ko'));
+  }, [allCourses]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    allCourses.forEach((course) => {
+      const name = course.category?.trim() || '미분류';
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    });
+    return counts;
+  }, [allCourses]);
+
+  const courses = useMemo(() => {
+    if (!categoryFilter) return allCourses;
+    return allCourses.filter((course) => (course.category ?? '') === categoryFilter);
+  }, [allCourses, categoryFilter]);
+
   const selectedCourse = useMemo(
-    () => courses.find((c) => c.id === selectedId),
-    [courses, selectedId],
+    () => allCourses.find((c) => c.id === selectedId),
+    [allCourses, selectedId],
   );
 
   const loadDetail = useCallback(async (courseId: string) => {
@@ -59,7 +83,7 @@ export function useCoursesAdmin() {
       const unique = Array.from(new Map(merged.map((u: { id: string }) => [u.id, u])).values());
 
       const nextCourses: CourseItem[] = courseData.courses ?? [];
-      setCourses(nextCourses);
+      setAllCourses(nextCourses);
       setInstructors(unique as { id: string; name: string; email: string }[]);
 
       if (nextCourses.length === 0) {
@@ -69,8 +93,25 @@ export function useCoursesAdmin() {
         return;
       }
 
+      const visibleCourses = categoryFilter
+        ? nextCourses.filter((course) => (course.category ?? '') === categoryFilter)
+        : nextCourses;
+
       const targetId = preferredId ?? selectedIdRef.current;
-      const target = targetId ? nextCourses.find((c) => c.id === targetId) ?? nextCourses[0] : nextCourses[0];
+      const target = targetId
+        ? visibleCourses.find((c) => c.id === targetId)
+          ?? nextCourses.find((c) => c.id === targetId)
+          ?? visibleCourses[0]
+          ?? nextCourses[0]
+        : visibleCourses[0] ?? nextCourses[0];
+
+      if (!target) {
+        setSelectedId('');
+        setForm(EMPTY_FORM);
+        setModules([]);
+        return;
+      }
+
       setSelectedId(target.id);
       setForm(toForm(target));
       await loadDetail(target.id);
@@ -79,7 +120,36 @@ export function useCoursesAdmin() {
     } finally {
       setLoading(false);
     }
-  }, [loadDetail]);
+  }, [categoryFilter, loadDetail]);
+
+  const changeCategoryFilter = useCallback(
+    async (nextCategory: string) => {
+      setCategoryFilter(nextCategory);
+      const visible = nextCategory
+        ? allCourses.filter((course) => (course.category ?? '') === nextCategory)
+        : allCourses;
+
+      if (visible.length === 0) {
+        setSelectedId('');
+        setForm(EMPTY_FORM);
+        setModules([]);
+        return;
+      }
+
+      const current = selectedIdRef.current
+        ? visible.find((course) => course.id === selectedIdRef.current)
+        : undefined;
+      const target = current ?? visible[0];
+      setSelectedId(target.id);
+      setForm(toForm(target));
+      try {
+        await loadDetail(target.id);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : '강좌 상세 정보를 불러오지 못했습니다.');
+      }
+    },
+    [allCourses, loadDetail],
+  );
 
   const updateForm = <K extends keyof CourseForm>(key: K, value: CourseForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -139,7 +209,11 @@ export function useCoursesAdmin() {
   const resetForNewCourse = () => {
     setSelectedId('');
     setModules([]);
-    setForm({ ...EMPTY_FORM, instructorId: instructors[0]?.id ?? '' });
+    setForm({
+      ...EMPTY_FORM,
+      instructorId: instructors[0]?.id ?? '',
+      category: categoryFilter || '',
+    });
     setLastSavedText('');
   };
 
@@ -248,13 +322,38 @@ export function useCoursesAdmin() {
   };
 
   return {
-    courses, instructors, modules, setModules,
-    loading, selectedId, selectedCourse,
-    form, updateForm, saving, creating, busy,
-    lastSavedText, newModuleTitle, setNewModuleTitle,
-    newLessonDraft, setNewLessonDraft,
-    load, selectCourse, saveCourse, createCourse, resetForNewCourse,
-    addModule, saveModule, removeModule,
-    addLesson, saveLesson, removeLesson,
+    allCourses,
+    courses,
+    categoryFilter,
+    categoryOptions,
+    categoryCounts,
+    changeCategoryFilter,
+    instructors,
+    modules,
+    setModules,
+    loading,
+    selectedId,
+    selectedCourse,
+    form,
+    updateForm,
+    saving,
+    creating,
+    busy,
+    lastSavedText,
+    newModuleTitle,
+    setNewModuleTitle,
+    newLessonDraft,
+    setNewLessonDraft,
+    load,
+    selectCourse,
+    saveCourse,
+    createCourse,
+    resetForNewCourse,
+    addModule,
+    saveModule,
+    removeModule,
+    addLesson,
+    saveLesson,
+    removeLesson,
   };
 }

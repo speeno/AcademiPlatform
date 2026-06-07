@@ -31,15 +31,17 @@ export class CoursesService {
 
   async getAdminCourses(filter: {
     status?: CourseStatus;
+    category?: string;
     search?: string;
     page?: number;
     limit?: number;
   }) {
-    const { status, search, page = 1, limit = 50 } = filter;
+    const { status, category, search, page = 1, limit = 50 } = filter;
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (status) where.status = status;
+    if (category) where.category = category;
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },

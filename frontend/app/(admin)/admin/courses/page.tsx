@@ -11,12 +11,39 @@ import { STATUS_OPTIONS } from './_types';
 
 export default function AdminCoursesPage() {
   const {
-    courses, instructors, modules, setModules,
-    loading, selectedId, selectedCourse,
-    form, updateForm, saving, creating, busy, lastSavedText,
-    newModuleTitle, setNewModuleTitle, newLessonDraft, setNewLessonDraft,
-    load, selectCourse, saveCourse, createCourse, resetForNewCourse,
-    addModule, saveModule, removeModule, addLesson, saveLesson, removeLesson,
+    allCourses,
+    courses,
+    categoryFilter,
+    categoryOptions,
+    categoryCounts,
+    changeCategoryFilter,
+    instructors,
+    modules,
+    setModules,
+    loading,
+    selectedId,
+    selectedCourse,
+    form,
+    updateForm,
+    saving,
+    creating,
+    busy,
+    lastSavedText,
+    newModuleTitle,
+    setNewModuleTitle,
+    newLessonDraft,
+    setNewLessonDraft,
+    load,
+    selectCourse,
+    saveCourse,
+    createCourse,
+    resetForNewCourse,
+    addModule,
+    saveModule,
+    removeModule,
+    addLesson,
+    saveLesson,
+    removeLesson,
   } = useCoursesAdmin();
 
   useEffect(() => { load(); }, [load]);
@@ -40,14 +67,36 @@ export default function AdminCoursesPage() {
       />
 
       <div className="grid md:grid-cols-[300px_1fr] gap-4">
-        <CourseSidebar courses={courses} selectedId={selectedId} onSelect={selectCourse} />
+        <CourseSidebar
+          courses={courses}
+          allCount={allCourses.length}
+          selectedId={selectedId}
+          categoryFilter={categoryFilter}
+          categoryOptions={categoryOptions}
+          categoryCounts={categoryCounts}
+          onCategoryChange={changeCategoryFilter}
+          onSelect={selectCourse}
+        />
 
         <div className="space-y-4">
           <div className="bg-white rounded-xl border p-4 space-y-4">
             <div className="grid md:grid-cols-2 gap-3">
               <input className="border rounded-lg px-3 py-2 text-sm" placeholder="강좌명 *" value={form.title} onChange={(e) => updateForm('title', e.target.value)} />
               <input className="border rounded-lg px-3 py-2 text-sm" placeholder="slug" value={form.slug} onChange={(e) => updateForm('slug', e.target.value)} />
-              <input className="border rounded-lg px-3 py-2 text-sm" placeholder="카테고리" value={form.category} onChange={(e) => updateForm('category', e.target.value)} />
+              <div className="space-y-1">
+                <input
+                  className="border rounded-lg px-3 py-2 text-sm w-full"
+                  placeholder="카테고리"
+                  list="course-category-suggestions"
+                  value={form.category}
+                  onChange={(e) => updateForm('category', e.target.value)}
+                />
+                <datalist id="course-category-suggestions">
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category} />
+                  ))}
+                </datalist>
+              </div>
               <input className="border rounded-lg px-3 py-2 text-sm" type="number" placeholder="가격" value={form.price} onChange={(e) => updateForm('price', Number(e.target.value))} />
               <select className="border rounded-lg px-3 py-2 text-sm" value={form.status} onChange={(e) => updateForm('status', e.target.value as typeof form.status)}>
                 {STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}

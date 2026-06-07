@@ -33,6 +33,7 @@
     "test:all": "npm test && npm run test:e2e",
     "cms:migrate:legacy": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/migrate-lesson-content-to-cms.ts",
     "curriculum:harness:import": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/import-harness-curriculum.ts",
+    "curriculum:harness:sync-api": "node -r ts-node/register/transpile-only -r tsconfig-paths/register debug/sync-harness-courses-via-api.ts",
     "hero:harness:merge": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/merge-hero-harness-slide.ts",
     "shorts:thumbnails:regenerate": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/regenerate-shorts-thumbnails.ts",
     "exam:questions:seed-ai": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-ai-question-bank.ts",
