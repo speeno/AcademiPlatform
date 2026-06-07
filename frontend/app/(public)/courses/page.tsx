@@ -33,7 +33,7 @@ export default function CoursesPage() {
               국제 표준 기반 자격증 취득을 목표로 하는 공식 교육 과정입니다.
             </p>
             <CoursesListClient
-              excludeHarness
+              audience="certification"
               emptyMessage="현재 공개된 자격증 교육과정이 없습니다."
             />
           </PageShell>

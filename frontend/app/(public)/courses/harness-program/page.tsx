@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { ArrowRight, BookOpen, Briefcase, Users } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandCard } from '@/components/ui/brand-card';
+import { CoursesListClient } from '@/components/courses/CoursesListClient';
+import { PublicAuthRefresh } from '@/components/auth/PublicAuthRefresh';
 import { PageShell } from '@/components/layout/PageShell';
 
 export const metadata: Metadata = {
@@ -17,7 +19,9 @@ const TRACKS = [
 
 export default function HarnessProgramPage() {
   return (
-    <div>
+    <>
+      <PublicAuthRefresh />
+      <div>
       <section className="border-b bg-hero-gradient py-14">
         <PageShell size="content" flush>
           <p className="text-sm font-semibold text-brand-orange mb-2">기업 맞춤 교육</p>
@@ -49,30 +53,49 @@ export default function HarnessProgramPage() {
         </PageShell>
       </section>
 
-      <section className="pb-12">
+      <section className="py-12 bg-white border-t">
+        <PageShell size="content" flush>
+          <h2 className="text-xl font-bold text-foreground mb-2">Harness · Agent Skills 교육과정</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            AI Harness 및 기업·실무 교육 과정입니다. AI 국제자격증(ISO/IEC 17024) 과정은{' '}
+            <Link href="/courses" className="text-brand-blue hover:underline">
+              자격증교육과정
+            </Link>
+            에서 확인할 수 있습니다.
+          </p>
+          <CoursesListClient
+            audience="nonCertification"
+            emptyMessage="현재 공개된 Harness·기업 교육 과정이 없습니다."
+            limit={24}
+          />
+        </PageShell>
+      </section>
+
+      <section className="pb-12 bg-muted/30">
         <PageShell size="content" flush>
           <div className="rounded-xl border bg-white p-6">
-          <h2 className="text-xl font-bold text-foreground">구성</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border p-4 text-sm">
-              <BookOpen className="mb-2 h-4 w-4 text-brand-blue" />
-              1일 / 3일 / 1주 과정
+            <h2 className="text-xl font-bold text-foreground">프로그램 구성</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-lg border p-4 text-sm">
+                <BookOpen className="mb-2 h-4 w-4 text-brand-blue" />
+                1일 / 3일 / 1주 과정
+              </div>
+              <div className="rounded-lg border p-4 text-sm">
+                <Users className="mb-2 h-4 w-4 text-brand-blue" />
+                코호트 기반 실시간 진행
+              </div>
+              <div className="rounded-lg border p-4 text-sm">
+                <Briefcase className="mb-2 h-4 w-4 text-brand-blue" />
+                산업별 Harness Lab 연계
+              </div>
             </div>
-            <div className="rounded-lg border p-4 text-sm">
-              <Users className="mb-2 h-4 w-4 text-brand-blue" />
-              코호트 기반 실시간 진행
-            </div>
-            <div className="rounded-lg border p-4 text-sm">
-              <Briefcase className="mb-2 h-4 w-4 text-brand-blue" />
-              산업별 Harness Lab 연계
-            </div>
-          </div>
-          <Link href="/courses" className="mt-5 inline-flex items-center text-sm font-semibold text-brand-blue">
-            AcademiQ 과정 확인 <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
+            <Link href="/contact" className="mt-5 inline-flex items-center text-sm font-semibold text-brand-blue">
+              교육 도입 문의 <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
           </div>
         </PageShell>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

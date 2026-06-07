@@ -8,6 +8,10 @@ import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
 import { resolveCourseThumbnailUrl } from '@/lib/course-thumbnail';
+import {
+  filterCoursesByAudience,
+  type CourseListAudience,
+} from '@/lib/course-category';
 import { ApiWarmupNotice } from '@/components/loading/ApiWarmupNotice';
 import { useSlowApiFetch } from '@/lib/use-slow-api-fetch';
 
@@ -24,14 +28,7 @@ export type PublicCourse = {
   _count?: { enrollments?: number };
 };
 
-export function isHarnessCourse(course: PublicCourse): boolean {
-  const thumb = course.thumbnailUrl ?? '';
-  if (thumb.includes('/covers/harness-')) return true;
-  const title = course.title.toLowerCase();
-  if (title.includes('harness') || title.includes('하네스')) return true;
-  const cat = (course.category ?? '').toLowerCase();
-  return cat.includes('harness') || cat.includes('하네스');
-}
+export { isHarnessCourse, isCertificationCourse, isNonCertificationCourse } from '@/lib/course-category';
 
 function parseCourses(json: unknown): PublicCourse[] {
   const data = json as { courses?: unknown };
@@ -82,19 +79,31 @@ function CoursesLoadError({
 }
 
 export function CoursesListClient({
+  audience = 'all',
   excludeHarness = false,
   emptyMessage = '현재 공개된 교육과정이 없습니다.',
+  limit = 24,
 }: {
+  /** certification: 자격증만 | nonCertification: Harness·기타 | nonHarness: Harness 제외 */
+  audience?: CourseListAudience | 'all';
+  /** @deprecated audience="nonHarness" 사용 권장 */
   excludeHarness?: boolean;
   emptyMessage?: string;
+  limit?: number;
 }) {
+  const resolvedAudience: CourseListAudience | 'all' =
+    excludeHarness && audience === 'all' ? 'nonHarness' : audience;
+
   const { status, data: courses, elapsedSeconds, retry } = useSlowApiFetch({
-    path: '/courses?limit=12',
+    path: `/courses?limit=${limit}`,
     parse: parseCourses,
   });
 
   const loading = status === 'loading' || status === 'idle';
-  const list = (courses ?? []).filter((c) => (excludeHarness ? !isHarnessCourse(c) : true));
+  const list =
+    resolvedAudience === 'all'
+      ? (courses ?? [])
+      : filterCoursesByAudience(courses ?? [], resolvedAudience);
 
   if (loading) {
     return <ApiWarmupNotice elapsedSeconds={elapsedSeconds} className="rounded-xl border bg-white p-10" />;
