@@ -35,7 +35,10 @@
     "curriculum:harness:import": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/import-harness-curriculum.ts",
     "hero:harness:merge": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/merge-hero-harness-slide.ts",
     "shorts:thumbnails:regenerate": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/regenerate-shorts-thumbnails.ts",
-    "exam:questions:seed-ai": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-ai-question-bank.ts"
+    "exam:questions:seed-ai": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-ai-question-bank.ts",
+    "exam:content:export": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts export",
+    "exam:content:import": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts import",
+    "exam:content:sync": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts sync"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
