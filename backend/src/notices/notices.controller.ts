@@ -7,6 +7,7 @@ import {
   Res,
   StreamableFile,
 } from '@nestjs/common';
+import { NoticeScope } from '@prisma/client';
 import { Public } from '../common/decorators/public.decorator';
 import { PrismaService } from '../common/prisma/prisma.service';
 import type { Response } from 'express';
@@ -21,9 +22,22 @@ export class NoticesController {
   ) {}
 
   @Get()
-  async list(@Query('page') page = 1, @Query('limit') limit = 20) {
+  async list(
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Query('scopeType') scopeType?: string,
+  ) {
     const skip = (Number(page) - 1) * Number(limit);
-    const where = { isPublished: true };
+    const normalizedScope =
+      scopeType?.toUpperCase() === NoticeScope.COURSE
+        ? NoticeScope.COURSE
+        : scopeType?.toUpperCase() === NoticeScope.GLOBAL
+          ? NoticeScope.GLOBAL
+          : undefined;
+    const where = {
+      isPublished: true,
+      ...(normalizedScope ? { scopeType: normalizedScope } : {}),
+    };
 
     const [notices, total] = await Promise.all([
       this.prisma.notice.findMany({

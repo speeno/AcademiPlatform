@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { FileQuestion, Pencil, Plus, ShieldCheck, SquarePen, Users } from 'lucide-react';
+import { ClipboardList, FileQuestion, Pencil, Plus, ShieldCheck, SquarePen, Users } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { BrandButton } from '@/components/ui/brand-button';
@@ -339,6 +339,9 @@ export default function AdminExamPage() {
           </Link>
           <Link href={`/admin/exam/${s.id}/grading`} className="rounded p-1.5 hover:bg-muted" aria-label="채점">
             <SquarePen className="h-3.5 w-3.5 text-brand-blue" />
+          </Link>
+          <Link href={`/admin/exam/${s.id}/results`} className="rounded p-1.5 hover:bg-muted" aria-label="결과">
+            <ClipboardList className="h-3.5 w-3.5 text-brand-blue" />
           </Link>
           <button
             type="button"

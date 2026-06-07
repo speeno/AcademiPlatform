@@ -334,3 +334,28 @@ section.bg-hero-gradient p {
   color: #fff;
   font-weight: 800;
 }
+
+/* 공지 뉴스피드 티커 */
+@keyframes notice-ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.notice-ticker-track {
+  animation: notice-ticker-scroll 45s linear infinite;
+}
+
+.notice-ticker:hover .notice-ticker-track,
+.notice-ticker:focus-within .notice-ticker-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice-ticker-track {
+    animation: none;
+  }
+}

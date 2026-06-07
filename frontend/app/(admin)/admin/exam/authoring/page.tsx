@@ -131,6 +131,13 @@ export default function AdminExamAuthoringPage() {
                     <Users className="h-3.5 w-3.5" />
                     접수자
                   </Link>
+                  <Link
+                    href={`/admin/exam/${session.id}/results`}
+                    className="inline-flex items-center gap-1 rounded-full border border-brand-blue/30 px-3 py-1.5 text-xs font-semibold text-brand-blue hover:bg-brand-blue-subtle"
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    결과
+                  </Link>
                 </div>
               </div>
             </BrandCard>

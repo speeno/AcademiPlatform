@@ -9,6 +9,11 @@ import { ExamApplyButton } from '@/app/(public)/exam/ExamApplyButton';
 import { PageShell } from '@/components/layout/PageShell';
 import { ApiWarmupNotice } from '@/components/loading/ApiWarmupNotice';
 import { useSlowApiFetch } from '@/lib/use-slow-api-fetch';
+import {
+  getExamModeBadgeVariant,
+  getExamModeLabel,
+  getExamPlaceLabel,
+} from '@/lib/exam-mode';
 
 const STATUS_LABEL: Record<string, { text: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
   UPCOMING: { text: '접수 예정', variant: 'default' },
@@ -65,6 +70,7 @@ type ExamSession = {
   qualificationName: string;
   roundName: string;
   status: string;
+  examMode?: 'ONLINE' | 'OFFLINE' | 'HYBRID';
   examAt: string;
   place?: string | null;
   applyStartAt: string;
@@ -207,9 +213,12 @@ export function ExamSessionsClient() {
                   <BrandCard key={session.id} hoverable padding="lg">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
                           <h3 className="font-bold text-lg text-foreground">{session.qualificationName}</h3>
                           <BrandBadge variant="blue">{session.roundName}</BrandBadge>
+                          <BrandBadge variant={getExamModeBadgeVariant(session.examMode)}>
+                            {getExamModeLabel(session.examMode)}
+                          </BrandBadge>
                           <BrandBadge variant={statusInfo.variant}>{statusInfo.text}</BrandBadge>
                         </div>
 
@@ -220,7 +229,7 @@ export function ExamSessionsClient() {
                           </span>
                           <span className="flex items-center gap-1.5">
                             <MapPin className="w-4 h-4" />
-                            {session.place ?? '장소 미정'}
+                            {getExamPlaceLabel(session.examMode, session.place)}
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Users className="w-4 h-4" />

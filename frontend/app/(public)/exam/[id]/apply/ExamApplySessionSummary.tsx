@@ -3,6 +3,11 @@
 import { Calendar, MapPin } from 'lucide-react';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { PriceDisplay } from '@/components/ui/price-display';
+import {
+  getExamModeBadgeVariant,
+  getExamModeLabel,
+  getExamPlaceLabel,
+} from '@/lib/exam-mode';
 
 export interface ExamSessionSummaryData {
   qualificationName: string;
@@ -45,6 +50,9 @@ export function ExamApplySessionSummary({ session, loading }: ExamApplySessionSu
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-bold text-foreground">{session.qualificationName}</h2>
         <BrandBadge variant="blue">{session.roundName}</BrandBadge>
+        <BrandBadge variant={getExamModeBadgeVariant(session.examMode)}>
+          {getExamModeLabel(session.examMode)}
+        </BrandBadge>
       </div>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -54,7 +62,7 @@ export function ExamApplySessionSummary({ session, loading }: ExamApplySessionSu
         </span>
         <span className="flex items-center gap-1.5">
           <MapPin className="w-4 h-4 flex-shrink-0 text-brand-blue"  />
-          {session.place ?? '장소 미정'}
+          {getExamPlaceLabel(session.examMode, session.place)}
         </span>
       </div>
 

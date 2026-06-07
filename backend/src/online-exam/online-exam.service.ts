@@ -871,12 +871,21 @@ export class OnlineExamService {
       });
     }
 
-    return this.prisma.examAttempt.update({
+    await this.prisma.examAttempt.update({
       where: { id: attemptId },
       data: {
         status: needsManual ? ExamAttemptStatus.MANUAL_GRADING : ExamAttemptStatus.AUTO_GRADED,
         submittedAt: new Date(),
       },
+    });
+
+    if (!needsManual) {
+      await this.finalizeAttempt(attemptId);
+    }
+
+    return this.prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: { result: true },
     });
   }
 
@@ -989,14 +998,179 @@ export class OnlineExamService {
     return published;
   }
 
-  async getMyResult(attemptId: string, userId: string) {
-    const result = await this.prisma.examResult.findUnique({
-      where: { attemptId },
-      include: { attempt: { include: { examSession: true } } },
+  private async loadAttemptForResult(attemptId: string) {
+    const attempt = await this.prisma.examAttempt.findUnique({
+      where: { id: attemptId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        examSession: true,
+        result: true,
+        answers: {
+          include: {
+            question: {
+              include: {
+                options: { orderBy: { order: 'asc' } },
+                answerKeys: true,
+              },
+            },
+          },
+        },
+      },
     });
-    if (!result || result.attempt.userId !== userId) throw new NotFoundException('결과가 없습니다.');
-    if (!result.publishedAt) throw new ForbiddenException('아직 공개되지 않은 결과입니다.');
-    return result;
+    if (!attempt) throw new NotFoundException('응시 세션을 찾을 수 없습니다.');
+    if (attempt.status === ExamAttemptStatus.IN_PROGRESS) {
+      throw new BadRequestException('아직 제출되지 않은 시험입니다.');
+    }
+    return attempt;
+  }
+
+  private buildAttemptResultDetail(
+    attempt: Awaited<ReturnType<OnlineExamService['loadAttemptForResult']>>,
+    options: { revealAnswers: boolean; includeUser?: boolean },
+  ) {
+    const session = attempt.examSession;
+    const result = attempt.result;
+    const answerByQuestion = new Map(attempt.answers.map((a) => [a.questionId, a]));
+
+    const items = attempt.questionOrder
+      .map((questionId, index) => {
+        const answer = answerByQuestion.get(questionId);
+        if (!answer) return null;
+
+        const snapshot = answer.questionSnapshot as {
+          prompt?: string;
+          type?: QuestionType;
+        } | null;
+        const optionsSnapshot = answer.optionsSnapshot as Array<{
+          id: string;
+          label: string;
+          text: string;
+          order?: number;
+        }> | null;
+        const question = answer.question;
+        const type = snapshot?.type ?? question.type;
+        const prompt = snapshot?.prompt ?? question.prompt;
+        const points = answer.pointsSnapshot;
+        const score = answer.score ?? 0;
+
+        let correctAnswer: { optionIds?: string[]; textPattern?: string | null } | null = null;
+        let explanation: string | null = null;
+
+        if (options.revealAnswers) {
+          explanation = question.explanation ?? null;
+          if (
+            type === QuestionType.SINGLE_CHOICE ||
+            type === QuestionType.MULTIPLE_CHOICE
+          ) {
+            correctAnswer = {
+              optionIds: question.answerKeys
+                .map((key) => key.optionId)
+                .filter((id): id is string => Boolean(id)),
+            };
+          } else {
+            correctAnswer = {
+              textPattern: question.answerKeys[0]?.textPattern ?? null,
+            };
+          }
+        }
+
+        const isCorrect = points > 0 && score === points;
+
+        return {
+          order: index + 1,
+          questionId,
+          prompt,
+          type,
+          points,
+          options: Array.isArray(optionsSnapshot)
+            ? optionsSnapshot
+            : question.options,
+          myAnswer: {
+            selectedOptionIds: answer.selectedOptionIds,
+            textAnswer: answer.textAnswer,
+            fileUrl: answer.fileUrl,
+            fileName: answer.fileName,
+          },
+          correctAnswer: options.revealAnswers ? correctAnswer : null,
+          explanation: options.revealAnswers ? explanation : null,
+          feedback: options.revealAnswers ? answer.feedback : null,
+          score,
+          isCorrect: options.revealAnswers ? isCorrect : null,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    return {
+      attemptId: attempt.id,
+      attemptStatus: attempt.status,
+      submittedAt: attempt.submittedAt,
+      user: options.includeUser ? attempt.user : undefined,
+      session: {
+        id: session.id,
+        qualificationName: session.qualificationName,
+        roundName: session.roundName,
+        passingScore: session.passingScore,
+      },
+      result: result
+        ? {
+            id: result.id,
+            totalScore: result.totalScore,
+            maxScore: result.maxScore,
+            percentage: result.percentage,
+            status: result.status,
+            publishedAt: result.publishedAt,
+            emailSentAt: options.includeUser ? result.emailSentAt : undefined,
+          }
+        : null,
+      items,
+    };
+  }
+
+  async listSessionResults(sessionId: string) {
+    const attempts = await this.prisma.examAttempt.findMany({
+      where: {
+        examSessionId: sessionId,
+        status: { not: ExamAttemptStatus.IN_PROGRESS },
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        result: true,
+      },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    return attempts.map((attempt) => ({
+      attemptId: attempt.id,
+      user: attempt.user,
+      status: attempt.status,
+      submittedAt: attempt.submittedAt,
+      result: attempt.result
+        ? {
+            totalScore: attempt.result.totalScore,
+            maxScore: attempt.result.maxScore,
+            percentage: attempt.result.percentage,
+            status: attempt.result.status,
+            publishedAt: attempt.result.publishedAt,
+          }
+        : null,
+    }));
+  }
+
+  async getAdminAttemptResult(attemptId: string) {
+    const attempt = await this.loadAttemptForResult(attemptId);
+    return this.buildAttemptResultDetail(attempt, {
+      revealAnswers: true,
+      includeUser: true,
+    });
+  }
+
+  async getMyResult(attemptId: string, userId: string) {
+    const attempt = await this.loadAttemptForResult(attemptId);
+    if (attempt.userId !== userId) throw new ForbiddenException();
+    if (!attempt.result?.publishedAt) {
+      throw new ForbiddenException('아직 공개되지 않은 결과입니다.');
+    }
+    return this.buildAttemptResultDetail(attempt, { revealAnswers: true });
   }
 
   /* ── 감독 이벤트 ───────────────────────────────────────── */

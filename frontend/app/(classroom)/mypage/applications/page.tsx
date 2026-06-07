@@ -29,7 +29,16 @@ interface Application {
   formJson?: Record<string, unknown>;
   referrerCode?: string | null;
   depositAccount?: DepositAccountInfo;
-  attempt?: { id: string; status: string; result?: { status: string; publishedAt?: string | null } | null } | null;
+  attempt?: {
+    id: string;
+    status: string;
+    result?: {
+      status: string;
+      totalScore?: number;
+      maxScore?: number;
+      publishedAt?: string | null;
+    } | null;
+  } | null;
   examSession?: {
     id: string;
     qualificationName: string;
@@ -194,6 +203,17 @@ export default function ApplicationsPage() {
             const { canEnterLobby, windowStart, isAnytimeMock } = getLobbyAvailability(app.examSession);
             const attemptCompleted = isAttemptCompleted(app.attempt?.status);
             const attemptInProgress = isAttemptInProgress(app.attempt?.status);
+            const resultPublished = !!app.attempt?.result?.publishedAt;
+            const resultGrading =
+              attemptCompleted &&
+              isOnlineExam &&
+              !app.attempt?.result &&
+              app.attempt?.status !== 'INVALIDATED';
+            const resultPending =
+              attemptCompleted &&
+              isOnlineExam &&
+              !!app.attempt?.result &&
+              !resultPublished;
             return (
               <div key={app.id} className="bg-white rounded-xl border p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -212,6 +232,12 @@ export default function ApplicationsPage() {
                       {attemptInProgress && (
                         <BrandBadge variant="orange">응시 중</BrandBadge>
                       )}
+                      {resultGrading && (
+                        <BrandBadge variant="orange">채점 중</BrandBadge>
+                      )}
+                      {resultPending && (
+                        <BrandBadge variant="orange">결과 대기</BrandBadge>
+                      )}
                     </div>
                     <h3 className="font-bold text-foreground">{app.examSession?.qualificationName ?? '시험'}</h3>
                     <p className="text-sm text-muted-foreground mt-1">{app.examSession?.roundName ?? ''}</p>
@@ -226,14 +252,33 @@ export default function ApplicationsPage() {
                     {app.depositAccount && (
                       <ApplicationDepositSummary account={app.depositAccount} />
                     )}
-                    {app.attempt?.result?.publishedAt && (
+                    {resultPublished && app.attempt?.result && (
                       <div className="mt-3 rounded-lg border border-brand-blue/20 bg-brand-blue-subtle p-3 text-xs text-brand-blue">
                         시험 결과: {app.attempt.result.status === 'PASSED' ? '합격' : '불합격'}
+                        {typeof app.attempt.result.totalScore === 'number' &&
+                          typeof app.attempt.result.maxScore === 'number' && (
+                            <> ({app.attempt.result.totalScore}/{app.attempt.result.maxScore}점)</>
+                          )}
                       </div>
+                    )}
+                    {resultGrading && (
+                      <p className="mt-3 text-xs text-muted-foreground">채점이 진행 중입니다.</p>
+                    )}
+                    {resultPending && (
+                      <p className="mt-3 text-xs text-muted-foreground">채점이 완료되면 결과가 공개됩니다.</p>
                     )}
                   </div>
                   {app.status === 'APPLIED' && (
                     <div className="flex flex-col gap-2">
+                      {resultPublished && app.attempt && (
+                        <BrandButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/mypage/exam-results/${app.attempt!.id}`)}
+                        >
+                          결과 보기
+                        </BrandButton>
+                      )}
                       {isOnlineExam && app.examEligibility === 'APPROVED' && !attemptCompleted && (
                         <>
                           <BrandButton

@@ -135,6 +135,18 @@ export class OnlineExamController {
   }
 
   @Roles(UserRole.OPERATOR)
+  @Get('admin/sessions/:sessionId/results')
+  listSessionResults(@Param('sessionId') sessionId: string) {
+    return this.service.listSessionResults(sessionId);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/attempts/:attemptId/result')
+  getAdminAttemptResult(@Param('attemptId') attemptId: string) {
+    return this.service.getAdminAttemptResult(attemptId);
+  }
+
+  @Roles(UserRole.OPERATOR)
   @Get('admin/sessions/:sessionId/proctor')
   listProctorSession(@Param('sessionId') sessionId: string) {
     return this.service.listProctorSession(sessionId);
