@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileDown, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
@@ -78,13 +78,16 @@ export default function AdminExamPaperPage() {
   const [subjectOptions, setSubjectOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [examMode, setExamMode] = useState<'OFFLINE' | 'ONLINE' | 'HYBRID' | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState<'student' | 'answer' | 'combined' | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [paperRes, banksRes] = await Promise.all([
+      const [paperRes, banksRes, sessionRes] = await Promise.all([
         apiFetchWithAuth(`/online-exam/admin/sessions/${id}/paper`),
         apiFetchWithAuth('/online-exam/admin/question-banks'),
+        apiFetchWithAuth(`/exam/sessions/${id}`),
       ]);
       if (paperRes.ok) {
         const data = await parseJsonSafe<Paper | null>(paperRes, null);
@@ -113,6 +116,15 @@ export default function AdminExamPaperPage() {
           ),
         );
         setSubjectOptions(subjects);
+      }
+      if (sessionRes.ok) {
+        const session = await parseJsonSafe<{ examMode?: 'OFFLINE' | 'ONLINE' | 'HYBRID' } | null>(
+          sessionRes,
+          null,
+        );
+        setExamMode(session?.examMode ?? null);
+      } else {
+        setExamMode(null);
       }
     } finally {
       setLoading(false);
@@ -184,6 +196,58 @@ export default function AdminExamPaperPage() {
     }
   };
 
+  const canExportPdf =
+    (examMode === 'OFFLINE' || examMode === 'HYBRID') && selectedQuestionIds.length > 0;
+
+  const isPublishedPaper = paper?.status === 'PUBLISHED';
+  const pdfLabels = isPublishedPaper
+    ? {
+        student: '정시험지 PDF',
+        answer: '정답지 PDF',
+        combined: '시험+정답 통합본 PDF',
+      }
+    : {
+        student: '초안 시험지 PDF',
+        answer: '초안 정답지 PDF',
+        combined: '초안 통합본 PDF',
+      };
+
+  const downloadPaperPdf = async (variant: 'student' | 'answer' | 'combined') => {
+    setDownloadingPdf(variant);
+    try {
+      const res = await apiFetchWithAuth(
+        `/online-exam/admin/sessions/${id}/paper/export-pdf?variant=${variant}`,
+      );
+      if (!res.ok) {
+        const message = await parseJsonSafe<{ message?: string }>(res, {});
+        alert(message.message ?? 'PDF 생성에 실패했습니다.');
+        return;
+      }
+
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filenameMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+      const filename = filenameMatch
+        ? decodeURIComponent(filenameMatch[1])
+        : variant === 'combined'
+          ? '시험-정답-통합본.pdf'
+          : variant === 'answer'
+            ? '시험-정답지.pdf'
+            : '시험지.pdf';
+
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('PDF 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setDownloadingPdf(null);
+    }
+  };
+
   const addDocument = () => {
     const name = docName.trim();
     const url = docUrl.trim();
@@ -248,7 +312,35 @@ export default function AdminExamPaperPage() {
           title="시험지 편집"
           description={`선택 문항 ${selectedQuestionIds.length}개 · 총점 ${totalPoints}점`}
           actions={
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {canExportPdf ? (
+                <>
+                  <BrandButton
+                    variant="outline"
+                    size="sm"
+                    loading={downloadingPdf === 'student'}
+                    onClick={() => void downloadPaperPdf('student')}
+                  >
+                    <FileDown className="mr-1 h-4 w-4" /> {pdfLabels.student}
+                  </BrandButton>
+                  <BrandButton
+                    variant="outline"
+                    size="sm"
+                    loading={downloadingPdf === 'answer'}
+                    onClick={() => void downloadPaperPdf('answer')}
+                  >
+                    <FileDown className="mr-1 h-4 w-4" /> {pdfLabels.answer}
+                  </BrandButton>
+                  <BrandButton
+                    variant="outline"
+                    size="sm"
+                    loading={downloadingPdf === 'combined'}
+                    onClick={() => void downloadPaperPdf('combined')}
+                  >
+                    <FileDown className="mr-1 h-4 w-4" /> {pdfLabels.combined}
+                  </BrandButton>
+                </>
+              ) : null}
               <BrandButton variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
                 <Plus className="mr-1 h-4 w-4" /> 문항 추가
               </BrandButton>

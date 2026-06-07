@@ -18,11 +18,15 @@ import { ExamEligibilityStatus, UserRole } from '@prisma/client';
 import { from, interval, map, startWith, switchMap } from 'rxjs';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { ExamPaperPdfService, type PaperPdfVariant } from './exam-paper-pdf.service';
 import { OnlineExamService } from './online-exam.service';
 
 @Controller('online-exam')
 export class OnlineExamController {
-  constructor(private readonly service: OnlineExamService) {}
+  constructor(
+    private readonly service: OnlineExamService,
+    private readonly paperPdfService: ExamPaperPdfService,
+  ) {}
 
   /* ── Admin: 문제은행 ─────────────────────────────────────── */
 
@@ -80,6 +84,35 @@ export class OnlineExamController {
   @Post('admin/sessions/:sessionId/paper/publish')
   publishPaper(@Param('sessionId') sessionId: string) {
     return this.service.publishPaper(sessionId);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Get('admin/sessions/:sessionId/paper/export-pdf')
+  async exportPaperPdf(
+    @Param('sessionId') sessionId: string,
+    @Query('variant') variant: string | undefined,
+    @Res() res: Response,
+  ) {
+    const normalized = (variant ?? '').trim().toLowerCase();
+    if (normalized !== 'student' && normalized !== 'answer' && normalized !== 'combined') {
+      res.status(400).json({ message: 'variant는 student, answer, combined 중 하나여야 합니다.' });
+      return;
+    }
+
+    const { buffer, filename } = await this.paperPdfService.exportPaperPdf(
+      sessionId,
+      normalized as PaperPdfVariant,
+    );
+
+    const encodedFilename = encodeURIComponent(filename);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`,
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Length': buffer.length,
+    });
+    res.send(buffer);
   }
 
   @Roles(UserRole.OPERATOR)
