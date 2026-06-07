@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Bell, Pin } from 'lucide-react';
 import { API_BASE } from '@/lib/api-base';
 import {
+  buildTickerSegments,
   formatNoticeTickerDate,
   parseNoticeTickerItems,
   type NoticeTickerItem,
@@ -21,17 +22,21 @@ function NoticeTickerItems({ notices }: { notices: NoticeTickerItem[] }) {
   return (
     <>
       {notices.map((notice, index) => (
-        <span key={`${notice.id}-${index}`} className="inline-flex items-center gap-1.5 shrink-0">
-          {index > 0 && <span className="text-muted-foreground/60 px-2" aria-hidden="true">·</span>}
+        <span key={`${notice.id}-${index}`} className="inline-flex shrink-0 items-center gap-1.5">
+          {index > 0 && (
+            <span className="px-4 text-muted-foreground/60" aria-hidden="true">
+              ·
+            </span>
+          )}
           <Link
             href={`/notices/${notice.id}`}
-            className="inline-flex items-center gap-1 hover:text-brand-blue hover:underline"
+            className="inline-flex items-center gap-1.5 hover:text-brand-blue hover:underline"
           >
             {notice.isPinned && (
-              <Pin className="h-3 w-3 shrink-0 text-brand-blue" aria-label="고정 공지" />
+              <Pin className="h-3 w-3 shrink-0 text-brand-blue" aria-hidden="true" />
             )}
-            <span className="truncate max-w-[28rem]">{notice.title}</span>
-            <span className="text-muted-foreground shrink-0">
+            <span>{notice.title}</span>
+            <span className="shrink-0 text-muted-foreground">
               {formatNoticeTickerDate(notice)}
             </span>
           </Link>
@@ -79,9 +84,11 @@ export function NoticeNewsTicker({ initialNotices }: NoticeNewsTickerProps) {
     };
   }, []);
 
-  const shouldAnimate = useMemo(
-    () => notices.length > 1 && !reducedMotion,
-    [notices.length, reducedMotion],
+  const segments = useMemo(() => buildTickerSegments(notices), [notices]);
+  const shouldAnimate = notices.length > 0 && !reducedMotion;
+  const animationDuration = useMemo(
+    () => Math.max(24, segments.length * 5),
+    [segments.length],
   );
 
   if (notices.length === 0) return null;
@@ -102,14 +109,17 @@ export function NoticeNewsTicker({ initialNotices }: NoticeNewsTickerProps) {
 
         <div className="relative min-w-0 flex-1 overflow-hidden">
           {shouldAnimate ? (
-            <div className="notice-ticker-track inline-flex whitespace-nowrap text-xs text-foreground">
-              <NoticeTickerItems notices={notices} />
-              <span className="px-6" aria-hidden="true" />
-              <NoticeTickerItems notices={notices} />
+            <div
+              className="notice-ticker-track inline-flex w-max whitespace-nowrap text-xs text-foreground"
+              style={{ animationDuration: `${animationDuration}s` }}
+            >
+              <NoticeTickerItems notices={segments} />
+              <span className="px-8" aria-hidden="true" />
+              <NoticeTickerItems notices={segments} />
             </div>
           ) : (
             <div className="truncate text-xs text-foreground">
-              <NoticeTickerItems notices={notices.slice(0, 1)} />
+              <NoticeTickerItems notices={[notices[0]]} />
             </div>
           )}
         </div>

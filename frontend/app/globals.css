@@ -346,7 +346,10 @@ section.bg-hero-gradient p {
 }
 
 .notice-ticker-track {
-  animation: notice-ticker-scroll 45s linear infinite;
+  animation-name: notice-ticker-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
 }
 
 .notice-ticker:hover .notice-ticker-track,
