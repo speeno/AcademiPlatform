@@ -335,30 +335,24 @@ section.bg-hero-gradient p {
   font-weight: 800;
 }
 
-/* 공지 뉴스피드 티커 */
-@keyframes notice-ticker-scroll {
-  0% {
+/* 공지 뉴스피드 티커 — 공지 항목 순차 전환 */
+@keyframes notice-ticker-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
     transform: translateX(0);
   }
-  100% {
-    transform: translateX(-50%);
-  }
 }
 
-.notice-ticker-track {
-  animation-name: notice-ticker-scroll;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  will-change: transform;
-}
-
-.notice-ticker:hover .notice-ticker-track,
-.notice-ticker:focus-within .notice-ticker-track {
-  animation-play-state: paused;
+.notice-ticker-item {
+  animation: notice-ticker-enter 0.45s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .notice-ticker-track {
+  .notice-ticker-item {
     animation: none;
   }
 }
