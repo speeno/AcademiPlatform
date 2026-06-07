@@ -38,7 +38,8 @@
     "exam:questions:seed-ai": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-ai-question-bank.ts",
     "exam:content:export": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts export",
     "exam:content:import": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts import",
-    "exam:content:sync": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts sync"
+    "exam:content:sync": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts sync",
+    "exam:content:import-api": "node -r ts-node/register/transpile-only -r tsconfig-paths/register debug/import-question-bank-via-api.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
