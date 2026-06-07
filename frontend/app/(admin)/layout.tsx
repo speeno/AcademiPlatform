@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
   MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award, BarChart3,
-  FileQuestion,
+  FileQuestion, SquarePen,
 } from 'lucide-react';
 import { SidebarShell } from '@/components/layout/SidebarShell';
 import { type SidebarNavGroup } from '@/components/layout/AppSidebar';
@@ -31,6 +31,7 @@ const navGroups: SidebarNavGroup[] = [
     label: '시험 & 결제',
     items: [
       { href: '/admin/exam', icon: ClipboardList, label: '시험 접수 관리', matchPrefix: true },
+      { href: '/admin/exam/authoring', icon: SquarePen, label: '시험 출제 관리', matchPrefix: true },
       { href: '/admin/exam/questions', icon: FileQuestion, label: '문제은행', matchPrefix: true },
       { href: '/admin/qualifications', icon: Award, label: '자격 소개 관리' },
       { href: '/admin/referrers', icon: UserCheck, label: '권유자 관리' },

@@ -3,13 +3,31 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookOpen, Menu, Shield, UserRound, X, LogIn, LogOut } from 'lucide-react';
+import {
+  BookOpen,
+  ChevronDown,
+  LogIn,
+  LogOut,
+  Menu,
+  MoreHorizontal,
+  Shield,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandButton } from '@/components/ui/brand-button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Logo } from './Logo';
 import { clearAccessToken } from '@/lib/auth';
 import { useAuthContext } from '@/lib/auth-context';
 import {
+  PUBLIC_NAV_PRIMARY_COUNT,
   publicNavItems,
   publicNavLinkClass,
   publicNavMobileLinkClass,
@@ -33,6 +51,15 @@ export function Navbar() {
       ? { href: '/classroom/instructor/cms', label: '강사 CMS', Icon: UserRound }
       : { href: '/classroom', label: '내 강의실', Icon: BookOpen };
   const RoleEntryIcon = roleEntry.Icon;
+  const primaryNavItems = publicNavItems.slice(0, PUBLIC_NAV_PRIMARY_COUNT);
+  const overflowNavItems = publicNavItems.slice(PUBLIC_NAV_PRIMARY_COUNT);
+
+  const renderNavLink = (item: (typeof publicNavItems)[number]) => (
+    <Link key={item.href} href={item.href} className={publicNavLinkClass}>
+      <span>{item.label}</span>
+      <span className="absolute left-2 right-2 -bottom-0.5 h-0.5 scale-x-0 rounded-full bg-brand-orange transition-transform duration-200 group-hover:scale-x-100" />
+    </Link>
+  );
 
   useEffect(() => {
     setMobileOpen(false);
@@ -65,16 +92,35 @@ export function Navbar() {
             </div>
           </div>
 
-          <nav className="hidden xl:flex min-w-0 flex-1 items-center justify-center gap-0.5">
-            {publicNavItems.map((item) => (
-              <Link key={item.href} href={item.href} className={publicNavLinkClass}>
-                <span>{item.label}</span>
-                <span className="absolute left-2 right-2 -bottom-0.5 h-0.5 scale-x-0 rounded-full bg-brand-orange transition-transform duration-200 group-hover:scale-x-100" />
-              </Link>
-            ))}
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden xl:flex 2xl:hidden">
+            {primaryNavItems.map(renderNavLink)}
+            {overflowNavItems.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={`${publicNavLinkClass} inline-flex items-center gap-0.5`}
+                  aria-label="추가 메뉴"
+                >
+                  더보기
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="min-w-40">
+                  {overflowNavItems.map((item) => (
+                    <DropdownMenuItem key={item.href}>
+                      <Link href={item.href} className="flex w-full items-center">
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </nav>
 
-          <div className="hidden shrink-0 xl:flex items-center gap-2">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 2xl:flex">
+            {publicNavItems.map(renderNavLink)}
+          </nav>
+
+          <div className="relative z-10 hidden shrink-0 items-center gap-1.5 border-l border-border/50 bg-white/95 pl-2 xl:flex 2xl:gap-2 2xl:pl-3">
             {authLoading ? (
               <Button
                 variant="outline"
@@ -85,30 +131,28 @@ export function Navbar() {
                 확인중...
               </Button>
             ) : isAuthenticated ? (
-              <>
-                <Link href={roleEntry.href}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-brand-blue text-brand-blue hover:bg-brand-blue-subtle"
-                  >
-                    <RoleEntryIcon className="w-4 h-4 mr-1" />
-                    {roleEntry.label}
-                  </Button>
-                </Link>
-                <span className="max-w-[5.5rem] truncate px-1 text-xs font-semibold text-foreground 2xl:max-w-[9rem] 2xl:text-sm">
-                  {displayName}님
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="border-brand-blue text-brand-blue hover:bg-brand-blue-subtle"
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className="inline-flex h-8 max-w-[9.5rem] items-center gap-1 rounded-md border border-brand-blue bg-white px-3 text-sm font-medium text-brand-blue hover:bg-brand-blue-subtle 2xl:max-w-[11rem]"
                 >
-                  <LogOut className="w-4 h-4 mr-1" />
-                  로그아웃
-                </Button>
-              </>
+                  <RoleEntryIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{displayName}님</span>
+                  <ChevronDown className="ml-0.5 h-3.5 w-3.5 shrink-0 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-44">
+                  <DropdownMenuItem>
+                    <Link href={roleEntry.href} className="flex w-full items-center gap-1.5">
+                      <RoleEntryIcon className="h-4 w-4" />
+                      {roleEntry.label}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="gap-1.5">
+                    <LogOut className="h-4 w-4" />
+                    로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Link href="/login">
                 <Button variant="outline" size="sm" className="border-brand-blue text-brand-blue hover:bg-brand-blue-subtle">
@@ -118,7 +162,7 @@ export function Navbar() {
               </Link>
             )}
             <Link href="/courses">
-              <BrandButton size="sm" variant="primary">
+              <BrandButton size="sm" variant="primary" className="whitespace-nowrap px-3 2xl:px-4">
                 수강 신청
               </BrandButton>
             </Link>

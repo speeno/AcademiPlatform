@@ -153,6 +153,7 @@ export default function AdminDashboard() {
             {[
               { label: '교육과정 관리', href: '/admin/courses', color: 'var(--brand-blue)' },
               { label: '시험 접수 관리', href: '/admin/exam', color: 'var(--brand-orange)' },
+              { label: '시험 출제 관리', href: '/admin/exam/authoring', color: 'var(--brand-blue-light)' },
               { label: '교재 관리', href: '/admin/textbooks', color: 'var(--brand-sky)' },
               { label: '공지 관리', href: '/admin/notices', color: 'var(--brand-green)' },
               { label: '소개 페이지 CMS', href: '/admin/intro', color: 'var(--brand-blue-light)' },

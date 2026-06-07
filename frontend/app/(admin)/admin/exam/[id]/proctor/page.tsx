@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import { apiFetchWithAuth, getApiUrl } from '@/lib/api-client';
+import { apiFetchWithAuth, getApiUrl, parseJsonSafe } from '@/lib/api-client';
 
 interface ProctorAttempt {
   id: string;
@@ -29,7 +29,10 @@ export default function AdminExamProctorPage() {
   const load = async () => {
     try {
       const res = await apiFetchWithAuth(`/online-exam/admin/sessions/${id}/proctor`);
-      if (res.ok) setAttempts(await res.json());
+      if (res.ok) {
+        const data = await parseJsonSafe<ProctorAttempt[]>(res, []);
+        setAttempts(Array.isArray(data) ? data : []);
+      }
     } finally {
       setLoading(false);
     }

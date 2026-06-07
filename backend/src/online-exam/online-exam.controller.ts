@@ -25,8 +25,8 @@ export class OnlineExamController {
 
   @Roles(UserRole.OPERATOR)
   @Get('admin/questions')
-  listQuestions(@Query('bankId') bankId?: string) {
-    return this.service.listQuestions(bankId);
+  listQuestions(@Query() query: any) {
+    return this.service.listQuestions(query);
   }
 
   @Roles(UserRole.OPERATOR)
@@ -53,6 +53,12 @@ export class OnlineExamController {
   @Post('admin/sessions/:sessionId/paper')
   upsertPaper(@Param('sessionId') sessionId: string, @Body() body: any) {
     return this.service.upsertPaper(sessionId, body);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Post('admin/sessions/:sessionId/paper/auto-select')
+  autoSelectPaperQuestions(@Body() body: any) {
+    return this.service.autoSelectQuestions(body);
   }
 
   @Roles(UserRole.OPERATOR)

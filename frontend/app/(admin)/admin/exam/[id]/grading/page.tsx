@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { apiFetchWithAuth } from '@/lib/api-client';
+import { apiFetchWithAuth, parseJsonSafe } from '@/lib/api-client';
 
 interface GradingAnswer {
   id: string;
@@ -33,7 +33,10 @@ export default function AdminExamGradingPage() {
 
   const load = async () => {
     const res = await apiFetchWithAuth(`/online-exam/admin/sessions/${id}/grading`);
-    if (res.ok) setAttempts(await res.json());
+    if (res.ok) {
+      const data = await parseJsonSafe<GradingAttempt[]>(res, []);
+      setAttempts(Array.isArray(data) ? data : []);
+    }
   };
 
   useEffect(() => {

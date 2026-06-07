@@ -7,6 +7,7 @@ import { PriceDisplay } from '@/components/ui/price-display';
 export interface ExamSessionSummaryData {
   qualificationName: string;
   roundName: string;
+  examMode?: 'ONLINE' | 'OFFLINE' | 'HYBRID';
   examAt: string;
   place?: string | null;
   applyStartAt: string;

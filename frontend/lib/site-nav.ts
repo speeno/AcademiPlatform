@@ -12,7 +12,10 @@ export const publicNavItems = [
 ] as const;
 
 export const publicNavLinkClass =
-  'group relative shrink-0 whitespace-nowrap rounded-md px-2 py-2 text-xs font-bold text-muted-foreground transition-colors hover:text-brand-blue xl:px-3 xl:text-sm';
+  'group relative shrink-0 whitespace-nowrap rounded-md px-2 py-2 text-xs font-bold text-muted-foreground transition-colors hover:text-brand-blue 2xl:px-3 2xl:text-sm';
+
+/** xl(1280px)에서 한 줄에 넣을 주 메뉴 개수 — 나머지는 "더보기" 드롭다운 */
+export const PUBLIC_NAV_PRIMARY_COUNT = 6;
 
 export const publicNavMobileLinkClass =
   'block min-h-12 px-3 py-3 text-sm font-bold text-muted-foreground hover:text-brand-blue rounded-md hover:bg-brand-blue-subtle';

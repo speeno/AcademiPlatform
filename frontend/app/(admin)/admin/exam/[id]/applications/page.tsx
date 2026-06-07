@@ -8,6 +8,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
+import { parseJsonSafe } from '@/lib/api-client';
 
 const statusInfo: Record<string, { label: string; variant: 'default' | 'blue' | 'orange' | 'green' | 'red' }> = {
   TEMP_SAVED:       { label: '임시 저장', variant: 'default' },
@@ -56,7 +57,7 @@ export default function ExamApplicationsPage() {
     try {
       const res = await fetch(`${API_BASE}/exam/admin/sessions/${id}/applications`, { headers: buildAuthHeader(false) });
       if (res.ok) {
-        const d = await res.json();
+        const d = await parseJsonSafe<any>(res, []);
         setApps(d.applications ?? d);
       }
     } catch { /* ignore */ } finally { setLoading(false); }

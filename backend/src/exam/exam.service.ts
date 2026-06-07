@@ -4,9 +4,11 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { parseAppDateTime } from '../common/datetime/parse-app-datetime';
 import { PrismaService } from '../common/prisma/prisma.service';
 import {
   ExamApplicationStatus,
+  ExamMode,
   ExamSessionStatus,
   PaymentStatus,
 } from '@prisma/client';
@@ -28,6 +30,11 @@ const DEFAULT_DEPOSIT_ACCOUNT = {
   account: '302-0608-9280-11',
   holder: '이현길',
 };
+
+const APPLICABLE_EXAM_MODES = new Set<ExamMode>([
+  ExamMode.ONLINE,
+  ExamMode.OFFLINE,
+]);
 
 function sanitizeUploadedFileName(rawName: string | undefined): string {
   const trimmed = (rawName ?? '').trim();
@@ -241,6 +248,23 @@ export class ExamService {
     }
 
     const form = formJson as any;
+    const requestedExamModeRaw =
+      typeof form?.examMode === 'string' ? form.examMode.trim().toUpperCase() : '';
+    if (!requestedExamModeRaw || !APPLICABLE_EXAM_MODES.has(requestedExamModeRaw as ExamMode)) {
+      throw new BadRequestException('응시 방식(온라인/오프라인)을 선택해주세요.');
+    }
+    const requestedExamMode = requestedExamModeRaw as ExamMode;
+    if (session.examMode === ExamMode.ONLINE && requestedExamMode !== ExamMode.ONLINE) {
+      throw new BadRequestException('해당 회차는 온라인 응시만 가능합니다.');
+    }
+    if (session.examMode === ExamMode.OFFLINE && requestedExamMode !== ExamMode.OFFLINE) {
+      throw new BadRequestException('해당 회차는 오프라인 응시만 가능합니다.');
+    }
+
+    const normalizedFormJson: Record<string, unknown> = {
+      ...formJson,
+      examMode: requestedExamMode,
+    };
     const referrerCode =
       typeof form?.referrerCode === 'string' ? form.referrerCode || null : null;
     const fileName = sanitizeUploadedFileName(idPhoto.originalname);
@@ -251,7 +275,7 @@ export class ExamService {
       data: {
         examSessionId: sessionId,
         userId,
-        formJson: formJson as any,
+        formJson: normalizedFormJson as any,
         idPhoto: toPrismaBytes(idPhoto.buffer),
         idPhotoMimeType: normalizedMimeType,
         idPhotoFileName,
@@ -540,7 +564,7 @@ export class ExamService {
     const result = { ...data };
     for (const field of dateFields) {
       if (typeof result[field] === 'string' && result[field]) {
-        result[field] = new Date(result[field]);
+        result[field] = parseAppDateTime(result[field]);
       }
     }
     if (typeof result.fee === 'string') result.fee = Number(result.fee);

@@ -26,6 +26,7 @@ interface Application {
   status: string;
   examEligibility?: string;
   appliedAt: string;
+  formJson?: Record<string, unknown>;
   referrerCode?: string | null;
   depositAccount?: DepositAccountInfo;
   attempt?: { id: string; status: string; result?: { status: string; publishedAt?: string | null } | null } | null;
@@ -41,6 +42,60 @@ interface Application {
     fee: number;
     displayFee?: number | null;
   } | null;
+}
+
+type DisplayExamMode = 'ONLINE' | 'OFFLINE' | 'HYBRID';
+
+function getApplicationExamMode(app: Application): DisplayExamMode {
+  const selectedMode = typeof app.formJson?.examMode === 'string'
+    ? app.formJson.examMode.toUpperCase()
+    : '';
+  if (selectedMode === 'ONLINE' || selectedMode === 'OFFLINE') {
+    return selectedMode;
+  }
+  const sessionMode = app.examSession?.examMode;
+  if (sessionMode === 'ONLINE' || sessionMode === 'HYBRID') return sessionMode;
+  return 'OFFLINE';
+}
+
+function getExamModeLabel(mode: DisplayExamMode): string {
+  if (mode === 'ONLINE') return '온라인';
+  if (mode === 'HYBRID') return '온라인/오프라인';
+  return '오프라인';
+}
+
+function getExamModeBadgeVariant(mode: DisplayExamMode): 'default' | 'blue' | 'green' {
+  if (mode === 'ONLINE') return 'blue';
+  if (mode === 'HYBRID') return 'green';
+  return 'default';
+}
+
+function getExamPlaceLabel(app: Application, mode: DisplayExamMode): string {
+  if (mode === 'ONLINE') return '온라인 시험장';
+  if (mode === 'HYBRID') {
+    return app.examSession?.place
+      ? `오프라인: ${app.examSession.place} / 온라인: 온라인 시험장`
+      : '온라인 시험장 / 오프라인 장소 미정';
+  }
+  return app.examSession?.place || '장소 미정';
+}
+
+function getLobbyAvailability(session?: Application['examSession']) {
+  if (!session) {
+    return { canEnterLobby: false, lobbyOpenAt: null as Date | null, isAnytimeMock: false };
+  }
+  if (!session.examWindowStart || !session.examWindowEnd) {
+    return { canEnterLobby: true, lobbyOpenAt: null as Date | null, isAnytimeMock: true };
+  }
+  const startAt = new Date(session.examWindowStart);
+  const endAt = new Date(session.examWindowEnd);
+  const lobbyOpenAt = new Date(startAt.getTime() - 60 * 60 * 1000);
+  const now = new Date();
+  return {
+    canEnterLobby: now >= lobbyOpenAt && now <= endAt,
+    lobbyOpenAt,
+    isAnytimeMock: false,
+  };
 }
 
 export default function ApplicationsPage() {
@@ -105,18 +160,27 @@ export default function ApplicationsPage() {
         <div className="space-y-4">
           {apps.map((app) => {
             const s = statusLabel[app.status] ?? { label: app.status, variant: 'default' as const };
+            const applicationExamMode = getApplicationExamMode(app);
+            const isOnlineExam = applicationExamMode !== 'OFFLINE';
+            const { canEnterLobby, lobbyOpenAt, isAnytimeMock } = getLobbyAvailability(app.examSession);
             return (
               <div key={app.id} className="bg-white rounded-xl border p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <BrandBadge variant={s.variant}>{s.label}</BrandBadge>
+                      <BrandBadge variant={getExamModeBadgeVariant(applicationExamMode)}>
+                        {getExamModeLabel(applicationExamMode)}
+                      </BrandBadge>
+                      {isOnlineExam && app.examEligibility === 'APPROVED' && isAnytimeMock && (
+                        <BrandBadge variant="blue">상시 모의고사</BrandBadge>
+                      )}
                     </div>
                     <h3 className="font-bold text-foreground">{app.examSession?.qualificationName ?? '시험'}</h3>
                     <p className="text-sm text-muted-foreground mt-1">{app.examSession?.roundName ?? ''}</p>
                     <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
                       <span>시험일: {app.examSession?.examAt ? new Date(app.examSession.examAt).toLocaleDateString('ko-KR') : '-'}</span>
-                      {app.examSession?.place && <span>장소: {app.examSession.place}</span>}
+                      <span>시험장소: {getExamPlaceLabel(app, applicationExamMode)}</span>
                       <span>응시료: {Number(
                         app.examSession?.displayFee ?? app.examSession?.fee ?? 0,
                       ).toLocaleString('ko-KR')}원</span>
@@ -133,20 +197,33 @@ export default function ApplicationsPage() {
                   </div>
                   {app.status === 'APPLIED' && (
                     <div className="flex flex-col gap-2">
-                      {app.examSession?.examMode !== 'OFFLINE' && app.examEligibility === 'APPROVED' && (
-                        <BrandButton
-                          variant="primary"
-                          size="sm"
-                          onClick={() => {
-                            if (app.attempt?.status === 'IN_PROGRESS') {
-                              router.push(`/exam/attempt/${app.attempt.id}`);
-                            } else {
-                              router.push(`/exam/${app.examSession!.id}/lobby`);
-                            }
-                          }}
-                        >
-                          {app.attempt?.status === 'IN_PROGRESS' ? '응시 이어가기' : '시험 입장'}
-                        </BrandButton>
+                      {isOnlineExam && app.examEligibility === 'APPROVED' && (
+                        <>
+                          <BrandButton
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              if (app.attempt?.status === 'IN_PROGRESS') {
+                                router.push(`/exam/attempt/${app.attempt.id}`);
+                              } else {
+                                router.push(`/exam/${app.examSession!.id}/lobby`);
+                              }
+                            }}
+                          >
+                            {app.attempt?.status === 'IN_PROGRESS'
+                              ? '응시 이어가기'
+                              : canEnterLobby
+                                ? isAnytimeMock
+                                  ? '모의고사 입장'
+                                  : '시험장 입장'
+                                : '시험장 확인'}
+                          </BrandButton>
+                          {!canEnterLobby && app.attempt?.status !== 'IN_PROGRESS' && lobbyOpenAt && !isAnytimeMock && (
+                            <p className="max-w-36 text-xs text-muted-foreground">
+                              {lobbyOpenAt.toLocaleString('ko-KR')}부터 입장
+                            </p>
+                          )}
+                        </>
                       )}
                       <BrandButton
                         variant="danger"

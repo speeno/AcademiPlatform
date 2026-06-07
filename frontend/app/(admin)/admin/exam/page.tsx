@@ -9,6 +9,7 @@ import { BrandButton } from '@/components/ui/brand-button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
+import { toDatetimeLocalValue } from '@/lib/datetime-local';
 import { calculatePricingSnapshot, type DiscountType } from '@/lib/pricing-snapshot';
 
 const API = API_BASE;
@@ -153,15 +154,15 @@ export default function AdminExamPage() {
     setForm({
       qualificationName: session.qualificationName,
       roundName: session.roundName,
-      examAt: session.examAt.slice(0, 16),
-      applyStartAt: session.applyStartAt?.slice(0, 16) ?? '',
-      applyEndAt: session.applyEndAt?.slice(0, 16) ?? '',
+      examAt: toDatetimeLocalValue(session.examAt),
+      applyStartAt: toDatetimeLocalValue(session.applyStartAt),
+      applyEndAt: toDatetimeLocalValue(session.applyEndAt),
       place: session.place ?? '',
       capacity: String(session.capacity ?? ''),
       status: session.status,
       examMode: session.examMode ?? 'OFFLINE',
-      examWindowStart: session.examWindowStart?.slice(0, 16) ?? '',
-      examWindowEnd: session.examWindowEnd?.slice(0, 16) ?? '',
+      examWindowStart: toDatetimeLocalValue(session.examWindowStart),
+      examWindowEnd: toDatetimeLocalValue(session.examWindowEnd),
       durationMinutes: String(session.durationMinutes ?? 60),
       lateEntryMinutes: String(session.lateEntryMinutes ?? 0),
       requireFullscreen: !!session.requireFullscreen,
@@ -288,7 +289,15 @@ export default function AdminExamPage() {
       header: '방식',
       cell: (s) => (
         <BrandBadge variant={s.examMode === 'ONLINE' ? 'blue' : 'default'} className="text-xs">
-          {s.examMode === 'ONLINE' ? '온라인' : s.examMode === 'HYBRID' ? '혼합' : '오프라인'}
+          {s.examMode === 'ONLINE'
+            ? !s.examWindowStart || !s.examWindowEnd
+              ? '온라인(상시 모의)'
+              : '온라인'
+            : s.examMode === 'HYBRID'
+              ? !s.examWindowStart || !s.examWindowEnd
+                ? '혼합(상시 모의)'
+                : '혼합'
+              : '오프라인'}
         </BrandBadge>
       ),
       className: 'w-20',
@@ -351,9 +360,16 @@ export default function AdminExamPage() {
         title="시험 회차 관리"
         description={`총 ${sessions.length}개 회차 · 목록 응시료를 기준으로 편집/내부/사용자 노출 금액을 동일하게 유지합니다.`}
         actions={
-          <BrandButton variant="primary" size="sm" onClick={openCreate}>
-            <Plus className="mr-1 h-4 w-4" /> 회차 등록
-          </BrandButton>
+          <div className="flex items-center gap-2">
+            <Link href="/admin/exam/authoring">
+              <BrandButton variant="outline" size="sm">
+                <SquarePen className="mr-1 h-4 w-4" /> 출제 관리
+              </BrandButton>
+            </Link>
+            <BrandButton variant="primary" size="sm" onClick={openCreate}>
+              <Plus className="mr-1 h-4 w-4" /> 회차 등록
+            </BrandButton>
+          </div>
         }
       />
 
@@ -459,6 +475,9 @@ export default function AdminExamPage() {
                     />
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  응시 시작/종료를 비워두면 접수 승인된 온라인 응시자는 언제든 모의고사를 시작할 수 있습니다.
+                </p>
                 <div className="flex flex-wrap gap-3">
                   <label className="inline-flex items-center gap-2 text-sm">
                     <input

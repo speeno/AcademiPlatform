@@ -60,6 +60,17 @@ export default function ExamApplyPage() {
   const [idPhotoFile, setIdPhotoFile] = useState<File | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
+  const sessionExamMode = sessionInfo?.examMode ?? 'OFFLINE';
+  const availableExamModes =
+    sessionExamMode === 'HYBRID'
+      ? [
+          { value: 'ONLINE', label: '온라인' },
+          { value: 'OFFLINE', label: '오프라인' },
+        ]
+      : sessionExamMode === 'ONLINE'
+        ? [{ value: 'ONLINE', label: '온라인' }]
+        : [{ value: 'OFFLINE', label: '오프라인' }];
+
   useEffect(() => {
     let active = true;
     const applyPath = `/exam/${sessionId}/apply`;
@@ -108,6 +119,7 @@ export default function ExamApplyPage() {
         setSessionInfo({
           qualificationName: data.qualificationName ?? '시험',
           roundName: data.roundName ?? '',
+          examMode: data.examMode ?? 'OFFLINE',
           examAt: data.examAt,
           place: data.place,
           applyStartAt: data.applyStartAt,
@@ -132,6 +144,20 @@ export default function ExamApplyPage() {
     fetchSession();
     fetchReferrerGroups();
   }, [sessionId, authReady]);
+
+  useEffect(() => {
+    if (!sessionInfo) return;
+    setFormData((prev) => {
+      if (prev.examMode) return prev;
+      const defaultMode =
+        sessionInfo.examMode === 'HYBRID'
+          ? 'ONLINE'
+          : sessionInfo.examMode === 'ONLINE'
+            ? 'ONLINE'
+            : 'OFFLINE';
+      return { ...prev, examMode: defaultMode };
+    });
+  }, [sessionInfo]);
 
   const referrerOptions = flattenReferrerOptions(referrerGroups);
   const selectedMember = findReferrerMemberByCode(referrerGroups, selectedMemberCode);
@@ -162,6 +188,10 @@ export default function ExamApplyPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.examMode || !['ONLINE', 'OFFLINE'].includes(formData.examMode)) {
+      toast.error('응시 방식(온라인/오프라인)을 선택해주세요.');
+      return;
+    }
     if (!idPhotoFile) {
       toast.error('증명사진을 업로드해주세요.');
       return;
@@ -305,6 +335,27 @@ export default function ExamApplyPage() {
 
               <div>
                 <label className="text-sm font-medium text-foreground mb-2.5 block">
+                  응시 방식 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                  value={formData.examMode ?? availableExamModes[0]?.value ?? 'OFFLINE'}
+                  onChange={(e) => handleFormChange('examMode', e.target.value)}
+                  required
+                >
+                  {availableExamModes.map((mode) => (
+                    <option key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  회차 설정에 따라 선택 가능한 응시 방식만 노출됩니다.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2.5 block">
                   증명사진 <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -377,6 +428,12 @@ export default function ExamApplyPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">이메일</span>
                   <span className="font-medium">{formData.email}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">응시 방식</span>
+                  <span className="font-medium">
+                    {formData.examMode === 'ONLINE' ? '온라인' : '오프라인'}
+                  </span>
                 </div>
                 {selectedMemberCode && (
                   <div className="flex justify-between text-sm">

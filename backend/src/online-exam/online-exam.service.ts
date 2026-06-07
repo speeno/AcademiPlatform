@@ -13,18 +13,59 @@ import {
   ExamPaperStatus,
   ExamProctorEventType,
   ExamResultStatus,
+  Prisma,
+  QuestionDifficulty,
   QuestionType,
   UserRole,
 } from '@prisma/client';
+import { parseAppDateTime } from '../common/datetime/parse-app-datetime';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { NotifyService } from '../notify/notify.service';
 
 type Actor = { id: string; role?: UserRole };
+type QuestionSearchQuery = {
+  bankId?: string;
+  subject?: string;
+  q?: string;
+  keyword?: string;
+  type?: QuestionType;
+  difficulty?: QuestionDifficulty;
+  isActive?: string | boolean;
+  page?: string | number;
+  limit?: string | number;
+};
+type AutoSelectRule = {
+  type?: QuestionType;
+  difficulty?: QuestionDifficulty;
+  subject?: string;
+  count?: number;
+};
 
-function toDateOrNull(value: unknown): Date | null {
-  if (!value) return null;
-  const date = new Date(String(value));
-  return Number.isNaN(date.getTime()) ? null : date;
+const MAX_QUESTION_SEARCH_LIMIT = 100;
+const MAX_AUTO_SELECT_PER_RULE = 100;
+const MAX_PAPER_QUESTIONS = 300;
+
+type ExamScheduleSession = {
+  examAt: Date;
+  examWindowStart: Date | null;
+  examWindowEnd: Date | null;
+  durationMinutes: number | null;
+  lateEntryMinutes: number;
+};
+
+function resolveExamSchedule(session: ExamScheduleSession) {
+  if (!session.examWindowStart && !session.examWindowEnd) {
+    return { isAnytimeMock: true, windowStart: null as Date | null, windowEnd: null as Date | null };
+  }
+
+  const windowStart = session.examWindowStart ?? session.examAt;
+  const durationMs = (session.durationMinutes ?? 60) * 60 * 1000;
+  const lateEntryMs = (session.lateEntryMinutes ?? 0) * 60 * 1000;
+  const windowEnd =
+    session.examWindowEnd ??
+    (windowStart ? new Date(windowStart.getTime() + durationMs + lateEntryMs) : null);
+
+  return { isAnytimeMock: false, windowStart, windowEnd };
 }
 
 function shuffle<T>(items: T[]): T[] {
@@ -34,6 +75,26 @@ function shuffle<T>(items: T[]): T[] {
     [next[i], next[j]] = [next[j], next[i]];
   }
   return next;
+}
+
+function toPositiveInt(value: unknown, fallback: number, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return Math.min(Math.floor(parsed), max);
+}
+
+function parseQuestionType(value: unknown): QuestionType | undefined {
+  if (!value) return undefined;
+  return Object.values(QuestionType).includes(value as QuestionType)
+    ? (value as QuestionType)
+    : undefined;
+}
+
+function parseQuestionDifficulty(value: unknown): QuestionDifficulty | undefined {
+  if (!value) return undefined;
+  return Object.values(QuestionDifficulty).includes(value as QuestionDifficulty)
+    ? (value as QuestionDifficulty)
+    : undefined;
 }
 
 @Injectable()
@@ -67,9 +128,64 @@ export class OnlineExamService {
     });
   }
 
-  async listQuestions(bankId?: string) {
+  private buildQuestionWhere(query: QuestionSearchQuery = {}): Prisma.QuestionWhereInput {
+    const keyword = String(query.q ?? query.keyword ?? '').trim();
+    const subject = String(query.subject ?? '').trim();
+    const type = parseQuestionType(query.type);
+    const difficulty = parseQuestionDifficulty(query.difficulty);
+    const where: Prisma.QuestionWhereInput = {
+      ...(query.bankId ? { bankId: String(query.bankId) } : {}),
+      ...(type ? { type } : {}),
+      ...(difficulty ? { difficulty } : {}),
+      ...(subject
+        ? {
+            bank: {
+              subject: { contains: subject, mode: 'insensitive' },
+            },
+          }
+        : {}),
+    };
+
+    if (query.isActive !== undefined) {
+      where.isActive = query.isActive === true || String(query.isActive) === 'true';
+    }
+    if (keyword) {
+      where.OR = [
+        { prompt: { contains: keyword, mode: 'insensitive' } },
+        { explanation: { contains: keyword, mode: 'insensitive' } },
+        { tags: { has: keyword } },
+      ];
+    }
+
+    return where;
+  }
+
+  async listQuestions(query: QuestionSearchQuery = {}) {
+    const page = toPositiveInt(query.page, 1, 100000);
+    const limit = toPositiveInt(query.limit, 20, MAX_QUESTION_SEARCH_LIMIT);
+    const where = this.buildQuestionWhere(query);
+
+    const [questions, total] = await Promise.all([
+      this.prisma.question.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          bank: { select: { id: true, title: true } },
+          options: { orderBy: { order: 'asc' } },
+          answerKeys: true,
+        },
+      }),
+      this.prisma.question.count({ where }),
+    ]);
+
+    return { questions, total, page, limit };
+  }
+
+  async listAllQuestionsForLegacy(bankId?: string) {
     return this.prisma.question.findMany({
-      where: { ...(bankId ? { bankId } : {}) },
+      where: { ...(bankId ? { bankId } : {}), isActive: true },
       orderBy: { createdAt: 'desc' },
       include: {
         bank: { select: { id: true, title: true } },
@@ -144,18 +260,82 @@ export class OnlineExamService {
     const question = await this.prisma.question.findUnique({ where: { id } });
     if (!question) throw new NotFoundException('문항을 찾을 수 없습니다.');
 
-    return this.prisma.question.update({
-      where: { id },
-      data: {
-        ...(data.prompt !== undefined && { prompt: data.prompt }),
-        ...(data.explanation !== undefined && { explanation: data.explanation }),
-        ...(data.points !== undefined && { points: Number(data.points) }),
-        ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
-        ...(data.tags !== undefined && { tags: Array.isArray(data.tags) ? data.tags : [] }),
-        ...(data.isActive !== undefined && { isActive: !!data.isActive }),
-        version: { increment: 1 },
-      },
-      include: { options: { orderBy: { order: 'asc' } }, answerKeys: true },
+    const nextType = parseQuestionType(data.type) ?? question.type;
+    const isChoice =
+      nextType === QuestionType.SINGLE_CHOICE ||
+      nextType === QuestionType.MULTIPLE_CHOICE;
+    const options = Array.isArray(data.options) ? data.options : undefined;
+    const correctLabels = new Set<string>(
+      Array.isArray(data.correctOptionLabels) ? data.correctOptionLabels : [],
+    );
+
+    if (isChoice && options && options.length < 2) {
+      throw new BadRequestException('객관식 문항은 보기 2개 이상이 필요합니다.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.question.update({
+        where: { id },
+        data: {
+          ...(data.type !== undefined && { type: nextType }),
+          ...(data.prompt !== undefined && { prompt: String(data.prompt).trim() }),
+          ...(data.explanation !== undefined && { explanation: data.explanation }),
+          ...(data.points !== undefined && { points: Number(data.points) }),
+          ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
+          ...(data.tags !== undefined && { tags: Array.isArray(data.tags) ? data.tags : [] }),
+          ...(data.isActive !== undefined && { isActive: !!data.isActive }),
+          version: { increment: 1 },
+        },
+        include: { options: { orderBy: { order: 'asc' } } },
+      });
+
+      if (data.type !== undefined || options !== undefined || data.correctOptionLabels !== undefined) {
+        await tx.questionAnswerKey.deleteMany({ where: { questionId: id } });
+
+        if (isChoice) {
+          await tx.questionOption.deleteMany({ where: { questionId: id } });
+          const optionInputs = options ?? [];
+          const createdOptions = await Promise.all(
+            optionInputs.map((option: any, index: number) =>
+              tx.questionOption.create({
+                data: {
+                  questionId: id,
+                  label: option.label || String.fromCharCode(65 + index),
+                  text: option.text,
+                  order: Number(option.order ?? index),
+                },
+              }),
+            ),
+          );
+          const answerCreates = createdOptions
+            .filter((option) => correctLabels.has(option.label))
+            .map((option) => ({
+              questionId: id,
+              optionId: option.id,
+              points: updated.points,
+              explanation: updated.explanation,
+            }));
+          if (answerCreates.length === 0) {
+            throw new BadRequestException('정답 보기를 1개 이상 선택해주세요.');
+          }
+          await tx.questionAnswerKey.createMany({ data: answerCreates });
+        } else {
+          await tx.questionOption.deleteMany({ where: { questionId: id } });
+          await tx.questionAnswerKey.create({
+            data: {
+              questionId: id,
+              textPattern: data.textPattern ?? null,
+              points: updated.points,
+              explanation: updated.explanation,
+            },
+          });
+        }
+      }
+
+      return tx.question.findUnique({
+        where: { id },
+        include: { options: { orderBy: { order: 'asc' } }, answerKeys: true },
+      });
     });
   }
 
@@ -183,7 +363,12 @@ export class OnlineExamService {
     const session = await this.prisma.examSession.findUnique({ where: { id: sessionId } });
     if (!session) throw new NotFoundException('시험 회차를 찾을 수 없습니다.');
 
-    const questionIds = Array.isArray(data.questionIds) ? data.questionIds : [];
+    const questionIds: string[] = Array.isArray(data.questionIds)
+      ? Array.from(new Set<string>(data.questionIds.map((id: unknown) => String(id)).filter(Boolean)))
+      : [];
+    if (questionIds.length > MAX_PAPER_QUESTIONS) {
+      throw new BadRequestException(`시험지는 최대 ${MAX_PAPER_QUESTIONS}문항까지 구성할 수 있습니다.`);
+    }
     const questions = await this.prisma.question.findMany({
       where: { id: { in: questionIds }, isActive: true },
     });
@@ -191,45 +376,130 @@ export class OnlineExamService {
       throw new BadRequestException('유효하지 않은 문항이 포함되어 있습니다.');
     }
 
-    const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+    const questionById = new Map(questions.map((question) => [question.id, question]));
+    const orderedQuestions = questionIds.map((questionId) => questionById.get(questionId)!);
+    const totalPoints = orderedQuestions.reduce((sum, q) => sum + q.points, 0);
     const existing = await this.prisma.examPaper.findFirst({
       where: { examSessionId: sessionId, status: { not: ExamPaperStatus.ARCHIVED } },
       orderBy: { createdAt: 'desc' },
     });
 
-    const paper = existing
-      ? await this.prisma.examPaper.update({
-          where: { id: existing.id },
-          data: {
-            title: data.title || `${session.qualificationName} ${session.roundName}`,
-            description: data.description ?? null,
-            totalPoints,
-            shuffleQuestions: data.shuffleQuestions ?? true,
-            shuffleOptions: data.shuffleOptions ?? true,
-            items: { deleteMany: {} },
-          },
-        })
-      : await this.prisma.examPaper.create({
-          data: {
-            examSessionId: sessionId,
-            title: data.title || `${session.qualificationName} ${session.roundName}`,
-            description: data.description ?? null,
-            totalPoints,
-            shuffleQuestions: data.shuffleQuestions ?? true,
-            shuffleOptions: data.shuffleOptions ?? true,
-          },
-        });
+    await this.prisma.$transaction(async (tx) => {
+      const paper = existing
+        ? await tx.examPaper.update({
+            where: { id: existing.id },
+            data: {
+              title: data.title || `${session.qualificationName} ${session.roundName}`,
+              description: data.description ?? null,
+              totalPoints,
+              shuffleQuestions: data.shuffleQuestions ?? true,
+              shuffleOptions: data.shuffleOptions ?? true,
+              items: { deleteMany: {} },
+            },
+          })
+        : await tx.examPaper.create({
+            data: {
+              examSessionId: sessionId,
+              title: data.title || `${session.qualificationName} ${session.roundName}`,
+              description: data.description ?? null,
+              totalPoints,
+              shuffleQuestions: data.shuffleQuestions ?? true,
+              shuffleOptions: data.shuffleOptions ?? true,
+            },
+          });
 
-    await this.prisma.examPaperItem.createMany({
-      data: questions.map((question, index) => ({
-        paperId: paper.id,
-        questionId: question.id,
-        order: index,
-        points: question.points,
-      })),
+      if (orderedQuestions.length > 0) {
+        await tx.examPaperItem.createMany({
+          data: orderedQuestions.map((question, index) => ({
+            paperId: paper.id,
+            questionId: question.id,
+            order: index,
+            points: question.points,
+          })),
+        });
+      }
     });
 
     return this.getPaper(sessionId);
+  }
+
+  async autoSelectQuestions(data: any) {
+    const rules = Array.isArray(data?.rules) ? data.rules : [];
+    if (rules.length === 0) {
+      throw new BadRequestException('자동 출제 규칙을 1개 이상 입력해주세요.');
+    }
+
+    const excludeIds = new Set<string>(
+      Array.isArray(data?.excludeQuestionIds)
+        ? data.excludeQuestionIds.map((id: unknown) => String(id)).filter(Boolean)
+        : [],
+    );
+    const selectedIds = new Set<string>();
+    const warnings: Array<{
+      type: QuestionType;
+      difficulty: QuestionDifficulty;
+      requested: number;
+      selected: number;
+      available: number;
+    }> = [];
+
+    for (const rawRule of rules as AutoSelectRule[]) {
+      const type = parseQuestionType(rawRule?.type);
+      const difficulty = parseQuestionDifficulty(rawRule?.difficulty);
+      const count = Math.min(Number(rawRule?.count ?? 0), MAX_AUTO_SELECT_PER_RULE);
+      const subject = String((rawRule as { subject?: string })?.subject ?? '').trim();
+      if (!type || !difficulty || !Number.isFinite(count) || count < 1) continue;
+
+      const where: Prisma.QuestionWhereInput = {
+        type,
+        difficulty,
+        isActive: true,
+        id: { notIn: [...excludeIds, ...selectedIds] },
+        ...(subject
+          ? {
+              bank: {
+                subject: { contains: subject, mode: 'insensitive' },
+              },
+            }
+          : {}),
+      };
+      const candidates = await this.prisma.question.findMany({
+        where,
+        select: { id: true },
+      });
+      const picked = shuffle(candidates).slice(0, count);
+      picked.forEach((question) => selectedIds.add(question.id));
+      if (picked.length < count) {
+        warnings.push({
+          type,
+          difficulty,
+          requested: count,
+          selected: picked.length,
+          available: candidates.length,
+        });
+      }
+    }
+
+    const selectedQuestionIds = [...selectedIds].slice(0, MAX_PAPER_QUESTIONS);
+    const questions = selectedQuestionIds.length
+      ? await this.prisma.question.findMany({
+          where: { id: { in: selectedQuestionIds }, isActive: true },
+          include: {
+            bank: { select: { id: true, title: true } },
+            options: { orderBy: { order: 'asc' } },
+            answerKeys: true,
+          },
+        })
+      : [];
+    const questionById = new Map(questions.map((question) => [question.id, question]));
+
+    return {
+      selectedQuestionIds,
+      selectedQuestions: selectedQuestionIds
+        .map((questionId) => questionById.get(questionId))
+        .filter(Boolean),
+      warnings,
+    };
   }
 
   async publishPaper(sessionId: string) {
@@ -264,8 +534,8 @@ export class OnlineExamService {
       where: { id: sessionId },
       data: {
         examMode: data.examMode ?? ExamMode.ONLINE,
-        examWindowStart: toDateOrNull(data.examWindowStart),
-        examWindowEnd: toDateOrNull(data.examWindowEnd),
+        examWindowStart: parseAppDateTime(data.examWindowStart),
+        examWindowEnd: parseAppDateTime(data.examWindowEnd),
         durationMinutes: data.durationMinutes ? Number(data.durationMinutes) : null,
         lateEntryMinutes: Number(data.lateEntryMinutes ?? 0),
         requireFullscreen: !!data.requireFullscreen,
@@ -294,28 +564,118 @@ export class OnlineExamService {
 
     const now = new Date();
     const session = application.examSession;
-    const canEnter =
+    const form = application.formJson as Record<string, unknown> | null;
+    const selectedExamMode =
+      typeof form?.examMode === 'string' ? form.examMode.toUpperCase() : null;
+    const allowsOnlineBySelection =
+      selectedExamMode === ExamMode.ONLINE ||
+      (selectedExamMode === null &&
+        (session.examMode === ExamMode.ONLINE || session.examMode === ExamMode.HYBRID));
+    const schedule = resolveExamSchedule(session);
+    const { isAnytimeMock, windowStart, windowEnd } = schedule;
+    const lobbyOpenAt = windowStart
+      ? new Date(windowStart.getTime() - 60 * 60 * 1000)
+      : null;
+    const isEligibleAndReady =
       application.status === ExamApplicationStatus.APPLIED &&
       application.examEligibility === ExamEligibilityStatus.APPROVED &&
       !!paper &&
-      !!session.examWindowStart &&
-      !!session.examWindowEnd &&
-      now >= session.examWindowStart &&
-      now <= session.examWindowEnd;
+      allowsOnlineBySelection;
+    const canEnterLobby =
+      isEligibleAndReady &&
+      (isAnytimeMock ||
+        (!!lobbyOpenAt && !!windowEnd && now >= lobbyOpenAt && now <= windowEnd));
+    const canStart =
+      isEligibleAndReady &&
+      (isAnytimeMock ||
+        (!!windowStart && !!windowEnd && now >= windowStart && now <= windowEnd));
+
+    let startBlockedReason: string | null = null;
+    if (!isEligibleAndReady) {
+      if (application.status !== ExamApplicationStatus.APPLIED) {
+        startBlockedReason = '접수 상태가 유효하지 않습니다.';
+      } else if (application.examEligibility !== ExamEligibilityStatus.APPROVED) {
+        startBlockedReason = '온라인 응시 승인이 필요합니다.';
+      } else if (!paper) {
+        startBlockedReason = '게시된 시험지가 없습니다.';
+      } else if (!allowsOnlineBySelection) {
+        startBlockedReason = '온라인 응시로 접수된 내역이 아닙니다.';
+      }
+    } else if (!isAnytimeMock) {
+      if (!windowStart || !windowEnd) {
+        startBlockedReason = '응시 시간이 설정되지 않았습니다.';
+      } else if (now < windowStart) {
+        startBlockedReason = '시험 시작 전입니다.';
+      } else if (now > windowEnd) {
+        startBlockedReason = '응시 시간이 종료되었습니다.';
+      }
+    }
+    const participantApplications = await this.prisma.examApplication.findMany({
+      where: {
+        examSessionId: sessionId,
+        status: ExamApplicationStatus.APPLIED,
+        examEligibility: ExamEligibilityStatus.APPROVED,
+      },
+      select: {
+        id: true,
+        user: { select: { name: true, email: true } },
+        formJson: true,
+        attempts: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            startedAt: true,
+          },
+        },
+      },
+      orderBy: { appliedAt: 'asc' },
+    });
+    const participants = participantApplications
+      .map((item) => {
+        const latestAttempt = item.attempts[0] ?? null;
+        const appForm = item.formJson as Record<string, unknown> | null;
+        const status =
+          latestAttempt?.status === ExamAttemptStatus.IN_PROGRESS
+            ? 'IN_PROGRESS'
+            : latestAttempt
+              ? 'COMPLETED'
+              : 'WAITING';
+        return {
+          id: item.id,
+          name:
+            item.user?.name ??
+            (typeof appForm?.applicantName === 'string' ? appForm.applicantName : '응시자'),
+          email: item.user?.email ?? (typeof appForm?.email === 'string' ? appForm.email : null),
+          status,
+          attemptId: latestAttempt?.id ?? null,
+          startedAt: latestAttempt?.startedAt ?? null,
+        };
+      })
+      .filter((item) => item.status === 'WAITING' || item.status === 'IN_PROGRESS');
 
     return {
       application,
       session,
       paper,
       existingAttempt: application.attempts[0] ?? null,
-      canEnter,
+      canEnter: canStart,
+      canStart,
+      canEnterLobby,
+      isAnytimeMock,
+      effectiveWindowStart: windowStart?.toISOString() ?? null,
+      effectiveWindowEnd: windowEnd?.toISOString() ?? null,
+      startBlockedReason,
+      lobbyOpenAt: lobbyOpenAt?.toISOString() ?? null,
+      participants,
       serverNow: now.toISOString(),
     };
   }
 
   async startAttempt(sessionId: string, userId: string) {
     const lobby = await this.getLobby(sessionId, userId);
-    if (!lobby.canEnter) {
+    if (!lobby.canStart) {
       throw new ForbiddenException('현재 온라인 시험에 입장할 수 없습니다.');
     }
 
@@ -341,10 +701,12 @@ export class OnlineExamService {
 
     const orderedItems = paper.shuffleQuestions ? shuffle(paper.items) : paper.items;
     const now = new Date();
-    const hardEnd = session.examWindowEnd!;
     const durationEnd = new Date(
       now.getTime() + (session.durationMinutes ?? 60) * 60 * 1000,
     );
+    const hardEnd = lobby.effectiveWindowEnd
+      ? new Date(lobby.effectiveWindowEnd)
+      : durationEnd;
     const expiresAt = durationEnd < hardEnd ? durationEnd : hardEnd;
 
     const attempt = await this.prisma.examAttempt.create({

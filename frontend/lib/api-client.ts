@@ -27,4 +27,17 @@ export function apiFetchWithAuth(path: string, init?: RequestInit): Promise<Resp
   return fetchWithAuth(getApiUrl(path, { server: false }), init);
 }
 
+/**
+ * 응답 본문이 비어있거나(JSON 204/empty) 잘린 경우에도 안전하게 fallback을 반환한다.
+ */
+export async function parseJsonSafe<T>(response: Response, fallback: T): Promise<T> {
+  const raw = await response.text();
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export { getAccessToken };
