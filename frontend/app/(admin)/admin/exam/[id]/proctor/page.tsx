@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { ProctorSnapshotThumb } from '@/components/exam/ProctorSnapshotThumb';
 import { apiFetchWithAuth, getApiUrl, parseJsonSafe } from '@/lib/api-client';
 
 interface ProctorAttempt {
@@ -100,13 +101,15 @@ export default function AdminExamProctorPage() {
       key: 'snapshots',
       header: '스냅샷',
       cell: (a) => (
-        <div className="space-y-1 text-xs">
+        <div className="flex flex-wrap gap-2">
           {a.proctorSnapshots.length === 0 ? (
-            <span className="text-muted-foreground">-</span>
+            <span className="text-xs text-muted-foreground">스냅샷 없음</span>
           ) : a.proctorSnapshots.map((snapshot) => (
-            <a key={snapshot.id} href={snapshot.fileUrl} target="_blank" className="block text-brand-blue underline">
-              {new Date(snapshot.capturedAt).toLocaleTimeString('ko-KR')}
-            </a>
+            <ProctorSnapshotThumb
+              key={snapshot.id}
+              fileUrl={snapshot.fileUrl}
+              capturedAt={snapshot.capturedAt}
+            />
           ))}
         </div>
       ),

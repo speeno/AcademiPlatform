@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { BrandButton } from '@/components/ui/brand-button';
 import { BrandBadge } from '@/components/ui/brand-badge';
@@ -48,6 +48,8 @@ export default function OnlineExamAttemptPage() {
   const [remainingMs, setRemainingMs] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
+  const webcamStreamRef = useRef<MediaStream | null>(null);
 
   const load = async () => {
     const res = await apiFetchWithAuth(`/online-exam/attempts/${attemptId}`);
@@ -84,13 +86,40 @@ export default function OnlineExamAttemptPage() {
     return () => clearInterval(timer);
   }, [attempt]);
 
-  const recordEvent = async (type: string, payload?: Record<string, unknown>) => {
+  const recordEvent = useCallback(async (type: string, payload?: Record<string, unknown>) => {
     await apiFetchWithAuth(`/online-exam/attempts/${attemptId}/proctor-events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, payload }),
     }).catch(() => {});
-  };
+  }, [attemptId]);
+
+  const uploadWebcamSnapshot = useCallback(async () => {
+    const video = webcamVideoRef.current;
+    if (!video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return false;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const context = canvas.getContext('2d');
+    if (!context) return false;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/jpeg', 0.72);
+    });
+    if (!blob) return false;
+
+    const form = new FormData();
+    form.append('snapshot', blob, `proctor-${Date.now()}.jpg`);
+    const res = await apiFetchWithAuth(`/online-exam/attempts/${attemptId}/snapshots`, {
+      method: 'POST',
+      body: form,
+    });
+    if (!res.ok) return false;
+    await recordEvent('WEBCAM_SNAPSHOT');
+    return true;
+  }, [attemptId, recordEvent]);
 
   useEffect(() => {
     const prevent = (event: Event) => event.preventDefault();
@@ -120,23 +149,45 @@ export default function OnlineExamAttemptPage() {
       document.removeEventListener('visibilitychange', onVisibility);
       document.removeEventListener('fullscreenchange', onFullscreen);
     };
-  }, [attemptId]);
+  }, [attemptId, recordEvent]);
 
   useEffect(() => {
-    if (!attempt?.session.requireWebcam) return;
-    const capture = async () => {
+    if (!attempt?.session.requireWebcam) return undefined;
+
+    let cancelled = false;
+    const setupWebcam = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach((track) => track.stop());
-        await recordEvent('WEBCAM_SNAPSHOT');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        webcamStreamRef.current = stream;
+        if (webcamVideoRef.current) {
+          webcamVideoRef.current.srcObject = stream;
+          await webcamVideoRef.current.play();
+        }
+        await uploadWebcamSnapshot();
       } catch {
         await recordEvent('WEBCAM_PERMISSION_DENIED');
       }
     };
-    capture();
-    const timer = setInterval(capture, 3 * 60 * 1000);
-    return () => clearInterval(timer);
-  }, [attempt?.session.requireWebcam, attemptId]);
+
+    void setupWebcam();
+    const timer = window.setInterval(() => {
+      void uploadWebcamSnapshot();
+    }, 3 * 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      webcamStreamRef.current?.getTracks().forEach((track) => track.stop());
+      webcamStreamRef.current = null;
+    };
+  }, [attempt?.session.requireWebcam, uploadWebcamSnapshot, recordEvent]);
 
   const question = attempt?.questions[current];
   const answer = question ? answers[question.questionId] : undefined;
@@ -188,6 +239,15 @@ export default function OnlineExamAttemptPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
+      {attempt.session.requireWebcam && (
+        <video
+          ref={webcamVideoRef}
+          autoPlay
+          muted
+          playsInline
+          className="pointer-events-none fixed bottom-4 right-4 z-20 h-24 w-32 rounded-lg border border-white/20 object-cover opacity-80"
+        />
+      )}
       <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/95 px-5 py-3">
         <div className="flex items-center justify-between gap-4">
           <div>

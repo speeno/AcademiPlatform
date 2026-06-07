@@ -4,6 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 import {
   ExamAnswerStatus,
   ExamApplicationStatus,
@@ -44,6 +46,12 @@ type AutoSelectRule = {
 const MAX_QUESTION_SEARCH_LIMIT = 100;
 const MAX_AUTO_SELECT_PER_RULE = 100;
 const MAX_PAPER_QUESTIONS = 300;
+const MAX_PROCTOR_SNAPSHOT_BYTES = 2 * 1024 * 1024;
+const ALLOWED_PROCTOR_SNAPSHOT_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
 
 type ExamScheduleSession = {
   examAt: Date;
@@ -53,12 +61,21 @@ type ExamScheduleSession = {
   lateEntryMinutes: number;
 };
 
+function resolveEffectiveWindowStart(session: ExamScheduleSession): Date | null {
+  const examAt = session.examAt ?? null;
+  const configuredStart = session.examWindowStart ?? null;
+  if (configuredStart && examAt) {
+    return configuredStart.getTime() >= examAt.getTime() ? configuredStart : examAt;
+  }
+  return configuredStart ?? examAt;
+}
+
 function resolveExamSchedule(session: ExamScheduleSession) {
   if (!session.examWindowStart && !session.examWindowEnd) {
     return { isAnytimeMock: true, windowStart: null as Date | null, windowEnd: null as Date | null };
   }
 
-  const windowStart = session.examWindowStart ?? session.examAt;
+  const windowStart = resolveEffectiveWindowStart(session);
   const durationMs = (session.durationMinutes ?? 60) * 60 * 1000;
   const lateEntryMs = (session.lateEntryMinutes ?? 0) * 60 * 1000;
   const windowEnd =
@@ -573,22 +590,17 @@ export class OnlineExamService {
         (session.examMode === ExamMode.ONLINE || session.examMode === ExamMode.HYBRID));
     const schedule = resolveExamSchedule(session);
     const { isAnytimeMock, windowStart, windowEnd } = schedule;
-    const lobbyOpenAt = windowStart
-      ? new Date(windowStart.getTime() - 60 * 60 * 1000)
-      : null;
+    const lobbyOpenAt = windowStart;
     const isEligibleAndReady =
       application.status === ExamApplicationStatus.APPLIED &&
       application.examEligibility === ExamEligibilityStatus.APPROVED &&
       !!paper &&
       allowsOnlineBySelection;
-    const canEnterLobby =
-      isEligibleAndReady &&
-      (isAnytimeMock ||
-        (!!lobbyOpenAt && !!windowEnd && now >= lobbyOpenAt && now <= windowEnd));
     const canStart =
       isEligibleAndReady &&
       (isAnytimeMock ||
         (!!windowStart && !!windowEnd && now >= windowStart && now <= windowEnd));
+    const canEnterLobby = canStart;
 
     let startBlockedReason: string | null = null;
     if (!isEligibleAndReady) {
@@ -1026,13 +1038,109 @@ export class OnlineExamService {
     });
   }
 
+  private assertSnapshotUploadTarget(attemptId: string, userId: string) {
+    return this.prisma.examAttempt.findUnique({ where: { id: attemptId } }).then((attempt) => {
+      if (!attempt) throw new NotFoundException('응시 세션을 찾을 수 없습니다.');
+      if (attempt.userId !== userId) throw new ForbiddenException();
+      if (attempt.status !== ExamAttemptStatus.IN_PROGRESS) {
+        throw new BadRequestException('응시 중에만 스냅샷을 저장할 수 있습니다.');
+      }
+      return attempt;
+    });
+  }
+
+  private snapshotExtension(mimeType: string): string {
+    if (mimeType === 'image/png') return 'png';
+    if (mimeType === 'image/webp') return 'webp';
+    return 'jpg';
+  }
+
+  private snapshotStoragePath(snapshotId: string, mimeType: string): string {
+    return path.join(
+      process.cwd(),
+      'uploads',
+      'proctor-snapshots',
+      `${snapshotId}.${this.snapshotExtension(mimeType)}`,
+    );
+  }
+
+  async uploadSnapshot(
+    attemptId: string,
+    userId: string,
+    file:
+      | {
+          originalname?: string;
+          mimetype?: string;
+          buffer?: Buffer;
+          size?: number;
+        }
+      | undefined,
+  ) {
+    await this.assertSnapshotUploadTarget(attemptId, userId);
+    if (!file?.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('스냅샷 이미지를 업로드해주세요.');
+    }
+
+    const mimeType = file.mimetype?.toLowerCase();
+    if (!mimeType || !ALLOWED_PROCTOR_SNAPSHOT_MIME_TYPES.has(mimeType)) {
+      throw new BadRequestException('스냅샷은 JPG, PNG, WEBP 형식만 업로드할 수 있습니다.');
+    }
+
+    const size = file.size ?? file.buffer.length;
+    if (size > MAX_PROCTOR_SNAPSHOT_BYTES) {
+      throw new BadRequestException('스냅샷은 2MB 이하만 업로드할 수 있습니다.');
+    }
+
+    const snapshot = await this.prisma.examProctorSnapshot.create({
+      data: {
+        attemptId,
+        fileUrl: 'pending',
+        fileName: file.originalname ?? `proctor-${Date.now()}.${this.snapshotExtension(mimeType)}`,
+        mimeType,
+      },
+    });
+
+    const storagePath = this.snapshotStoragePath(snapshot.id, mimeType);
+    await fs.mkdir(path.dirname(storagePath), { recursive: true });
+    await fs.writeFile(storagePath, file.buffer);
+
+    return this.prisma.examProctorSnapshot.update({
+      where: { id: snapshot.id },
+      data: { fileUrl: `/online-exam/admin/snapshots/${snapshot.id}/image` },
+    });
+  }
+
+  async getSnapshotImage(snapshotId: string) {
+    const snapshot = await this.prisma.examProctorSnapshot.findUnique({
+      where: { id: snapshotId },
+    });
+    if (!snapshot) throw new NotFoundException('스냅샷을 찾을 수 없습니다.');
+
+    const mimeType = snapshot.mimeType ?? 'image/jpeg';
+    const storagePath = this.snapshotStoragePath(snapshot.id, mimeType);
+    try {
+      const buffer = await fs.readFile(storagePath);
+      return {
+        buffer,
+        mimeType,
+        fileName: snapshot.fileName ?? `${snapshot.id}.${this.snapshotExtension(mimeType)}`,
+        size: buffer.length,
+      };
+    } catch {
+      if (snapshot.fileUrl?.startsWith('http')) {
+        throw new NotFoundException('외부 스냅샷 URL은 이 엔드포인트로 조회할 수 없습니다.');
+      }
+      throw new NotFoundException('스냅샷 파일을 찾을 수 없습니다.');
+    }
+  }
+
   async listProctorSession(sessionId: string) {
     return this.prisma.examAttempt.findMany({
       where: { examSessionId: sessionId },
       include: {
         user: { select: { id: true, name: true, email: true } },
         proctorEvents: { orderBy: { occurredAt: 'desc' }, take: 10 },
-        proctorSnapshots: { orderBy: { capturedAt: 'desc' }, take: 3 },
+        proctorSnapshots: { orderBy: { capturedAt: 'desc' }, take: 6 },
       },
       orderBy: { startedAt: 'desc' },
     });

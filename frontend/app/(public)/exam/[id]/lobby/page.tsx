@@ -117,7 +117,6 @@ export default function OnlineExamLobbyPage() {
 
   const session = data.session;
   const canStart = data.canStart ?? data.canEnter;
-  const canEnterLobby = data.canEnterLobby ?? data.canEnter;
   const isAnytimeMock = !!data.isAnytimeMock;
   const windowStart = data.effectiveWindowStart ?? session.examWindowStart ?? null;
   const windowEnd = data.effectiveWindowEnd ?? session.examWindowEnd ?? null;
@@ -131,8 +130,8 @@ export default function OnlineExamLobbyPage() {
     <main className="mx-auto max-w-3xl px-5 py-12">
       <div className="rounded-2xl border bg-white p-6 shadow-sm">
         <div className="mb-6">
-          <BrandBadge variant={canStart ? 'green' : canEnterLobby ? 'blue' : 'orange'} className="mb-3">
-            {canStart ? (isAnytimeMock ? '상시 모의고사 시작 가능' : '시험 시작 가능') : canEnterLobby ? '대기실 입장 중' : '입장 대기'}
+          <BrandBadge variant={canStart ? 'green' : 'orange'} className="mb-3">
+            {canStart ? (isAnytimeMock ? '상시 모의고사 시작 가능' : '시험 시작 가능') : '입장 대기'}
           </BrandBadge>
           <h1 className="text-heading text-brand-blue">{session.qualificationName}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{session.roundName}</p>
@@ -148,18 +147,11 @@ export default function OnlineExamLobbyPage() {
           <div className="rounded-xl bg-muted/30 p-3">제한 시간: {session.durationMinutes ?? 60}분</div>
           <div className="rounded-xl bg-muted/30 p-3">문항 수: {data.paper?._count?.items ?? 0}개</div>
           <div className="rounded-xl bg-muted/30 p-3">
-            대기실 오픈: {isAnytimeMock ? '즉시 입장 가능' : data.lobbyOpenAt ? new Date(data.lobbyOpenAt).toLocaleString('ko-KR') : '-'}
+            입장 가능: {isAnytimeMock ? '승인 후 즉시' : windowStart ? new Date(windowStart).toLocaleString('ko-KR') : '-'}
           </div>
         </div>
 
-        {!canStart && canEnterLobby && !isAnytimeMock && (
-          <div className="mt-4 rounded-xl border border-brand-blue/20 bg-brand-blue-subtle p-3 text-sm text-brand-blue">
-            {data.startBlockedReason ?? '시험 시작 전입니다.'}{' '}
-            {windowStart ? `시작 예정: ${new Date(windowStart).toLocaleString('ko-KR')}` : ''}
-            <span className="mt-1 block text-xs">시작 시간이 되면 자동으로 상태가 갱신됩니다.</span>
-          </div>
-        )}
-        {!canStart && !canEnterLobby && data.startBlockedReason && (
+        {!canStart && data.startBlockedReason && (
           <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
             {data.startBlockedReason}
           </div>

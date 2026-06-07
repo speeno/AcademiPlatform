@@ -28,7 +28,19 @@ interface Application {
   hasIdPhoto?: boolean;
   idPhotoFileName?: string | null;
   examEligibility?: string;
-  attempt?: { id: string; status: string; warningCount?: number; result?: { status: string; totalScore: number; maxScore: number; publishedAt?: string | null } | null } | null;
+  attempt?: {
+    id: string;
+    status: string;
+    startedAt?: string | null;
+    submittedAt?: string | null;
+    warningCount?: number;
+    result?: {
+      status: string;
+      totalScore: number;
+      maxScore: number;
+      publishedAt?: string | null;
+    } | null;
+  } | null;
   user: { name: string; email: string; phone: string | null } | null;
   payment: { amount: number; paymentStatus: string } | null;
 }
@@ -43,6 +55,62 @@ function getApplicantEmail(a: Application): string {
 
 function getApplicantPhone(a: Application): string {
   return a.user?.phone ?? (a.formJson?.phone as string) ?? '-';
+}
+
+function isOnlineApplicant(a: Application): boolean {
+  const selectedMode = typeof a.formJson?.examMode === 'string'
+    ? a.formJson.examMode.toUpperCase()
+    : '';
+  return selectedMode !== 'OFFLINE';
+}
+
+function getOnlineSubmissionDisplay(a: Application): {
+  label: string;
+  variant: 'default' | 'blue' | 'orange' | 'green' | 'red';
+  detail?: string;
+} {
+  if (!isOnlineApplicant(a)) {
+    return { label: '오프라인', variant: 'default' };
+  }
+
+  const attempt = a.attempt;
+  if (!attempt) {
+    return { label: '미응시', variant: 'default' };
+  }
+
+  if (attempt.status === 'IN_PROGRESS') {
+    return { label: '응시 중', variant: 'orange' };
+  }
+
+  if (attempt.status === 'INVALIDATED') {
+    return {
+      label: '무효 처리',
+      variant: 'red',
+      detail: attempt.submittedAt
+        ? `제출 ${new Date(attempt.submittedAt).toLocaleString('ko-KR')}`
+        : undefined,
+    };
+  }
+
+  const submittedLabel = attempt.submittedAt
+    ? new Date(attempt.submittedAt).toLocaleString('ko-KR')
+    : undefined;
+  const gradingLabel =
+    attempt.status === 'MANUAL_GRADING'
+      ? '채점 대기'
+      : attempt.status === 'GRADED' && attempt.result?.publishedAt
+        ? `결과 공개 (${attempt.result.totalScore}/${attempt.result.maxScore})`
+        : attempt.status === 'GRADED' || attempt.status === 'AUTO_GRADED'
+          ? '채점 완료'
+          : undefined;
+
+  return {
+    label: '답안 제출 완료',
+    variant: 'green',
+    detail: [submittedLabel, gradingLabel, attempt.warningCount ? `경고 ${attempt.warningCount}` : null]
+      .filter(Boolean)
+      .join(' · '),
+  };
 }
 
 export default function ExamApplicationsPage() {
@@ -128,13 +196,14 @@ export default function ExamApplicationsPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 border-b">
-            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '증명사진', '상태', '온라인 승인', '응시', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}</tr>
+            <tr>{['이름', '이메일', '연락처', '소속/직업', '권유자', '접수일', '증명사진', '상태', '온라인 승인', '온라인 답안', '관리'].map((h) => <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y">
             {apps.length === 0 ? (
               <tr><td colSpan={11} className="text-center py-12 text-muted-foreground">접수자가 없습니다.</td></tr>
             ) : apps.map((a) => {
               const si = statusInfo[a.status] ?? { label: a.status, variant: 'default' as const };
+              const submission = getOnlineSubmissionDisplay(a);
               return (
                 <tr key={a.id} className="hover:bg-muted/30">
                   <td className="px-4 py-3 font-medium text-foreground">{getApplicantName(a)}</td>
@@ -170,8 +239,13 @@ export default function ExamApplicationsPage() {
                       <option value="REJECTED">반려</option>
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {a.attempt ? `${a.attempt.status}${a.attempt.warningCount ? ` / 경고 ${a.attempt.warningCount}` : ''}` : '-'}
+                  <td className="px-4 py-3">
+                    <BrandBadge variant={submission.variant} className="text-xs">
+                      {submission.label}
+                    </BrandBadge>
+                    {submission.detail && (
+                      <p className="mt-1 text-xs text-muted-foreground">{submission.detail}</p>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <select

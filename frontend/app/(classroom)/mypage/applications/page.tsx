@@ -80,22 +80,51 @@ function getExamPlaceLabel(app: Application, mode: DisplayExamMode): string {
   return app.examSession?.place || '장소 미정';
 }
 
+function resolveEffectiveWindowStart(session: NonNullable<Application['examSession']>) {
+  const examAt = session.examAt ? new Date(session.examAt) : null;
+  const configuredStart = session.examWindowStart ? new Date(session.examWindowStart) : null;
+  if (configuredStart && examAt) {
+    return configuredStart.getTime() >= examAt.getTime() ? configuredStart : examAt;
+  }
+  return configuredStart ?? examAt;
+}
+
 function getLobbyAvailability(session?: Application['examSession']) {
   if (!session) {
-    return { canEnterLobby: false, lobbyOpenAt: null as Date | null, isAnytimeMock: false };
+    return {
+      canEnterLobby: false,
+      lobbyOpenAt: null as Date | null,
+      windowStart: null as Date | null,
+      isAnytimeMock: false,
+    };
   }
-  if (!session.examWindowStart || !session.examWindowEnd) {
-    return { canEnterLobby: true, lobbyOpenAt: null as Date | null, isAnytimeMock: true };
+  if (!session.examWindowStart && !session.examWindowEnd) {
+    return {
+      canEnterLobby: true,
+      lobbyOpenAt: null as Date | null,
+      windowStart: null as Date | null,
+      isAnytimeMock: true,
+    };
   }
-  const startAt = new Date(session.examWindowStart);
-  const endAt = new Date(session.examWindowEnd);
-  const lobbyOpenAt = new Date(startAt.getTime() - 60 * 60 * 1000);
+  const windowStart = resolveEffectiveWindowStart(session);
+  const windowEnd = session.examWindowEnd ? new Date(session.examWindowEnd) : null;
   const now = new Date();
+  const canEnterLobby =
+    !!windowStart && !!windowEnd && now >= windowStart && now <= windowEnd;
   return {
-    canEnterLobby: now >= lobbyOpenAt && now <= endAt,
-    lobbyOpenAt,
+    canEnterLobby,
+    lobbyOpenAt: windowStart,
+    windowStart,
     isAnytimeMock: false,
   };
+}
+
+function isAttemptInProgress(status?: string) {
+  return status === 'IN_PROGRESS';
+}
+
+function isAttemptCompleted(status?: string) {
+  return !!status && !isAttemptInProgress(status);
 }
 
 export default function ApplicationsPage() {
@@ -162,7 +191,9 @@ export default function ApplicationsPage() {
             const s = statusLabel[app.status] ?? { label: app.status, variant: 'default' as const };
             const applicationExamMode = getApplicationExamMode(app);
             const isOnlineExam = applicationExamMode !== 'OFFLINE';
-            const { canEnterLobby, lobbyOpenAt, isAnytimeMock } = getLobbyAvailability(app.examSession);
+            const { canEnterLobby, windowStart, isAnytimeMock } = getLobbyAvailability(app.examSession);
+            const attemptCompleted = isAttemptCompleted(app.attempt?.status);
+            const attemptInProgress = isAttemptInProgress(app.attempt?.status);
             return (
               <div key={app.id} className="bg-white rounded-xl border p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -174,6 +205,12 @@ export default function ApplicationsPage() {
                       </BrandBadge>
                       {isOnlineExam && app.examEligibility === 'APPROVED' && isAnytimeMock && (
                         <BrandBadge variant="blue">상시 모의고사</BrandBadge>
+                      )}
+                      {attemptCompleted && (
+                        <BrandBadge variant="green">시험 완료</BrandBadge>
+                      )}
+                      {attemptInProgress && (
+                        <BrandBadge variant="orange">응시 중</BrandBadge>
                       )}
                     </div>
                     <h3 className="font-bold text-foreground">{app.examSession?.qualificationName ?? '시험'}</h3>
@@ -197,20 +234,20 @@ export default function ApplicationsPage() {
                   </div>
                   {app.status === 'APPLIED' && (
                     <div className="flex flex-col gap-2">
-                      {isOnlineExam && app.examEligibility === 'APPROVED' && (
+                      {isOnlineExam && app.examEligibility === 'APPROVED' && !attemptCompleted && (
                         <>
                           <BrandButton
                             variant="primary"
                             size="sm"
                             onClick={() => {
-                              if (app.attempt?.status === 'IN_PROGRESS') {
+                              if (attemptInProgress && app.attempt) {
                                 router.push(`/exam/attempt/${app.attempt.id}`);
                               } else {
                                 router.push(`/exam/${app.examSession!.id}/lobby`);
                               }
                             }}
                           >
-                            {app.attempt?.status === 'IN_PROGRESS'
+                            {attemptInProgress
                               ? '응시 이어가기'
                               : canEnterLobby
                                 ? isAnytimeMock
@@ -218,21 +255,23 @@ export default function ApplicationsPage() {
                                   : '시험장 입장'
                                 : '시험장 확인'}
                           </BrandButton>
-                          {!canEnterLobby && app.attempt?.status !== 'IN_PROGRESS' && lobbyOpenAt && !isAnytimeMock && (
+                          {!canEnterLobby && !attemptInProgress && windowStart && !isAnytimeMock && (
                             <p className="max-w-36 text-xs text-muted-foreground">
-                              {lobbyOpenAt.toLocaleString('ko-KR')}부터 입장
+                              {windowStart.toLocaleString('ko-KR')}부터 입장
                             </p>
                           )}
                         </>
                       )}
-                      <BrandButton
-                        variant="danger"
-                        size="sm"
-                        loading={cancellingId === app.id}
-                        onClick={() => handleCancel(app.id)}
-                      >
-                        <XCircle className="w-3.5 h-3.5 mr-1" /> 취소
-                      </BrandButton>
+                      {!attemptCompleted && (
+                        <BrandButton
+                          variant="danger"
+                          size="sm"
+                          loading={cancellingId === app.id}
+                          onClick={() => handleCancel(app.id)}
+                        >
+                          <XCircle className="w-3.5 h-3.5 mr-1" /> 취소
+                        </BrandButton>
+                      )}
                     </div>
                   )}
                 </div>

@@ -1,4 +1,19 @@
-import { Body, Controller, Get, MessageEvent, Param, Patch, Post, Query, Sse } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  MessageEvent,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  Sse,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { ExamEligibilityStatus, UserRole } from '@prisma/client';
 import { from, interval, map, startWith, switchMap } from 'rxjs';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -126,6 +141,24 @@ export class OnlineExamController {
   }
 
   @Roles(UserRole.OPERATOR)
+  @Get('admin/snapshots/:snapshotId/image')
+  async getSnapshotImage(
+    @Param('snapshotId') snapshotId: string,
+    @Res() res: Response,
+  ) {
+    const file = await this.service.getSnapshotImage(snapshotId);
+    const encodedFileName = encodeURIComponent(file.fileName);
+    res.set({
+      'Content-Type': file.mimeType,
+      'Content-Disposition': `inline; filename*=UTF-8''${encodedFileName}`,
+      'Content-Length': file.size,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.send(file.buffer);
+  }
+
+  @Roles(UserRole.OPERATOR)
   @Sse('admin/sessions/:sessionId/proctor/stream')
   streamProctorSession(@Param('sessionId') sessionId: string) {
     return interval(5000).pipe(
@@ -188,11 +221,26 @@ export class OnlineExamController {
   }
 
   @Post('attempts/:attemptId/snapshots')
+  @UseInterceptors(
+    FileInterceptor('snapshot', { limits: { fileSize: 2 * 1024 * 1024 } }),
+  )
   recordSnapshot(
     @Param('attemptId') attemptId: string,
+    @UploadedFile()
+    file:
+      | {
+          originalname?: string;
+          mimetype?: string;
+          buffer?: Buffer;
+          size?: number;
+        }
+      | undefined,
     @Body() body: any,
     @CurrentUser() user: { id: string },
   ) {
+    if (file?.buffer && file.buffer.length > 0) {
+      return this.service.uploadSnapshot(attemptId, user.id, file);
+    }
     return this.service.recordSnapshot(attemptId, user.id, body);
   }
 
