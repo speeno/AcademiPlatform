@@ -56,7 +56,7 @@ export const HARNESS_AX_HERO_SLIDE: HeroSlide = {
   primaryButton: { text: '기업 교육 프로그램', href: '/courses/harness-program' },
   secondaryButton: { text: '교육 문의', href: '/contact' },
   promoCard: {
-    image: '/covers/harness-dev-3d.png',
+    image: '/images/promos/hero-promo-card-2.png',
     title: 'Harness·Agent Skills',
     description: '스킬·워크플로·검증까지 파일럿 패키지로 완성하는 기업 AX 전환 과정',
     href: '/courses/harness-program',
@@ -77,7 +77,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     primaryButton: { text: '무료 상담 신청', href: '/contact' },
     secondaryButton: { text: '교육과정 보기', href: '/courses' },
     promoCard: {
-      image: '/images/promos/hero-slide-1.png',
+      image: '/images/promos/hero-promo-card-1.png',
       title: '기업·개인 맞춤 실무 교육',
       description: '직무별 커리큘럼과 컨설팅으로 AI를 업무 성과로 연결합니다.',
       href: '/contact',
@@ -96,7 +96,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     primaryButton: { text: '도입 상담하기', href: '/contact' },
     secondaryButton: null,
     promoCard: {
-      image: '/images/promos/hero-slide-3.png',
+      image: '/images/promos/hero-promo-card-3.png',
       title: '기업교육 B2B 프로그램',
       description: '현업 적용 중심의 팀 단위 실무 교육을 제공합니다.',
       href: '/contact',
@@ -115,7 +115,7 @@ export const TEMPLATE_HERO_SLIDES: HeroSlide[] = [
     primaryButton: { text: '교육과정 보기', href: '/courses' },
     secondaryButton: { text: '자격증시험 온라인 접수', href: '/exam' },
     promoCard: {
-      image: '/covers/ai-iso-creator.png',
+      image: '/images/promos/hero-promo-card-4.png',
       title: 'AI ISO Creator 과정',
       description: '실무 커리큘럼과 국제 자격 대비를 함께 준비할 수 있습니다.',
       href: '/courses/ai-expert-1',
