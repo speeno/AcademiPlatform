@@ -9,6 +9,8 @@
  */
 export interface QmiKbEntry {
   id: string;
+  /** 시드 시 문서 제목(없으면 keywords[0] 사용) */
+  title?: string;
   category: string;
   /** 정규화된 사용자 입력에 substring 으로 등장하면 매칭되는 한국어 키워드/표현 */
   keywords: string[];
@@ -18,6 +20,8 @@ export interface QmiKbEntry {
   /** 후속 추천 질문(칩) */
   suggestions?: string[];
 }
+
+import { QMI_SERVICE_GUIDE } from './service-guide';
 
 export const QMI_KNOWLEDGE_BASE: QmiKbEntry[] = [
   // ── 학습 도우미 (study help) ───────────────────────────────────────────────
@@ -140,4 +144,7 @@ export const QMI_KNOWLEDGE_BASE: QmiKbEntry[] = [
     pose: 'presenting',
     suggestions: ['결제가 안 돼요', '로그인이 안 돼요', '강의가 안 보여요'],
   },
+
+  // ── 서비스 종합 안내 (관리자 등록 문서) ─────────────────────────────────────
+  QMI_SERVICE_GUIDE,
 ];

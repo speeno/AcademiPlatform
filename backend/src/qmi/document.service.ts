@@ -55,7 +55,7 @@ export class QmiDocumentService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
-      await this.seedIfEmpty();
+      await this.ensureSeedDocuments();
       this.dbReady = true;
     } catch (error) {
       this.dbReady = false;
@@ -65,15 +65,22 @@ export class QmiDocumentService implements OnModuleInit {
     }
   }
 
-  /** 테이블이 비어 있으면 정적 지식베이스로 시드하고, 가능하면 임베딩까지 채운다. */
-  async seedIfEmpty(): Promise<void> {
-    const count = await this.prisma.chatbotDocument.count();
-    if (count > 0) return;
+  /**
+   * 정적 지식베이스(QMI_KNOWLEDGE_BASE)의 문서를 제목 기준으로 reconcile 한다.
+   * - 누락된 문서만 추가하고 기존 문서는 건드리지 않는다(멱등·비파괴).
+   * - 신규 배포로 추가된 캐논 문서가 이미 시드된 운영 DB 에도 자동 반영된다.
+   */
+  async ensureSeedDocuments(): Promise<void> {
+    const existing = await this.prisma.chatbotDocument.findMany({ select: { title: true } });
+    const existingTitles = new Set(existing.map((d) => d.title));
 
+    let inserted = 0;
     for (const e of QMI_KNOWLEDGE_BASE) {
+      const title = e.title ?? e.keywords[0] ?? e.category;
+      if (existingTitles.has(title)) continue;
       await this.prisma.chatbotDocument.create({
         data: {
-          title: e.keywords[0] ?? e.category,
+          title,
           category: e.category,
           content: e.answer,
           keywords: e.keywords,
@@ -83,15 +90,18 @@ export class QmiDocumentService implements OnModuleInit {
           enabled: true,
         },
       });
+      inserted++;
     }
-    this.logger.log(`정적 지식베이스 ${QMI_KNOWLEDGE_BASE.length}건 시드 완료`);
 
-    if (this.openai.enabled) {
-      try {
-        const n = await this.reindex();
-        this.logger.log(`시드 문서 임베딩 ${n}건 완료`);
-      } catch (error) {
-        this.logger.warn(`시드 임베딩 실패(나중에 reindex 가능): ${String(error)}`);
+    if (inserted > 0) {
+      this.logger.log(`지식 문서 ${inserted}건 시드(reconcile) 완료`);
+      if (this.openai.enabled) {
+        try {
+          const n = await this.reindex();
+          this.logger.log(`임베딩 ${n}건 완료`);
+        } catch (error) {
+          this.logger.warn(`임베딩 실패(나중에 reindex 가능): ${String(error)}`);
+        }
       }
     }
   }
