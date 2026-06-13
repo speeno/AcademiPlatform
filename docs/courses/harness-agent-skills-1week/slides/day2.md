@@ -2,8 +2,10 @@
 marp: true
 title: Day 2 — 하네스 이해 & 에이전트처럼 일 시키기
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # Day 2
 ## 하네스 이해 & 에이전트처럼 일 시키기
 

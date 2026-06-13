@@ -2,8 +2,10 @@
 marp: true
 title: 에이전트 코딩 1Day (개발자)
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # 에이전트 코딩 1Day
 ## 하네스 & Agent Skills로 개발 생산성 즉시 향상
 개발자용

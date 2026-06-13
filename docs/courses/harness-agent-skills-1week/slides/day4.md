@@ -2,8 +2,10 @@
 marp: true
 title: Day 4 — 문제 정의 & 팀 프로젝트 빌드
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # Day 4
 ## 문제 정의 & 팀 프로젝트 빌드 (1)
 

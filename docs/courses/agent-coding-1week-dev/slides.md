@@ -2,8 +2,10 @@
 marp: true
 title: 에이전트 코딩 1주 (개발자, 심화)
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # 에이전트 코딩 1주
 ## 오케스트레이션 · 컨텍스트 엔지니어링 · 표준화
 개발자 심화 풀코스
@@ -41,6 +43,7 @@ paginate: true
 - (심화) 자동 코드 리뷰
 
 ---
+<!-- _class: section -->
 <!-- D4 -->
 # Day 4 — 오케스트레이션 · 컨텍스트 · 평가
 
@@ -66,6 +69,7 @@ paginate: true
 - **가드레일**: 위험 작업 게이트·검증 필수화
 
 ---
+<!-- _class: section -->
 <!-- D5 -->
 # Day 5 — 표준화 + 데모 + 거버넌스
 

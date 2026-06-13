@@ -2,8 +2,10 @@
 marp: true
 title: Day 5 — 빌드 완료 & 데모
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # Day 5
 ## 빌드 완료 & 데모 & 이어가기
 

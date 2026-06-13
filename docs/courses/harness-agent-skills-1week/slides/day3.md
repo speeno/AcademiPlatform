@@ -2,8 +2,10 @@
 marp: true
 title: Day 3 — Agent Skills & 기술 파일
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # Day 3
 ## Agent Skills & 기술 파일 만들기
 

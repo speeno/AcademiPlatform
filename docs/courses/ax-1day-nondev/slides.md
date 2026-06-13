@@ -2,8 +2,10 @@
 marp: true
 title: AX 입문 1Day (비개발)
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # AX 입문 1Day
 ## 하루 만에 시작하는 바이브 코딩
 하네스 & Agent Skills 맛보기 — 비개발자용

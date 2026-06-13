@@ -2,8 +2,10 @@
 marp: true
 title: Day 1 — AI로 일하기 & 첫 성공
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # Day 1
 ## AI로 일하기 & 첫 성공 경험
 비개발자를 위한 1주 AX 실무 — 하네스 & Agent Skills

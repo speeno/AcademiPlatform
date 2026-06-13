@@ -2,8 +2,10 @@
 marp: true
 title: AX 실무 3Day (비개발)
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # AX 실무 3Day
 ## 입문부터 팀 프로젝트 완주까지
 하네스 & Agent Skills — 비개발자용
@@ -18,6 +20,7 @@ paginate: true
 - **Day 3** 팀 프로젝트: 정의 → 빌드 → 데모
 
 ---
+<!-- _class: section -->
 <!-- ===== DAY 1 ===== -->
 # Day 1
 ## 입문 & 첫 성공
@@ -37,6 +40,7 @@ paginate: true
 - 랩: 미니 도구 → 다단계 빌드
 
 ---
+<!-- _class: section -->
 <!-- ===== DAY 2 ===== -->
 # Day 2
 ## Agent Skills & 기술 파일
@@ -58,6 +62,7 @@ paginate: true
 - 가져온 불편 → **팀 문제 후보** → 1개로 좁히기
 
 ---
+<!-- _class: section -->
 <!-- ===== DAY 3 ===== -->
 # Day 3
 ## 팀 프로젝트: 정의 → 빌드 → 데모

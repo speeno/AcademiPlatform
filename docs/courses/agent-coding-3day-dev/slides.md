@@ -2,8 +2,10 @@
 marp: true
 title: 에이전트 코딩 3Day (개발자)
 paginate: true
+theme: academiq
 ---
-
+<!-- _class: lead -->
+<!-- _paginate: false -->
 # 에이전트 코딩 3Day
 ## 스킬 라이브러리 · 서브에이전트 · MCP · 자동화
 개발자용 — 팀 워크플로우 표준화
@@ -16,6 +18,7 @@ paginate: true
 - **Day 3** 자동화(리뷰·테스트·훅·CI) + 팀 적용
 
 ---
+<!-- _class: section -->
 <!-- ===== DAY 1 ===== -->
 # Day 1 — 워크플로우 다지기
 
@@ -29,6 +32,7 @@ paginate: true
 > 랩: 버그 수정 + 기능 추가(테스트로 검증)
 
 ---
+<!-- _class: section -->
 <!-- ===== DAY 2 ===== -->
 # Day 2 — 스킬 · 서브에이전트 · MCP
 
@@ -54,6 +58,7 @@ paginate: true
 - 설정·토큰은 **공식 문서 기준 + 비밀 관리** 주의
 
 ---
+<!-- _class: section -->
 <!-- ===== DAY 3 ===== -->
 # Day 3 — 자동화 + 팀 적용
 
