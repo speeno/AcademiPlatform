@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
   MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award, BarChart3,
-  FileQuestion, SquarePen,
+  FileQuestion, SquarePen, Bot,
 } from 'lucide-react';
 import { SidebarShell } from '@/components/layout/SidebarShell';
 import { type SidebarNavGroup } from '@/components/layout/AppSidebar';
@@ -51,6 +51,7 @@ const navGroups: SidebarNavGroup[] = [
       { href: '/admin/notices', icon: Bell, label: '공지사항', matchPrefix: true },
       { href: '/admin/faq', icon: HelpCircle, label: 'FAQ' },
       { href: '/admin/inquiries', icon: MessageSquare, label: '1:1 문의' },
+      { href: '/admin/qmi', icon: Bot, label: '큐미 RAG 데이터' },
     ],
   },
   {

@@ -158,6 +158,7 @@ export default function AdminDashboard() {
               { label: '공지 관리', href: '/admin/notices', color: 'var(--brand-green)' },
               { label: '소개 페이지 CMS', href: '/admin/intro', color: 'var(--brand-blue-light)' },
               { label: '회원 관리', href: '/admin/users', color: '#EF4444' },
+              { label: '큐미 RAG 데이터', href: '/admin/qmi', color: 'var(--brand-green)' },
             ].map((action) => (
               <a
                 key={action.label}

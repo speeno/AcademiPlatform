@@ -44,6 +44,14 @@ services:
       - key: FRONTEND_URL
         sync: false       # https://academiq.vercel.app
 
+      # 큐미 RAG - OpenAI (백엔드에서 챗봇/임베딩 처리. Vercel 아님)
+      - key: OPENAI_API_KEY
+        sync: false       # 대시보드에서 직접 입력. 없으면 데이터 폴백(지식베이스)로 동작
+      - key: QMI_CHAT_MODEL
+        value: gpt-4o-mini
+      - key: QMI_EMBED_MODEL
+        value: text-embedding-3-small
+
       # 객체 스토리지(R2/S3 호환) - 표준 키
       - key: S3_ENDPOINT
         sync: false

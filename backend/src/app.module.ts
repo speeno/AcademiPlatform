@@ -27,6 +27,7 @@ import { NoticesModule } from './notices/notices.module';
 import { InstructorPostsModule } from './instructor-posts/instructor-posts.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { OnlineExamModule } from './online-exam/online-exam.module';
+import { QmiModule } from './qmi/qmi.module';
 
 @Module({
   controllers: [AppController],
@@ -50,6 +51,7 @@ import { OnlineExamModule } from './online-exam/online-exam.module';
     NoticesModule,
     InstructorPostsModule,
     AnalyticsModule,
+    QmiModule,
   ],
   providers: [
     AppService,

@@ -1321,3 +1321,24 @@ model PageView {
   @@index([path, createdAt])
   @@index([sessionId, createdAt])
 }
+
+// ─── 큐미 RAG: 챗봇 지식 문서(임베딩 포함) ────────────────────────────────────
+model ChatbotDocument {
+  id          String                       @id @default(cuid())
+  title       String
+  category    String
+  url         String                       @default("")
+  content     String
+  keywords    String[]                     @default([])
+  roles       String[]                     @default(["public"])
+  pose        String                       @default("explaining")
+  suggestions String[]                     @default([])
+  enabled     Boolean                      @default(true)
+  // pgvector(1536) — OpenAI text-embedding-3-small. 읽기/쓰기는 raw SQL 사용.
+  embedding   Unsupported("vector(1536)")?
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
+
+  @@index([enabled])
+  @@map("chatbot_documents")
+}

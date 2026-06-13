@@ -68,12 +68,14 @@ export function VideoCard({ item }: { item: VideoItem }) {
             <PlayCircle className="w-8 h-8 text-brand-blue"  />
           </div>
         </div>
-        <div
-          className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold"
-          style={{ background: badge.bg, color: badge.color }}
-        >
-          {badge.label}
-        </div>
+        {item.type !== 'youtube' && (
+          <div
+            className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style={{ background: badge.bg, color: badge.color }}
+          >
+            {badge.label}
+          </div>
+        )}
       </div>
       {item.title && (
         <div className="p-3">
