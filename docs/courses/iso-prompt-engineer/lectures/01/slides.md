@@ -4,7 +4,7 @@ title: 강 01 OT & AI 기본 소양
 paginate: true
 theme: academiq
 ---
-<!-- _class: lead -->
+<!-- _class: lead qmi-greeting -->
 <!-- _paginate: false -->
 # 강 01
 ## OT & AI 기본 소양

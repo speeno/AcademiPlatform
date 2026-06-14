@@ -4,7 +4,7 @@ title: 강 02 인공지능의 정의
 paginate: true
 theme: academiq
 ---
-<!-- _class: lead -->
+<!-- _class: lead qmi-presenting -->
 <!-- _paginate: false -->
 # 강 02
 ## 인공지능(AI)의 정의

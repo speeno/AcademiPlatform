@@ -4,7 +4,7 @@ title: 강 03 AI의 분류 & 기계학습의 위치
 paginate: true
 theme: academiq
 ---
-<!-- _class: lead -->
+<!-- _class: lead qmi-idea -->
 <!-- _paginate: false -->
 # 강 03
 ## AI의 분류 & 기계학습의 위치
