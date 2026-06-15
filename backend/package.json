@@ -37,10 +37,13 @@
     "hero:harness:merge": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/merge-hero-harness-slide.ts",
     "shorts:thumbnails:regenerate": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/regenerate-shorts-thumbnails.ts",
     "exam:questions:seed-ai": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-ai-question-bank.ts",
+    "exam:questions:seed-iso-pe": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-iso-prompt-engineer-question-bank.ts",
     "exam:content:export": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts export",
     "exam:content:import": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts import",
     "exam:content:sync": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/sync-exam-content.ts sync",
-    "exam:content:import-api": "node -r ts-node/register/transpile-only -r tsconfig-paths/register debug/import-question-bank-via-api.ts"
+    "exam:content:import-api": "node -r ts-node/register/transpile-only -r tsconfig-paths/register debug/import-question-bank-via-api.ts",
+    "course:iso-ac:seed": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-iso-ai-creator-course.ts",
+    "course:iso-pe:seed": "node -r ts-node/register/transpile-only -r tsconfig-paths/register prisma/scripts/seed-iso-prompt-engineer-course.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

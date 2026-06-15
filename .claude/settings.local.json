@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx ts-node *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"qmi-errors-exit:$?\")",
+      "Bash(magick qmi-avatar.webp -background magenta -flatten /tmp/chk_avatar.png)",
+      "Bash(magick qmi-idle.png -background magenta -flatten /tmp/chk_idle_src.png)",
+      "Bash(magick qmi-greeting.png -background magenta -flatten /tmp/chk_greet_src.png)",
+      "Bash(magick montage *)",
+      "Bash(identify qmi-avatar.webp qmi-idle.png)",
+      "Bash(lsof -nP -iTCP:4400 -sTCP:LISTEN)",
+      "Bash(awk '{print $2}')",
+      "Bash(curl -sS -L -o /dev/null -w \"avatar: HTTP %{http_code} | type=%{content_type} | size=%{size_download} | redirects=%{num_redirects}\\\\n\" \"https://www.academiq.life/mascot/qmi/qmi-avatar.webp\" --max-time 40)",
+      "Bash(curl -sS -L -o /dev/null -w \"homepage: HTTP %{http_code} | type=%{content_type}\\\\n\" \"https://www.academiq.life/\" --max-time 40)",
+      "Bash(cd *)",
+      "Bash(export CHROME_PATH=\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\")",
+      "Bash(npx --yes @marp-team/marp-cli agent-coding-1day-dev/slides.md --pdf --allow-local-files -o agent-coding-1day-dev/slides.pdf)",
+      "Bash(awk '/^model Course \\\\{/,/^\\\\}/' prisma/schema.prisma)",
+      "Bash(psql \"postgresql://localhost:5432/academiq\" -tAc \"SELECT slug, status FROM \\\\\"Course\\\\\" WHERE slug LIKE 'ax-%nondev' OR slug LIKE 'agent-coding-%' ORDER BY slug;\")",
+      "Bash(python3 -)"
+    ]
+  }
+}

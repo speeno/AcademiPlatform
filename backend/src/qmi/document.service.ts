@@ -67,17 +67,40 @@ export class QmiDocumentService implements OnModuleInit {
 
   /**
    * 정적 지식베이스(QMI_KNOWLEDGE_BASE)의 문서를 제목 기준으로 reconcile 한다.
-   * - 누락된 문서만 추가하고 기존 문서는 건드리지 않는다(멱등·비파괴).
-   * - 신규 배포로 추가된 캐논 문서가 이미 시드된 운영 DB 에도 자동 반영된다.
+   * - 누락된 문서는 추가한다.
+   * - 이미 존재하는 시드 문서는 content·keywords·pose·suggestions 를 최신 정의로 동기화한다.
    */
   async ensureSeedDocuments(): Promise<void> {
-    const existing = await this.prisma.chatbotDocument.findMany({ select: { title: true } });
-    const existingTitles = new Set(existing.map((d) => d.title));
+    const existing = await this.prisma.chatbotDocument.findMany({
+      select: { id: true, title: true, content: true, keywords: true },
+    });
+    const existingByTitle = new Map(existing.map((d) => [d.title, d]));
 
     let inserted = 0;
+    let updated = 0;
+
     for (const e of QMI_KNOWLEDGE_BASE) {
       const title = e.title ?? e.keywords[0] ?? e.category;
-      if (existingTitles.has(title)) continue;
+      const current = existingByTitle.get(title);
+
+      if (current) {
+        const contentChanged = current.content !== e.answer;
+        const keywordsChanged = JSON.stringify(current.keywords) !== JSON.stringify(e.keywords);
+        if (contentChanged || keywordsChanged) {
+          await this.prisma.chatbotDocument.update({
+            where: { id: current.id },
+            data: {
+              content: e.answer,
+              keywords: e.keywords,
+              pose: e.pose,
+              suggestions: e.suggestions ?? [],
+            },
+          });
+          updated++;
+        }
+        continue;
+      }
+
       await this.prisma.chatbotDocument.create({
         data: {
           title,
@@ -93,8 +116,8 @@ export class QmiDocumentService implements OnModuleInit {
       inserted++;
     }
 
-    if (inserted > 0) {
-      this.logger.log(`지식 문서 ${inserted}건 시드(reconcile) 완료`);
+    if (inserted + updated > 0) {
+      this.logger.log(`지식 문서 ${inserted}건 시드, ${updated}건 동기화(reconcile) 완료`);
       if (this.openai.enabled) {
         try {
           const n = await this.reindex();
@@ -198,14 +221,30 @@ export class QmiDocumentService implements OnModuleInit {
 
   private lexicalScore(compactQuery: string, keywords: string[], content: string): number {
     let score = 0;
+    const counted = new Set<string>(); // 동일 토큰 중복 가점 방지
+
     for (const kw of keywords) {
-      const k = compact(kw);
-      if (k && compactQuery.includes(k)) score += 1 + Math.min(k.length, 6) / 6;
+      const compactKw = compact(kw);
+      if (!compactKw || compactKw.length < 2) continue;
+
+      // 1) 전체 키워드 매칭 (최고 가점)
+      if (compactQuery.includes(compactKw) && !counted.has(compactKw)) {
+        counted.add(compactKw);
+        score += 2 + Math.min(compactKw.length, 8) / 8;
+        continue;
+      }
+
+      // 2) 토큰 단위 매칭: 원본 키워드를 공백으로 분리해 각 토큰을 개별 검사
+      for (const part of kw.split(/\s+/)) {
+        const token = compact(part);
+        if (token.length < 2 || counted.has(token)) continue;
+        if (compactQuery.includes(token)) {
+          counted.add(token);
+          score += 0.7 + Math.min(token.length, 4) / 8;
+        }
+      }
     }
-    // 본문 일부가 질의에 포함되면 약하게 가점
-    if (compact(content).slice(0, 40) && compactQuery.length > 1) {
-      // (간단 가점 생략 — 키워드 기반으로 충분)
-    }
+
     return score;
   }
 

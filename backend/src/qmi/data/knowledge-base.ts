@@ -22,6 +22,8 @@ export interface QmiKbEntry {
 }
 
 import { QMI_SERVICE_GUIDE } from './service-guide';
+import { ISO_AI_CREATOR_KB } from './iso-ai-creator-kb';
+import { ISO_PROMPT_ENGINEER_KB } from './iso-prompt-engineer-kb';
 
 export const QMI_KNOWLEDGE_BASE: QmiKbEntry[] = [
   // ── 학습 도우미 (study help) ───────────────────────────────────────────────
@@ -144,6 +146,12 @@ export const QMI_KNOWLEDGE_BASE: QmiKbEntry[] = [
     pose: 'presenting',
     suggestions: ['결제가 안 돼요', '로그인이 안 돼요', '강의가 안 보여요'],
   },
+
+  // ── ISO AI Creator 30강 학습도우미 ────────────────────────────────────────
+  ...ISO_AI_CREATOR_KB,
+
+  // ── ISO Prompt Engineer 30강 학습도우미 ───────────────────────────────────
+  ...ISO_PROMPT_ENGINEER_KB,
 
   // ── 서비스 종합 안내 (관리자 등록 문서) ─────────────────────────────────────
   QMI_SERVICE_GUIDE,

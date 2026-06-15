@@ -58,7 +58,10 @@ const DEFAULT_SUGGESTIONS = [
 ];
 
 /** 벡터 검색 결과의 최소 코사인 유사도(이 미만이면 폴백) */
-const VECTOR_MIN_SIMILARITY = 0.3;
+const VECTOR_MIN_SIMILARITY = 0.4;
+
+/** LLM 컨텍스트에 포함할 문서당 최대 글자 수 */
+const MAX_DOC_CONTENT_CHARS = 800;
 
 @Injectable()
 export class QmiService {
@@ -128,17 +131,29 @@ export class QmiService {
     docs: QmiRetrievedDoc[],
     top: QmiRetrievedDoc,
   ): Promise<string> {
-    if (!this.openai.enabled) return top.content;
+    if (!this.openai.enabled) {
+      // OpenAI 미설정 시 짧은 문서는 그대로 반환, 긴 문서는 앞부분만 사용
+      if (top.content.length <= 600) return top.content;
+      return top.content.slice(0, 580) + '\n\n…\n더 자세한 내용은 강의 Q&A나 고객센터에 문의해 주세요.';
+    }
 
+    // 문서당 MAX_DOC_CONTENT_CHARS 자로 잘라 LLM 컨텍스트 과부하를 방지
     const context = docs
-      .map((d, i) => `[문서 ${i + 1}] (${d.category}) ${d.content}`)
+      .map((d, i) => {
+        const body =
+          d.content.length > MAX_DOC_CONTENT_CHARS
+            ? d.content.slice(0, MAX_DOC_CONTENT_CHARS) + '…'
+            : d.content;
+        return `[문서 ${i + 1}] (${d.category}) ${body}`;
+      })
       .join('\n\n');
+
     const userTurn =
       '다음은 참고자료(context)입니다. 이 내용에만 근거해 답하세요.\n\n' +
       `${context}\n\n---\n사용자 질문: ${message}`;
 
     const answer = await this.openai.chat(GROUNDED_SYSTEM, userTurn);
-    return answer ?? top.content;
+    return answer ?? (top.content.length <= 600 ? top.content : top.content.slice(0, 580) + '…');
   }
 
   private detectIntent(compactMsg: string): QmiChatResult | null {
