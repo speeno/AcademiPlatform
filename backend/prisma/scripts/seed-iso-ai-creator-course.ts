@@ -176,15 +176,17 @@ async function upsertContentDraft(
       courseId,
       lessonId,
       contentType: CmsContentType.HTML,
-      status: CmsContentStatus.DRAFT,
+      status: CmsContentStatus.PUBLISHED,
       latestVersionNo,
+      publishedVersionNo: latestVersionNo,
       createdById: actorId,
       updatedById: actorId,
     },
     update: {
       contentType: CmsContentType.HTML,
-      status: CmsContentStatus.DRAFT,
+      status: CmsContentStatus.PUBLISHED,
       latestVersionNo,
+      publishedVersionNo: latestVersionNo,
       updatedById: actorId,
     },
   });
@@ -201,7 +203,7 @@ async function upsertContentDraft(
 
   await prisma.lesson.update({
     where: { id: lessonId },
-    data: { contentStatus: 'DRAFT' },
+    data: { contentStatus: 'PUBLISHED' },
   });
   process.stdout.write(' [saved]\n');
 }
