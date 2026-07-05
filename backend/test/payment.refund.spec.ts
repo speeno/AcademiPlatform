@@ -8,6 +8,20 @@ import { PaymentService } from '../src/payment/payment.service';
  * - PG 취소 성공 후 DB 업데이트와 rollbackPostPayment 가 단일 $transaction 안에서 수행되어야 한다.
  */
 describe('PaymentService.requestRefund atomicity (P0)', () => {
+  // 환불 로직 검증에는 결제 모듈이 활성화돼 있어야 한다. 다른 스펙의 env 오염에
+  // 의존하지 않도록 이 스펙에서 명시적으로 설정/복원한다(테스트 격리).
+  const originalPaymentModule = process.env.PAYMENT_MODULE_ENABLED;
+  beforeAll(() => {
+    process.env.PAYMENT_MODULE_ENABLED = 'true';
+  });
+  afterAll(() => {
+    if (originalPaymentModule === undefined) {
+      delete process.env.PAYMENT_MODULE_ENABLED;
+    } else {
+      process.env.PAYMENT_MODULE_ENABLED = originalPaymentModule;
+    }
+  });
+
   const buildPrisma = (initial: any) => {
     const payment = { ...initial };
     const txCalls: string[] = [];

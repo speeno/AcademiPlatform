@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Logo } from './Logo';
-import { clearAccessToken } from '@/lib/auth';
+import { logout } from '@/lib/auth';
 import { useAuthContext } from '@/lib/auth-context';
 import {
   PUBLIC_NAV_PRIMARY_COUNT,
@@ -74,8 +74,8 @@ export function Navbar() {
     };
   }, [mobileOpen]);
 
-  const handleLogout = () => {
-    clearAccessToken();
+  const handleLogout = async () => {
+    await logout();
     setMobileOpen(false);
   };
 

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { QmiChatDto } from './dto/chat.dto';
@@ -23,18 +24,19 @@ export class QmiController {
     private readonly documents: QmiDocumentService,
   ) {}
 
-  // ── 공개: 공부도우미 큐미 채팅 ─────────────────────────────────────────────
+  // ── 공개(옵션 인증): 공부도우미 큐미 채팅 ────────────────────────────────────
+  // @Public() + JwtAuthGuard 의 optional 처리 덕분에 토큰이 있으면 request.user 가 채워진다.
   @Public()
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('chat')
-  chat(@Body() dto: QmiChatDto) {
-    return this.qmiService.chat(dto.message);
+  chat(@Body() dto: QmiChatDto, @CurrentUser() user: any) {
+    return this.qmiService.chat(dto.message, user ?? null);
   }
 
   @Public()
   @Get('starters')
-  starters() {
-    return { suggestions: this.qmiService.starters() };
+  starters(@CurrentUser() user: any) {
+    return { suggestions: this.qmiService.starters(!!user) };
   }
 
   // ── 관리자: RAG 지식 문서 관리 ─────────────────────────────────────────────

@@ -7,11 +7,8 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import {
   AssignmentSubmissionStatus,
   BookVoucherCodeStatus,
-  Course,
   CourseStatus,
   EnrollmentStatus,
-  PaymentStatus,
-  PaymentTarget,
   Prisma,
 } from '@prisma/client';
 import { CreateCourseDto, CourseFilterDto } from './dto/course.dto';
@@ -22,7 +19,6 @@ import {
   AdminUpdateAssignmentDto,
   SubmitAssignmentDto,
 } from './dto/assignment.dto';
-import { calculatePricingSnapshot } from '../common/pricing/pricing-snapshot';
 import { maskCourseForPublic } from '../common/pricing/public-price-policy';
 
 @Injectable()
@@ -175,16 +171,19 @@ export class CoursesService {
     });
   }
 
-  async enroll(
-    courseId: string,
-    userId: string,
-    paymentId?: string,
-    tx?: Prisma.TransactionClient,
-  ) {
-    const db = tx ?? this.prisma;
-    const course = await db.course.findUnique({
+  /**
+   * 학생 수강신청 — 결제 없이 PENDING(승인 대기) 상태로 신청한다.
+   * 관리자가 승인(approveEnrollment)하면 ACTIVE 로 전환되어 수강이 시작된다.
+   */
+  async enroll(courseId: string, userId: string) {
+    const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      include: { instructor: { select: { id: true, name: true } } },
+      select: {
+        id: true,
+        status: true,
+        enrollmentStartAt: true,
+        enrollmentEndAt: true,
+      },
     });
     if (!course) throw new NotFoundException('교육과정을 찾을 수 없습니다.');
     const now = new Date();
@@ -202,26 +201,61 @@ export class CoursesService {
     if (course.enrollmentEndAt && now > course.enrollmentEndAt) {
       throw new BadRequestException('수강 신청이 마감되었습니다.');
     }
+
+    const existing = await this.prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+    });
+    if (existing?.status === EnrollmentStatus.ACTIVE) {
+      throw new BadRequestException('이미 수강 중인 과정입니다.');
+    }
+    if (existing?.status === EnrollmentStatus.PENDING) {
+      throw new BadRequestException('이미 신청되어 승인 대기 중입니다.');
+    }
+
+    return this.prisma.enrollment.upsert({
+      where: { userId_courseId: { userId, courseId } },
+      create: { userId, courseId, status: EnrollmentStatus.PENDING },
+      update: {
+        status: EnrollmentStatus.PENDING,
+        paymentId: null,
+        expiresAt: null,
+        enrolledAt: now,
+      },
+    });
+  }
+
+  /**
+   * 수강 활성화 — 관리자 승인/수동등록/결제완료(tx) 경로에서 ACTIVE 로 전환하고
+   * 교재·바우처를 지급한다. (결제 없는 승인제이므로 결제 검증은 수행하지 않음)
+   */
+  async activateEnrollment(
+    courseId: string,
+    userId: string,
+    paymentId?: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx ?? this.prisma;
+    const course = await db.course.findUnique({
+      where: { id: courseId },
+      include: { instructor: { select: { id: true, name: true } } },
+    });
+    if (!course) throw new NotFoundException('교육과정을 찾을 수 없습니다.');
+
+    const existing = await db.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { status: true },
+    });
+
     if (course.maxCapacity && course.maxCapacity > 0) {
       const currentActive = await db.enrollment.count({
         where: { courseId, status: EnrollmentStatus.ACTIVE },
       });
-      if (currentActive >= course.maxCapacity) {
+      if (
+        existing?.status !== EnrollmentStatus.ACTIVE &&
+        currentActive >= course.maxCapacity
+      ) {
         throw new BadRequestException('정원이 마감되었습니다.');
       }
-    }
-
-    // tx 가 전달된 경로(PaymentService.handlePostPaymentInTx)는 결제·금액 검증이 이미 완료된
-    // 신뢰 호출이다. 외부 컨트롤러 진입(tx 미전달)은 paymentId 위조 차단을 위해 추가 검증을 수행한다.
-    if (!tx) {
-      await this.assertPaidEnrollmentPayment(course, userId, paymentId);
-    }
-
-    const existing = await db.enrollment.findUnique({
-      where: { userId_courseId: { userId, courseId } },
-    });
-    if (existing && existing.status === EnrollmentStatus.ACTIVE) {
-      throw new BadRequestException('이미 수강 중인 과정입니다.');
     }
 
     const expiresAt = course.learningPeriodDays
@@ -266,6 +300,51 @@ export class CoursesService {
     return enrollment;
   }
 
+  /** 관리자: 수강신청 승인(PENDING → ACTIVE). */
+  async approveEnrollment(courseId: string, enrollmentId: string) {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: { id: enrollmentId, courseId },
+      select: { id: true, userId: true, status: true },
+    });
+    if (!enrollment) {
+      throw new NotFoundException('수강 신청을 찾을 수 없습니다.');
+    }
+    // 이미 승인된 건은 멱등 처리.
+    if (enrollment.status === EnrollmentStatus.ACTIVE) return enrollment;
+    // PENDING 만 승인 가능. 취소/환불/만료된 등록을 승인 버튼으로 조용히 재활성화하지 않는다.
+    // (재수강이 필요하면 사용자가 다시 신청 → enroll() 이 PENDING 으로 재설정한다.)
+    if (enrollment.status !== EnrollmentStatus.PENDING) {
+      throw new BadRequestException(
+        '승인 대기(PENDING) 상태의 신청만 승인할 수 있습니다.',
+      );
+    }
+    return this.activateEnrollment(courseId, enrollment.userId);
+  }
+
+  /** 관리자: 수강신청 거절(PENDING → CANCELLED). */
+  async rejectEnrollment(courseId: string, enrollmentId: string) {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: { id: enrollmentId, courseId },
+      select: { id: true, status: true },
+    });
+    if (!enrollment) {
+      throw new NotFoundException('수강 신청을 찾을 수 없습니다.');
+    }
+    // 이미 취소된 건은 멱등 처리.
+    if (enrollment.status === EnrollmentStatus.CANCELLED) return enrollment;
+    // PENDING 만 거절 가능. 이미 ACTIVE(수강 중)인 등록을 거절로 처리하면 지급된 교재·
+    // 바우처를 회수하지 않고 접근만 조용히 끊긴다 → 환불/취소 절차를 사용해야 한다.
+    if (enrollment.status !== EnrollmentStatus.PENDING) {
+      throw new BadRequestException(
+        '승인 대기(PENDING) 상태의 신청만 거절할 수 있습니다. 이미 수강 중인 등록은 환불/취소 절차를 사용하세요.',
+      );
+    }
+    return this.prisma.enrollment.update({
+      where: { id: enrollment.id },
+      data: { status: EnrollmentStatus.CANCELLED },
+    });
+  }
+
   async getMyEnrollments(userId: string) {
     return this.prisma.enrollment.findMany({
       where: { userId, status: EnrollmentStatus.ACTIVE },
@@ -294,7 +373,12 @@ export class CoursesService {
       where: { id: targetUserId },
       select: { id: true },
     });
-    return this.enroll(courseId, targetUserId, undefined, this.prisma);
+    return this.activateEnrollment(
+      courseId,
+      targetUserId,
+      undefined,
+      this.prisma,
+    );
   }
 
   async getAdminEnrollments(courseId: string) {
@@ -666,78 +750,6 @@ export class CoursesService {
     if (!lesson) throw new NotFoundException('강의를 찾을 수 없습니다.');
     await this.prisma.lesson.delete({ where: { id: lessonId } });
     return { deleted: true };
-  }
-
-  /**
-   * 외부 수강 등록 요청에서 결제 정보(paymentId)가 위조되지 않았는지 검증한다.
-   * - 유료 판별은 `calculatePricingSnapshot.finalAmount > 0` 기준(legacy `price` 단독 사용 금지).
-   * - 결제 레코드는 동일 사용자·ENROLLMENT 타입·동일 courseId·PAID 상태여야 한다.
-   * - 결제 후처리 경로(PaymentService.handlePostPaymentInTx, tx 전달)는 이 검증을 건너뛴다.
-   */
-  private async assertPaidEnrollmentPayment(
-    course: Course,
-    userId: string,
-    paymentId?: string,
-  ): Promise<void> {
-    const pricing = calculatePricingSnapshot({
-      legacyPrice: course.price,
-      basePrice: course.basePrice,
-      salePrice: course.salePrice,
-      discountType: course.discountType,
-      discountValue: course.discountValue,
-      validFrom: course.priceValidFrom,
-      validUntil: course.priceValidUntil,
-      currency: course.currency,
-      policyVersion: course.pricePolicyVersion,
-    });
-
-    if (pricing.finalAmount === 0) {
-      // 무료 강의는 paymentId 가 와도 무시(과거 호환).
-      return;
-    }
-
-    if (!paymentId) {
-      throw new BadRequestException(
-        '유료 강의는 결제 완료 후 수강 신청이 가능합니다.',
-      );
-    }
-
-    const payment = await this.prisma.payment.findUnique({
-      where: { id: paymentId },
-      select: {
-        id: true,
-        userId: true,
-        targetType: true,
-        targetId: true,
-        paymentStatus: true,
-        finalAmount: true,
-        amount: true,
-      },
-    });
-
-    if (!payment) {
-      throw new BadRequestException('결제 정보를 찾을 수 없습니다.');
-    }
-    if (payment.userId !== userId) {
-      throw new BadRequestException(
-        '결제자와 수강 신청자가 일치하지 않습니다.',
-      );
-    }
-    if (payment.targetType !== PaymentTarget.ENROLLMENT) {
-      throw new BadRequestException(
-        '수강 결제가 아닌 결제로는 등록할 수 없습니다.',
-      );
-    }
-    if (payment.targetId !== course.id) {
-      throw new BadRequestException('결제 대상 강의가 일치하지 않습니다.');
-    }
-    if (payment.paymentStatus !== PaymentStatus.PAID) {
-      throw new BadRequestException('결제 완료 상태가 아닙니다.');
-    }
-    const paidAmount = payment.finalAmount || payment.amount;
-    if (paidAmount <= 0) {
-      throw new BadRequestException('결제 금액이 올바르지 않습니다.');
-    }
   }
 
   private async grantVoucherOnEnrollment(

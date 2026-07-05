@@ -62,6 +62,7 @@ enum DrmType {
 }
 
 enum EnrollmentStatus {
+  PENDING
   ACTIVE
   EXPIRED
   CANCELLED
@@ -268,6 +269,12 @@ model User {
   role         UserRole   @default(USER)
   status       UserStatus @default(ACTIVE)
   mfaSecret    String?
+  // 큐미 챗봇이 개인 학습 데이터(점수·일정·진도)를 외부 LLM(OpenAI) 프롬프트에 포함해도
+  // 되는지에 대한 명시적 동의. 기본 false → 동의 전에는 개인정보가 서버 밖으로 나가지 않는다.
+  qmiPersonalConsent Boolean @default(false)
+  // 토큰 무효화 버전. access/refresh 토큰 payload 의 tv 와 비교해 불일치 시 거부한다.
+  // 로그아웃·비밀번호 변경 시 증가시키면 해당 사용자의 모든 발급 토큰이 즉시 무효화된다.
+  tokenVersion Int      @default(0)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 

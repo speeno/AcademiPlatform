@@ -6,6 +6,7 @@ import { ArrowLeft, Pencil, Trash2, Calendar, User } from 'lucide-react';
 import { PageLoader } from '@/components/ui/page-loader';
 import { BrandButton } from '@/components/ui/brand-button';
 import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
+import { sanitizeCmsHtml } from '@/lib/html-sanitize';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -177,7 +178,7 @@ export default function InstructorPostDetailPage() {
 
         <div
           className="prose prose-sm max-w-none"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(post.content) }}
         />
       </div>
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiFetch, parseJsonSafe } from '@/lib/api-client';
+import { apiFetchWithAuth, apiFetch, parseJsonSafe } from '@/lib/api-client';
+import { isLoggedIn } from '@/lib/auth';
 import { QMI_AVATAR, qmiPoseSrc } from './poses';
 
 interface QmiChatResponse {
@@ -36,6 +37,13 @@ const DEFAULT_STARTERS = [
   '온라인 시험 응시 방법',
 ];
 
+const PERSONAL_STARTERS = [
+  '내 시험 점수 확인',
+  '다음 시험 일정',
+  '수강 중인 강의 진도',
+  '시험 신청 방법',
+];
+
 /** 런처가 닫혀 있을 때 주기적으로 순환하는 큐미 포즈 */
 const LAUNCHER_POSES = [
   'waving', 'idle', 'thumbs-up', 'idea', 'excited',
@@ -57,9 +65,12 @@ const PROACTIVE_MESSAGES: { text: string; pose: string }[] = [
 ];
 
 export function QmiChat() {
+  const loggedIn = isLoggedIn();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
-  const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_STARTERS);
+  const [suggestions, setSuggestions] = useState<string[]>(
+    loggedIn ? PERSONAL_STARTERS : DEFAULT_STARTERS,
+  );
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -132,7 +143,8 @@ export function QmiChat() {
       setLoading(true);
 
       try {
-        const res = await apiFetch('/qmi/chat', {
+        const fetchFn = loggedIn ? apiFetchWithAuth : apiFetch;
+        const res = await fetchFn('/qmi/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: text }),

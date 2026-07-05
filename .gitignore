@@ -34,5 +34,8 @@ Thumbs.db
 backend/static/textbooks/*.pdf
 .vercel
 backend/static/textbooks/uploads/*.pdf
+
+# CMS 로컬 폴백 업로드(개발용) — 사용자 콘텐츠가 git에 커밋되지 않도록 제외
+backend/static/cms/
 .git_frontend_backup_*/
 .data

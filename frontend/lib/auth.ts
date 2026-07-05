@@ -148,6 +148,22 @@ export function clearAccessToken() {
   notifyAuthChanged();
 }
 
+/**
+ * 로그아웃 — 서버에 토큰 무효화(tokenVersion 증가)를 요청해 발급된 모든 토큰을 폐기한 뒤
+ * 로컬 토큰을 정리한다. 네트워크 실패해도 로컬 정리는 항상 수행한다(best-effort).
+ */
+export async function logout(): Promise<void> {
+  try {
+    await fetchWithAuth(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: buildAuthHeader(false),
+    });
+  } catch {
+    /* 서버 무효화 실패해도 로컬 토큰은 정리한다 */
+  }
+  clearAccessToken();
+}
+
 export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;

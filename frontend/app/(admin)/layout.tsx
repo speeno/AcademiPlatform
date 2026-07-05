@@ -1,14 +1,31 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
   MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award, BarChart3,
-  FileQuestion, SquarePen, Bot,
+  FileQuestion, SquarePen, Bot, LogOut,
 } from 'lucide-react';
 import { SidebarShell } from '@/components/layout/SidebarShell';
 import { type SidebarNavGroup } from '@/components/layout/AppSidebar';
+import { PageLoader } from '@/components/ui/page-loader';
+import {
+  ensureAuthCookieSync,
+  forceLogoutToLogin,
+  logout,
+  verifyAuthSession,
+} from '@/lib/auth';
+
+const ADMIN_ROLES = ['OPERATOR', 'SUPER_ADMIN'];
+
+async function handleAdminLogout() {
+  // 서버측 토큰 무효화 + 로컬 토큰 정리 후 전체 이동 — 잔존 세션으로 대시보드로 튕기지 않도록
+  await logout();
+  window.location.assign('/login');
+}
 
 const navGroups: SidebarNavGroup[] = [
   {
@@ -67,6 +84,43 @@ const navGroups: SidebarNavGroup[] = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [authReady, setAuthReady] = useState(false);
+
+  // 관리자 레이아웃 게이트: middleware 는 쿠키 존재만 확인하므로, 일반 회원이라도
+  // /admin/* 셸이 렌더될 수 있다. 여기서 역할을 검증해 비관리자는 접근을 차단한다.
+  useEffect(() => {
+    let active = true;
+    setAuthReady(false);
+
+    const boot = async () => {
+      ensureAuthCookieSync();
+      const session = await verifyAuthSession();
+      if (!active) return;
+
+      if (!session.valid) {
+        forceLogoutToLogin(pathname);
+        return;
+      }
+      if (!ADMIN_ROLES.includes(session.role ?? '')) {
+        // 인증됐지만 관리자 권한 없음 — 세션은 유지한 채 사용자 영역으로 보낸다.
+        router.replace('/mypage');
+        return;
+      }
+      setAuthReady(true);
+    };
+
+    boot();
+    return () => {
+      active = false;
+    };
+  }, [pathname, router]);
+
+  if (!authReady) {
+    return <PageLoader />;
+  }
+
   return (
     <SidebarShell
       mobileTitle="관리자"
@@ -77,9 +131,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         groups: navGroups,
         width: 'md',
         footer: (
-          <Link href="/" className="text-xs text-white/60 hover:text-white">
-            ← 사이트로 돌아가기
-          </Link>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleAdminLogout}
+              className="flex items-center gap-1.5 text-xs font-medium text-white/80 hover:text-white"
+            >
+              <LogOut className="h-3.5 w-3.5" /> 로그아웃
+            </button>
+            <Link href="/" className="block text-xs text-white/60 hover:text-white">
+              ← 사이트로 돌아가기
+            </Link>
+          </div>
         ),
       }}
     >

@@ -1,4 +1,5 @@
-import { Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Trash2, FileText } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import type { LessonItem, ModuleItem } from './_types';
 import { LESSON_TYPE_OPTIONS, normalizeLessonType } from './_types';
@@ -79,7 +80,7 @@ export function CourseModuleEditor({
 
             <div className="space-y-2">
               {module.lessons.map((lesson) => (
-                <div key={lesson.id} className="grid md:grid-cols-[1fr_120px_90px_70px_80px] gap-2 items-center">
+                <div key={lesson.id} className="grid md:grid-cols-[1fr_auto_80px_64px_auto] gap-2 items-center">
                   <input
                     className="border rounded-lg px-3 py-2 text-sm"
                     value={lesson.title}
@@ -92,23 +93,19 @@ export function CourseModuleEditor({
                       ));
                     }}
                   />
-                  <select
-                    className="border rounded-lg px-2 py-2 text-sm"
-                    value={lesson.lessonType}
-                    onChange={(e) => {
-                      const value = normalizeLessonType(e.target.value);
-                      setModules((prev) => prev.map((m) =>
-                        m.id !== module.id ? m : {
-                          ...m,
-                          lessons: m.lessons.map((l) => l.id === lesson.id ? { ...l, lessonType: value } : l),
-                        },
-                      ));
-                    }}
-                  >
-                    {LESSON_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  {/* 콘텐츠 타입은 CMS에서 설정(단일 입력) — 여기서는 현재 타입 표시 + CMS 딥링크 */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] px-2 py-1 rounded bg-muted text-muted-foreground whitespace-nowrap" title="콘텐츠 타입 (CMS에서 설정)">
+                      {lesson.lessonType}
+                    </span>
+                    <Link
+                      href={selectedId ? `/admin/cms?courseId=${selectedId}&lessonId=${lesson.id}` : '#'}
+                      className="inline-flex items-center gap-1 text-xs text-brand-blue hover:underline whitespace-nowrap"
+                      title="CMS에서 콘텐츠 편집"
+                    >
+                      <FileText className="w-3.5 h-3.5" />콘텐츠
+                    </Link>
+                  </div>
                   <input
                     className="border rounded-lg px-2 py-2 text-sm"
                     type="number"

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Plus, Save, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Save, Loader2, UserCheck } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useCoursesAdmin } from './_useCoursesAdmin';
@@ -60,9 +61,18 @@ export default function AdminCoursesPage() {
         title="교육과정 관리"
         description="강좌 + 세부 모듈/레슨 추가·수정·삭제를 관리합니다."
         actions={
-          <BrandButton size="sm" variant="outline" onClick={resetForNewCourse}>
-            <Plus className="w-4 h-4 mr-1" />신규 과정 작성
-          </BrandButton>
+          <div className="flex gap-2">
+            {selectedId && (
+              <Link href={`/admin/courses/${selectedId}/enrollments`}>
+                <BrandButton size="sm" variant="secondary">
+                  <UserCheck className="w-4 h-4 mr-1" />수강 신청 승인
+                </BrandButton>
+              </Link>
+            )}
+            <BrandButton size="sm" variant="outline" onClick={resetForNewCourse}>
+              <Plus className="w-4 h-4 mr-1" />신규 과정 작성
+            </BrandButton>
+          </div>
         }
       />
 
@@ -97,8 +107,11 @@ export default function AdminCoursesPage() {
                   ))}
                 </datalist>
               </div>
-              <input className="border rounded-lg px-3 py-2 text-sm" type="number" placeholder="가격" value={form.price} onChange={(e) => updateForm('price', Number(e.target.value))} />
-              <select className="border rounded-lg px-3 py-2 text-sm" value={form.status} onChange={(e) => updateForm('status', e.target.value as typeof form.status)}>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">수강료 (원)</label>
+                <input className="border rounded-lg px-3 py-2 text-sm w-full" type="number" min={0} placeholder="0 = 무료" value={form.price} onChange={(e) => updateForm('price', Number(e.target.value))} />
+              </div>
+              <select className="border rounded-lg px-3 py-2 text-sm self-end" value={form.status} onChange={(e) => updateForm('status', e.target.value as typeof form.status)}>
                 {STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
               <select className="border rounded-lg px-3 py-2 text-sm" value={form.instructorId} onChange={(e) => updateForm('instructorId', e.target.value)}>

@@ -122,6 +122,35 @@ export class CmsService {
     return this.content.attachAsset(lessonId, userId, payload);
   }
 
+  uploadLessonAssetFile(
+    lessonId: string,
+    userId: string,
+    file:
+      | {
+          buffer?: Buffer;
+          originalname?: string;
+          mimetype?: string;
+          size?: number;
+        }
+      | undefined,
+    contentTypeHint?: string,
+  ) {
+    return this.content.uploadLessonAssetFile(
+      lessonId,
+      userId,
+      file,
+      contentTypeHint,
+    );
+  }
+
+  deleteLessonAsset(lessonId: string, assetId: string, userId: string) {
+    return this.content.deleteLessonAsset(lessonId, assetId, userId);
+  }
+
+  deleteLessonContent(lessonId: string, operatorId: string) {
+    return this.content.deleteLessonContent(lessonId, operatorId);
+  }
+
   /* ---- 검수 ---- */
   requestReview(lessonId: string, userId: string) {
     return this.review.requestReview(lessonId, userId);
@@ -158,5 +187,9 @@ export class CmsService {
 
   getPublishedAssetFile(assetId: string, userId: string) {
     return this.content.getPublishedAssetFile(assetId, userId);
+  }
+
+  getEditableAssetFile(assetId: string, userId: string) {
+    return this.content.getEditableAssetFile(assetId, userId);
   }
 }

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   PlayCircle, FileText, ChevronDown, CheckCircle2, Circle,
@@ -12,9 +11,10 @@ import {
 import { PageLoader } from '@/components/ui/page-loader';
 import { BrandProgress } from '@/components/ui/brand-progress';
 import { BrandBadge } from '@/components/ui/brand-badge';
-import { SecurePdfViewer } from '@/components/pdf-viewer/SecurePdfViewer';
 import { API_BASE } from '@/lib/api-base';
 import { buildAuthHeader, forceLogoutToLogin, getAccessToken } from '@/lib/auth';
+import { useAuthedBlobUrl } from '@/lib/use-authed-blob-url';
+import { LessonFormatViewer } from '@/components/cms/LessonFormatViewer';
 
 const VideoPlayer = dynamic(
   () => import('@/components/player/VideoPlayer').then((m) => ({ default: m.VideoPlayer })),
@@ -70,11 +70,14 @@ interface CourseData {
 
 interface CmsLessonContent {
   lessonId: string;
-  contentType: 'VIDEO_MP4' | 'VIDEO_YOUTUBE' | 'DOCUMENT' | 'HTML' | 'COURSE_PACKAGE';
+  source?: 'cms' | 'legacy';
+  contentType: 'VIDEO_MP4' | 'VIDEO_YOUTUBE' | 'DOCUMENT' | 'HTML' | 'COURSE_PACKAGE' | 'LIVE_LINK';
+  secureVideo?: boolean;
   schemaJson: Record<string, unknown>;
   assets: Array<{
     id: string;
     mimeType: string;
+    fileName?: string | null;
     resolvedUrl?: string | null;
     publicUrl?: string | null;
     storageKey?: string | null;
@@ -136,11 +139,13 @@ export default function CoursePlayerPage() {
     load();
   }, [courseId, router]);
 
-  // 레슨 선택 시 스트리밍/PDF 토큰 로드
+  // 레슨 선택 시 단일 리졸버(/lms/.../content)에서 콘텐츠를 로드.
+  // 보안 영상(secureVideo)일 때만 stream-token 을 추가로 발급한다.
   useEffect(() => {
     if (!selectedLesson) return;
     setStreamUrl(null);
     setCmsContent(null);
+    let cancelled = false;
 
     const fetchContent = async () => {
       try {
@@ -148,33 +153,24 @@ export default function CoursePlayerPage() {
           headers: authHeader(),
           credentials: 'include',
         });
-        if (cmsRes.ok) {
-          const cmsData = await cmsRes.json();
-          if (cmsData) {
-            setCmsContent(cmsData);
-            return;
-          }
-        }
-      } catch {
-        // fallback to legacy loader
-      }
+        const cmsData: CmsLessonContent | null = cmsRes.ok ? await cmsRes.json() : null;
+        if (cancelled) return;
+        setCmsContent(cmsData);
 
-      if (selectedLesson.lessonType === 'VIDEO_UPLOAD') {
-        try {
+        if (cmsData?.secureVideo) {
           const res = await fetch(`${API}/media/lessons/${selectedLesson.id}/stream-token`, {
             headers: authHeader(),
             credentials: 'include',
           });
-          if (res.ok) {
+          if (res.ok && !cancelled) {
             const { signedUrl } = await res.json();
             setStreamUrl(signedUrl);
           }
-        } catch { /* ignore */ }
-      } else if (selectedLesson.lessonType === 'DOCUMENT') {
-        // PDF 뷰어 토큰은 textbook id 기반 — lessonDocument에서 textbookId 필요 (추후 연결)
-      }
+        }
+      } catch { /* ignore */ }
     };
     fetchContent();
+    return () => { cancelled = true; };
   }, [selectedLesson, authHeader]);
 
   const handleProgress = useCallback(async (watchedSeconds: number, completionRate = 0) => {
@@ -188,14 +184,24 @@ export default function CoursePlayerPage() {
     } catch { /* ignore */ }
   }, [selectedLesson, authHeader]);
 
+  // 업로드 영상(plain)의 로컬 스토리지(서명 URL 없음) 폴백만 blob 으로 처리.
+  // 문서/이미지/HTML 다형식은 LessonFormatViewer 가 자체 처리한다.
+  const cmsPrimaryAsset = cmsContent?.assets?.[0];
+  const cmsAssetUrl = cmsPrimaryAsset?.resolvedUrl || cmsPrimaryAsset?.publicUrl || null;
+  const authedAssetSrc = useMemo(() => {
+    if (!cmsContent || !cmsPrimaryAsset?.id || cmsAssetUrl) return null;
+    const isMp4 =
+      cmsContent.contentType === 'VIDEO_MP4' && !cmsContent.schemaJson?.videoUrl;
+    return isMp4 ? `${API}/cms/assets/${cmsPrimaryAsset.id}/file` : null;
+  }, [cmsContent, cmsPrimaryAsset, cmsAssetUrl]);
+  const { url: authedAssetUrl } = useAuthedBlobUrl(authedAssetSrc, viewerAuthHeaders);
+
   if (loading) return <PageLoader />;
 
   if (!data) return null;
 
   const { course, progressMap, enrollment } = data;
   const progress = selectedLesson ? progressMap[selectedLesson.id] : null;
-  const cmsPrimaryAsset = cmsContent?.assets?.[0];
-  const cmsAssetUrl = cmsPrimaryAsset?.resolvedUrl || cmsPrimaryAsset?.publicUrl || null;
   const fromSchema = String(
     cmsContent?.schemaJson?.linkUrl ??
     cmsContent?.schemaJson?.liveUrl ??
@@ -262,37 +268,58 @@ export default function CoursePlayerPage() {
           <div>
             {/* 콘텐츠 뷰어 */}
             <div className="w-full bg-black">
-              {selectedLesson.lessonType === 'VIDEO_YOUTUBE' && selectedLesson.videoAsset?.youtubeUrl ? (
+              {/* 단일 렌더 경로 — cmsContent.contentType 하나로 분기(레거시는 백엔드 리졸버가 동일 형태로 변환) */}
+              {!cmsContent ? (
+                <div className="aspect-video flex flex-col items-center justify-center text-white/70">
+                  <BookOpen className="w-12 h-12 mb-3 opacity-40" />
+                  <p className="text-sm">콘텐츠가 아직 등록되지 않았습니다.</p>
+                </div>
+              ) : cmsContent.contentType === 'VIDEO_YOUTUBE' ? (
                 <div className="aspect-video">
                   <iframe
-                    src={selectedLesson.videoAsset.youtubeUrl.replace('watch?v=', 'embed/')}
+                    src={String(cmsContent.schemaJson?.youtubeUrl ?? '')
+                      .replace('watch?v=', 'embed/')
+                      .replace('youtu.be/', 'www.youtube.com/embed/')}
                     className="w-full h-full"
                     allowFullScreen
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   />
                 </div>
-              ) : cmsContent?.contentType === 'VIDEO_YOUTUBE' && cmsContent.schemaJson?.youtubeUrl ? (
-                <div className="aspect-video">
-                  <iframe
-                    src={String(cmsContent.schemaJson.youtubeUrl).replace('watch?v=', 'embed/')}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              ) : cmsContent.contentType === 'VIDEO_MP4' ? (
+                cmsContent.secureVideo ? (
+                  streamUrl ? (
+                    <VideoPlayer
+                      streamUrl={streamUrl}
+                      lessonId={selectedLesson.id}
+                      onProgress={handleProgress}
+                    />
+                  ) : (
+                    <div className="aspect-video flex flex-col items-center justify-center text-white/70">
+                      <Loader2 className="w-8 h-8 animate-spin mb-3" />
+                      <p className="text-sm">보안 스트리밍 준비 중...</p>
+                    </div>
+                  )
+                ) : (cmsContent.schemaJson?.videoUrl || cmsAssetUrl || authedAssetUrl) ? (
+                  <video
+                    className="w-full aspect-video bg-black"
+                    controls
+                    src={String(cmsContent.schemaJson?.videoUrl ?? cmsAssetUrl ?? authedAssetUrl ?? '')}
                   />
-                </div>
-              ) : cmsContent?.contentType === 'VIDEO_MP4' ? (
-                <video
-                  className="w-full aspect-video bg-black"
-                  controls
-                  src={String(cmsContent.schemaJson?.videoUrl ?? cmsAssetUrl ?? '')}
+                ) : (
+                  <div className="aspect-video flex items-center justify-center text-white/70">
+                    영상이 등록되지 않았습니다.
+                  </div>
+                )
+              ) : cmsContent.contentType === 'HTML' || cmsContent.contentType === 'DOCUMENT' ? (
+                <LessonFormatViewer
+                  contentType={cmsContent.contentType}
+                  schemaJson={cmsContent.schemaJson}
+                  assets={cmsContent.assets}
+                  assetFileUrl={(id) => `${API}/cms/assets/${id}/file`}
+                  authHeaders={viewerAuthHeaders}
+                  heightClassName="h-[70vh]"
                 />
-              ) : cmsContent?.contentType === 'HTML' ? (
-                <iframe
-                  title="lesson-html-content"
-                  className="w-full h-[70vh] bg-white"
-                  srcDoc={String(cmsContent.schemaJson?.html ?? '<p>콘텐츠가 없습니다.</p>')}
-                />
-              ) : cmsContent?.contentType === 'COURSE_PACKAGE' ? (
+              ) : cmsContent.contentType === 'COURSE_PACKAGE' ? (
                 <div className="h-[70vh]">
                   <CoursePackageViewer
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -302,36 +329,7 @@ export default function CoursePlayerPage() {
                     authHeaders={viewerAuthHeaders}
                   />
                 </div>
-              ) : cmsContent?.contentType === 'DOCUMENT' ? (
-                cmsAssetUrl && cmsPrimaryAsset?.mimeType?.includes('pdf') ? (
-                  <SecurePdfViewer
-                    src={
-                      cmsPrimaryAsset?.id
-                        ? `${API}/cms/assets/${cmsPrimaryAsset.id}/file`
-                        : cmsAssetUrl
-                    }
-                    heightClassName="h-[70vh]"
-                    httpHeaders={viewerAuthHeaders}
-                    withCredentials
-                  />
-                ) : cmsAssetUrl && cmsPrimaryAsset?.mimeType?.startsWith('image/') ? (
-                  <div className="w-full h-[70vh] bg-white flex items-center justify-center">
-                    <Image src={cmsAssetUrl} alt="lesson-document" width={1200} height={900} className="max-h-[70vh] w-auto object-contain" />
-                  </div>
-                ) : cmsAssetUrl ? (
-                  <iframe title="lesson-document-content" src={cmsAssetUrl} className="w-full h-[70vh] bg-white" />
-                ) : (
-                  <div className="aspect-video flex items-center justify-center text-muted-foreground">
-                    문서 에셋이 등록되지 않았습니다.
-                  </div>
-                )
-              ) : selectedLesson.lessonType === 'VIDEO_UPLOAD' && streamUrl ? (
-                <VideoPlayer
-                  streamUrl={streamUrl}
-                  lessonId={selectedLesson.id}
-                  onProgress={handleProgress}
-                />
-              ) : selectedLesson.lessonType === 'LIVE_LINK' ? (
+              ) : cmsContent.contentType === 'LIVE_LINK' ? (
                 <div className="aspect-video flex flex-col items-center justify-center gap-4 bg-white text-center px-6">
                   <ExternalLink className="w-10 h-10 text-green-600" />
                   <div>
@@ -354,12 +352,8 @@ export default function CoursePlayerPage() {
                   )}
                 </div>
               ) : (
-                <div className="aspect-video flex flex-col items-center justify-center text-muted-foreground">
-                  {selectedLesson.lessonType === 'VIDEO_UPLOAD' ? (
-                    <><Loader2 className="w-8 h-8 animate-spin mb-3" /><p className="text-sm">스트리밍 준비 중...</p></>
-                  ) : (
-                    <><BookOpen className="w-12 h-12 mb-3" /><p className="text-sm">{selectedLesson.lessonType} 타입 콘텐츠</p></>
-                  )}
+                <div className="aspect-video flex items-center justify-center text-white/70">
+                  지원하지 않는 콘텐츠 형식입니다.
                 </div>
               )}
             </div>

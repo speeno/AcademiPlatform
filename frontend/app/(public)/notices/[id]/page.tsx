@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Paperclip } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { PageShell } from '@/components/layout/PageShell';
 import type { Metadata } from 'next';
+import { sanitizeCmsHtml } from '@/lib/html-sanitize';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4400/api';
 
@@ -83,7 +84,7 @@ export default async function NoticeDetailPage({ params }: { params: Promise<{ i
           <div className="bg-white rounded-xl border p-6 md:p-8">
             <div
               className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: notice.content ?? '' }}
+              dangerouslySetInnerHTML={{ __html: sanitizeCmsHtml(notice.content ?? '') }}
             />
 
             {(notice.attachments?.length ?? 0) > 0 && (

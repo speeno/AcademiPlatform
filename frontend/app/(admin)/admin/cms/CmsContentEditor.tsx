@@ -1,11 +1,13 @@
-import { Upload, Save, Send } from 'lucide-react';
+import { Upload, Save, Send, Trash2, FileText, Image as ImageIcon, Film } from 'lucide-react';
 import { BrandButton } from '@/components/ui/brand-button';
 import { HtmlWysiwygEditor } from '@/components/cms/HtmlWysiwygEditor';
 import { toast } from 'sonner';
-import type { ContentType, CmsHistoryItem, PackageChapter } from './_types';
+import type { ContentType, CmsHistoryItem, PackageChapter, CmsAsset } from './_types';
+import { CmsContentPreview } from './CmsContentPreview';
 
 interface Props {
   lessonTitle: string | undefined;
+  lessonId: string;
   contentType: ContentType;
   onContentTypeChange: (v: ContentType) => void;
   changeNote: string;
@@ -21,23 +23,54 @@ interface Props {
   packageUploading: boolean;
   packageUploadProgress: number;
   packageResult: { chapters: PackageChapter[] } | null;
+  assets: CmsAsset[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  packageSchema: Record<string, any> | null;
+  isOperator: boolean;
   history: CmsHistoryItem[];
   onSave: () => Promise<void>;
   onReviewRequest: () => Promise<void>;
   onUploadAsset: (file: File | null) => Promise<void>;
   onPackageUpload: (file: File | null) => Promise<void>;
+  onDeleteAsset: (assetId: string) => Promise<void>;
+  onResetContent: () => Promise<void>;
+}
+
+function formatBytes(bytes?: number | null): string {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function assetIcon(mimeType: string) {
+  if (mimeType?.includes('pdf')) return <FileText className="h-4 w-4 text-amber-500" />;
+  if (mimeType?.startsWith('image/')) return <ImageIcon className="h-4 w-4 text-blue-500" />;
+  if (mimeType?.startsWith('video/')) return <Film className="h-4 w-4 text-purple-500" />;
+  return <FileText className="h-4 w-4 text-muted-foreground" />;
 }
 
 export function CmsContentEditor({
-  lessonTitle, contentType, onContentTypeChange,
+  lessonTitle, lessonId, contentType, onContentTypeChange,
   changeNote, onChangeNoteChange,
   youtubeUrl, onYoutubeUrlChange,
   videoUrl, onVideoUrlChange,
   documentNote, onDocumentNoteChange,
   htmlContent, onHtmlContentChange,
   packageUploading, packageUploadProgress, packageResult,
+  assets, packageSchema, isOperator,
   history, onSave, onReviewRequest, onUploadAsset, onPackageUpload,
+  onDeleteAsset, onResetContent,
 }: Props) {
+  const handleDeleteAsset = (assetId: string) => {
+    if (!confirm('이 에셋을 삭제하시겠습니까?')) return;
+    onDeleteAsset(assetId).catch((err: unknown) => toast.error(err instanceof Error ? err.message : '삭제 실패'));
+  };
+  const handleResetContent = () => {
+    if (!confirm('이 레슨의 콘텐츠(버전/에셋/이력)를 모두 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+    onResetContent().catch((err: unknown) => toast.error(err instanceof Error ? err.message : '삭제 실패'));
+  };
+
   return (
     <div className="bg-white rounded-xl border p-4 space-y-3">
       <p className="text-sm font-semibold text-foreground">{lessonTitle ?? '레슨 선택'}</p>
@@ -111,7 +144,64 @@ export function CmsContentEditor({
         </div>
       )}
 
+      {(contentType === 'HTML' || contentType === 'VIDEO_YOUTUBE') && (
+        <div className="rounded-lg border border-dashed bg-muted/10 p-3">
+          <p className="mb-2 text-xs text-muted-foreground">
+            추가 자료를 업로드하면 학습자가 본문과 <b>형식 탭으로 전환</b>해 볼 수 있습니다. (예: HTML 본문 + PDF)
+          </p>
+          <label className="inline-flex items-center text-sm px-3 py-2 border rounded-lg cursor-pointer hover:bg-muted/30 bg-white">
+            <Upload className="w-4 h-4 mr-1" />추가 자료 업로드(PDF/이미지/문서)
+            <input
+              type="file"
+              accept=".pdf,.html,.htm,image/*,.doc,.docx,.ppt,.pptx,.txt"
+              className="hidden"
+              onChange={(e) => onUploadAsset(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        </div>
+      )}
+
+      {assets.length > 0 && (
+        <div className="space-y-1 rounded-lg border bg-muted/10 p-3">
+          <p className="text-xs font-semibold text-muted-foreground">업로드된 에셋 ({assets.length})</p>
+          {assets.map((a) => (
+            <div key={a.id} className="flex items-center gap-2 rounded border bg-white px-2 py-1.5 text-xs">
+              {assetIcon(a.mimeType)}
+              <span className="min-w-0 flex-1 truncate font-medium">{a.fileName ?? a.id}</span>
+              <span className="text-muted-foreground">{a.mimeType}</span>
+              {a.fileSize ? <span className="text-muted-foreground">{formatBytes(a.fileSize)}</span> : null}
+              <button
+                onClick={() => handleDeleteAsset(a.id)}
+                className="rounded p-1 hover:bg-red-50"
+                title="에셋 삭제"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-red-400" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {lessonId && (
+        <div className="rounded-lg border p-3">
+          <CmsContentPreview
+            contentType={contentType}
+            assets={assets}
+            youtubeUrl={youtubeUrl}
+            htmlContent={htmlContent}
+            videoUrl={videoUrl}
+            lessonId={lessonId}
+            packageSchema={packageSchema}
+          />
+        </div>
+      )}
+
       <div className="flex justify-end gap-2">
+        {isOperator && (
+          <BrandButton size="sm" variant="outline" onClick={handleResetContent}>
+            <Trash2 className="w-4 h-4 mr-1" />콘텐츠 삭제
+          </BrandButton>
+        )}
         <BrandButton size="sm" variant="secondary" onClick={() => onSave().catch((err: unknown) => toast.error(err instanceof Error ? err.message : '저장 실패'))}>
           <Save className="w-4 h-4 mr-1" />임시저장
         </BrandButton>

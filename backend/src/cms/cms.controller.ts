@@ -127,6 +127,70 @@ export class CmsController {
     return this.cmsService.getUploadUrl(user.id, dto);
   }
 
+  /** 멀티파트 직접 업로드(S3/로컬 폴백 공통). presigned 흐름 대체. */
+  @Roles(UserRole.USER)
+  @Post('lessons/:lessonId/assets/upload')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 200 * 1024 * 1024 } }),
+  )
+  uploadAssetFile(
+    @Param('lessonId') lessonId: string,
+    @UploadedFile()
+    file: {
+      buffer?: Buffer;
+      originalname?: string;
+      mimetype?: string;
+      size?: number;
+    },
+    @Body('contentType') contentType: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.cmsService.uploadLessonAssetFile(
+      lessonId,
+      user.id,
+      file,
+      contentType,
+    );
+  }
+
+  /** 편집자용 에셋 스트리밍(게시 전 DRAFT 미리보기 포함). */
+  @Roles(UserRole.USER)
+  @Get('lessons/:lessonId/assets/:assetId/file')
+  async streamEditableAssetFile(
+    @Param('assetId') assetId: string,
+    @CurrentUser() user: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const file = await this.cmsService.getEditableAssetFile(assetId, user.id);
+    res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${encodeURIComponent(file.fileName)}"`,
+    );
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+    return new StreamableFile(file.buffer);
+  }
+
+  @Roles(UserRole.USER)
+  @Delete('lessons/:lessonId/assets/:assetId')
+  deleteAsset(
+    @Param('lessonId') lessonId: string,
+    @Param('assetId') assetId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.cmsService.deleteLessonAsset(lessonId, assetId, user.id);
+  }
+
+  /** 레슨 콘텐츠 전체 삭제(운영자 전용, 되돌릴 수 없음). */
+  @Roles(UserRole.OPERATOR)
+  @Delete('lessons/:lessonId/content')
+  deleteLessonContent(
+    @Param('lessonId') lessonId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.cmsService.deleteLessonContent(lessonId, user.id);
+  }
+
   @Roles(UserRole.USER)
   @Post('lessons/:lessonId/assets')
   attachAsset(

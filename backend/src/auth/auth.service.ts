@@ -42,11 +42,18 @@ export class AuthService {
         name: true,
         role: true,
         createdAt: true,
+        tokenVersion: true,
       },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-    return { user, ...tokens };
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.tokenVersion,
+    );
+    const { tokenVersion: _tv, ...safeUser } = user;
+    return { user: safeUser, ...tokens };
   }
 
   async login(dto: LoginDto) {
@@ -66,7 +73,12 @@ export class AuthService {
         '이메일 또는 비밀번호가 올바르지 않습니다.',
       );
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.tokenVersion,
+    );
     return {
       user: {
         id: user.id,
@@ -108,10 +120,33 @@ export class AuthService {
   async refreshToken(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, role: true, status: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        tokenVersion: true,
+      },
     });
     if (!user || user.status !== 'ACTIVE') throw new UnauthorizedException();
-    return this.generateTokens(user.id, user.email, user.role);
+    return this.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+      user.tokenVersion,
+    );
+  }
+
+  /**
+   * 로그아웃: tokenVersion 을 증가시켜 해당 사용자에게 발급된 모든 access/refresh 토큰을
+   * 즉시 무효화한다(서버측 revocation). 비밀번호 변경 시에도 동일하게 호출하는 것을 권장한다.
+   */
+  async logout(userId: string): Promise<{ success: true }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    return { success: true };
   }
 
   private getJwtSecrets() {
@@ -123,8 +158,13 @@ export class AuthService {
     return { accessSecret, refreshSecret };
   }
 
-  private async generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
+  private async generateTokens(
+    userId: string,
+    email: string,
+    role: string,
+    tokenVersion: number,
+  ) {
+    const payload = { sub: userId, email, role, tv: tokenVersion };
     const { accessSecret, refreshSecret } = this.getJwtSecrets();
     const accessToken = this.jwt.sign(payload, {
       secret: accessSecret,

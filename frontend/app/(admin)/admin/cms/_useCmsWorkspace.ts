@@ -7,7 +7,7 @@ import { buildAuthHeader } from '@/lib/auth';
 import { sanitizeCmsHtml } from '@/lib/html-sanitize';
 import type {
   CmsCourse, CmsTree, CmsHistoryItem, ContentType, CollaboratorRole,
-  InstructorOption, PackageChapter,
+  InstructorOption, PackageChapter, CmsAsset,
 } from './_types';
 
 export function useCmsWorkspace() {
@@ -32,6 +32,8 @@ export function useCmsWorkspace() {
   const [packageUploading, setPackageUploading] = useState(false);
   const [packageUploadProgress, setPackageUploadProgress] = useState(0);
   const [packageResult, setPackageResult] = useState<{ chapters: PackageChapter[] } | null>(null);
+  const [assets, setAssets] = useState<CmsAsset[]>([]);
+  const [packageSchema, setPackageSchema] = useState<Record<string, unknown> | null>(null);
   const ownerSelectRef = useRef<HTMLSelectElement | null>(null);
 
   const selectedLesson = useMemo(
@@ -85,8 +87,14 @@ export function useCmsWorkspace() {
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.message ?? '강의 트리를 불러오지 못했습니다.');
     setTree(data);
+    // 딥링크(?lessonId=) 가 있으면 해당 레슨을 우선 선택, 없으면 첫 레슨
+    const queryLessonId = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('lessonId') ?? ''
+      : '';
+    const allLessons: Array<{ id: string }> = data?.modules?.flatMap((m: { lessons: Array<{ id: string }> }) => m.lessons) ?? [];
+    const matched = queryLessonId && allLessons.some((l) => l.id === queryLessonId);
     const firstLesson = data?.modules?.[0]?.lessons?.[0];
-    if (firstLesson) setSelectedLessonId((prev) => prev || firstLesson.id);
+    setSelectedLessonId((prev) => prev || (matched ? queryLessonId : (firstLesson?.id ?? '')));
   }, []);
 
   const loadLessonContent = useCallback(async (lessonId: string) => {
@@ -104,6 +112,8 @@ export function useCmsWorkspace() {
     setHtmlContent(schema?.html ?? '');
     setVideoUrl(schema?.videoUrl ?? '');
     setDocumentNote(schema?.note ?? '');
+    setAssets(Array.isArray(data?.item?.assets) ? data.item.assets : []);
+    setPackageSchema(nextType === 'COURSE_PACKAGE' ? (schema ?? null) : null);
     if (nextType === 'COURSE_PACKAGE' && schema?.chapters) {
       setPackageResult({
         chapters: (schema.chapters as Array<Record<string, unknown>>).map((ch) => ({
@@ -180,27 +190,59 @@ export function useCmsWorkspace() {
     await loadLessonContent(selectedLessonId);
   };
 
+  // presigned(S3 전용) 대신 멀티파트 직접 업로드 — S3/로컬 폴백 모두에서 동작.
   const handleUploadAsset = async (file: File | null) => {
     if (!file || !selectedCourseId || !selectedLessonId) return;
     try {
-      const presignedRes = await fetch(`${API_BASE}/cms/assets/upload-url`, {
-        method: 'POST', headers: buildAuthHeader(), credentials: 'include',
-        body: JSON.stringify({ courseId: selectedCourseId, lessonId: selectedLessonId, fileName: file.name, contentType: file.type || 'application/octet-stream' }),
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('contentType', contentType);
+      const res = await fetch(`${API_BASE}/cms/lessons/${selectedLessonId}/assets/upload`, {
+        method: 'POST', headers: buildAuthHeader(false), credentials: 'include', body: formData,
       });
-      const presigned = await presignedRes.json().catch(() => ({}));
-      if (!presignedRes.ok) throw new Error(presigned?.message ?? '업로드 URL 발급 실패');
-      const uploadRes = await fetch(presigned.presignedUrl, { method: 'PUT', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file });
-      if (!uploadRes.ok) throw new Error('파일 업로드 실패');
-      const attachRes = await fetch(`${API_BASE}/cms/lessons/${selectedLessonId}/assets`, {
-        method: 'POST', headers: buildAuthHeader(), credentials: 'include',
-        body: JSON.stringify({ assetType: contentType, mimeType: file.type || 'application/octet-stream', storageKey: presigned.storageKey, publicUrl: presigned.presignedUrl.split('?')[0], fileName: file.name, fileSize: file.size }),
-      });
-      const attachData = await attachRes.json().catch(() => ({}));
-      if (!attachRes.ok) throw new Error(attachData?.message ?? '에셋 연결 실패');
-      if (contentType === 'VIDEO_MP4') setVideoUrl(attachData?.publicUrl ?? presigned.presignedUrl.split('?')[0]);
-      toast.success('에셋 업로드 완료');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message ?? '에셋 업로드에 실패했습니다.');
+      toast.success('에셋 업로드 완료 — 저장 후 검수 요청하세요.');
+      await loadLessonContent(selectedLessonId);
+      await loadTree(selectedCourseId);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '업로드에 실패했습니다.');
+    }
+  };
+
+  const deleteAsset = async (assetId: string) => {
+    if (!selectedLessonId) return;
+    try {
+      const res = await fetch(`${API_BASE}/cms/lessons/${selectedLessonId}/assets/${assetId}`, {
+        method: 'DELETE', headers: buildAuthHeader(false), credentials: 'include',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message ?? '에셋 삭제에 실패했습니다.');
+      }
+      toast.success('에셋을 삭제했습니다.');
+      await loadLessonContent(selectedLessonId);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '에셋 삭제에 실패했습니다.');
+    }
+  };
+
+  const resetContent = async () => {
+    if (!selectedLessonId) return;
+    try {
+      const res = await fetch(`${API_BASE}/cms/lessons/${selectedLessonId}/content`, {
+        method: 'DELETE', headers: buildAuthHeader(false), credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.message ?? '콘텐츠 삭제에 실패했습니다.');
+      toast.success('레슨 콘텐츠를 삭제했습니다.');
+      setContentType('VIDEO_YOUTUBE');
+      setYoutubeUrl(''); setHtmlContent(''); setVideoUrl(''); setDocumentNote('');
+      setAssets([]); setPackageResult(null); setPackageSchema(null); setHistory([]);
+      await loadLessonContent(selectedLessonId);
+      await loadTree(selectedCourseId);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '콘텐츠 삭제에 실패했습니다.');
     }
   };
 
@@ -285,7 +327,9 @@ export function useCmsWorkspace() {
     collaboratorRole, setCollaboratorRole,
     instructors, instructorsLoading,
     packageUploading, packageUploadProgress, packageResult,
+    assets, packageSchema,
     loadTree, handleSave, handleUploadAsset, requestReview,
     addCollaborator, setCourseOwner, removeCollaborator, handlePackageUpload,
+    deleteAsset, resetContent,
   };
 }

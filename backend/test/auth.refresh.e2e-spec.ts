@@ -30,6 +30,7 @@ describe('Auth refresh (HTTP e2e)', () => {
     name: 'Refresh E2E',
     role: 'USER',
     status: 'ACTIVE',
+    tokenVersion: 0,
   };
 
   const mockPrisma = {

@@ -27,7 +27,7 @@ export default function CmsInstructorPage() {
 
       <div className="flex gap-2">
         <select
-          className="border rounded-lg px-3 py-2 text-sm bg-white min-w-72"
+          className="border rounded-lg px-3 py-2 text-sm bg-white w-full sm:w-auto sm:min-w-72 max-w-full"
           value={ws.selectedCourseId}
           onChange={(e) => ws.setSelectedCourseId(e.target.value)}
         >
@@ -37,14 +37,18 @@ export default function CmsInstructorPage() {
         </select>
       </div>
 
-      <div className="grid md:grid-cols-[300px_1fr] gap-4">
-        <CmsLessonTree
-          modules={ws.tree?.modules ?? []}
-          selectedLessonId={ws.selectedLessonId}
-          onSelectLesson={ws.setSelectedLessonId}
-        />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <CmsLessonTree
+            modules={ws.tree?.modules ?? []}
+            selectedLessonId={ws.selectedLessonId}
+            onSelectLesson={ws.setSelectedLessonId}
+          />
+        </div>
+        <div className="min-w-0">
         <CmsContentEditor
           lessonTitle={ws.selectedLesson?.title}
+          lessonId={ws.selectedLessonId}
           contentType={ws.contentType}
           onContentTypeChange={ws.setContentType}
           changeNote={ws.changeNote}
@@ -60,12 +64,18 @@ export default function CmsInstructorPage() {
           packageUploading={ws.packageUploading}
           packageUploadProgress={ws.packageUploadProgress}
           packageResult={ws.packageResult}
+          assets={ws.assets}
+          packageSchema={ws.packageSchema}
+          isOperator={ws.isOperator}
           history={ws.history}
           onSave={ws.handleSave}
           onReviewRequest={ws.requestReview}
           onUploadAsset={ws.handleUploadAsset}
           onPackageUpload={ws.handlePackageUpload}
+          onDeleteAsset={ws.deleteAsset}
+          onResetContent={ws.resetContent}
         />
+        </div>
       </div>
 
       {ws.isOperator && (

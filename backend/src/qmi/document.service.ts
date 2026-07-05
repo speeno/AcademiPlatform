@@ -42,6 +42,34 @@ function toVectorLiteral(vec: number[]): string {
   return `[${vec.join(',')}]`;
 }
 
+/** 역할별로 볼 수 있는 문서 태그 집합(상위 역할은 하위 태그를 포함). */
+const ROLE_TAG_HIERARCHY: Record<string, string[]> = {
+  USER: ['user'],
+  INSTRUCTOR: ['user', 'instructor'],
+  OPERATOR: ['user', 'instructor', 'operator'],
+  SUPER_ADMIN: ['user', 'instructor', 'operator', 'super_admin'],
+};
+
+/**
+ * 조회자(뷰어)가 접근 가능한 문서 role 태그 목록. 항상 'public' 을 포함하고,
+ * 로그인 사용자는 자신의 역할 및 하위 역할 태그를 추가로 본다. 익명은 ['public'].
+ */
+export function resolveQmiViewerRoles(userRole?: string | null): string[] {
+  const tags = new Set<string>(['public']);
+  const extra = userRole ? ROLE_TAG_HIERARCHY[userRole] : undefined;
+  if (extra) extra.forEach((t) => tags.add(t));
+  return [...tags];
+}
+
+/** viewerRoles 를 안전한 Postgres text[] 배열 리터럴로 변환(태그는 [a-z_] 로 제한). */
+function toRolesArrayLiteral(viewerRoles: string[]): string {
+  const sanitized = viewerRoles
+    .map((r) => r.toLowerCase().replace(/[^a-z_]/g, ''))
+    .filter(Boolean);
+  const list = sanitized.length > 0 ? sanitized : ['public'];
+  return `ARRAY[${list.map((r) => `'${r}'`).join(',')}]::text[]`;
+}
+
 @Injectable()
 export class QmiDocumentService implements OnModuleInit {
   private readonly logger = new Logger(QmiDocumentService.name);
@@ -129,8 +157,15 @@ export class QmiDocumentService implements OnModuleInit {
     }
   }
 
-  /** 검색: 벡터(가능 시) → 어휘 → 인메모리 순으로 폴백. */
-  async search(query: string, k = 4): Promise<QmiRetrievedDoc[]> {
+  /**
+   * 검색: 벡터(가능 시) → 어휘 → 인메모리 순으로 폴백.
+   * viewerRoles 로 문서 접근을 제한한다(기본 익명=public). role 태그가 겹치는 문서만 반환된다.
+   */
+  async search(
+    query: string,
+    k = 4,
+    viewerRoles: string[] = ['public'],
+  ): Promise<QmiRetrievedDoc[]> {
     if (!this.dbReady) return this.memorySearch(query, k);
 
     try {
@@ -138,25 +173,32 @@ export class QmiDocumentService implements OnModuleInit {
       if (this.openai.enabled) {
         const qv = await this.openai.embedOne(query);
         if (qv) {
-          const rows = await this.vectorSearch(qv, k);
+          const rows = await this.vectorSearch(qv, k, viewerRoles);
           if (rows.length > 0) return rows;
         }
       }
       // 2) 어휘(lexical) 검색
-      return await this.lexicalSearch(query, k);
+      return await this.lexicalSearch(query, k, viewerRoles);
     } catch (error) {
       this.logger.warn(`검색 실패, 인메모리 폴백: ${String(error)}`);
       return this.memorySearch(query, k);
     }
   }
 
-  private async vectorSearch(qv: number[], k: number): Promise<QmiRetrievedDoc[]> {
+  private async vectorSearch(
+    qv: number[],
+    k: number,
+    viewerRoles: string[],
+  ): Promise<QmiRetrievedDoc[]> {
     const lit = toVectorLiteral(qv);
+    // role 태그는 [a-z_] 로 살균 후 인라인하므로 주입 위험이 없다(파라미터 바인딩 배열 대체).
+    const rolesLiteral = toRolesArrayLiteral(viewerRoles);
     const rows = await this.prisma.$queryRawUnsafe<any[]>(
       `SELECT id, title, category, content, keywords, pose, suggestions,
               1 - (embedding <=> $1::vector) AS score
          FROM chatbot_documents
         WHERE enabled = true AND embedding IS NOT NULL
+          AND roles && ${rolesLiteral}
         ORDER BY embedding <=> $1::vector
         LIMIT $2`,
       lit,
@@ -175,8 +217,14 @@ export class QmiDocumentService implements OnModuleInit {
     }));
   }
 
-  private async lexicalSearch(query: string, k: number): Promise<QmiRetrievedDoc[]> {
-    const docs = await this.prisma.chatbotDocument.findMany({ where: { enabled: true } });
+  private async lexicalSearch(
+    query: string,
+    k: number,
+    viewerRoles: string[],
+  ): Promise<QmiRetrievedDoc[]> {
+    const docs = await this.prisma.chatbotDocument.findMany({
+      where: { enabled: true, roles: { hasSome: viewerRoles } },
+    });
     const q = compact(query);
     const scored = docs
       .map((d) => ({ d, score: this.lexicalScore(q, d.keywords ?? [], d.content) }))

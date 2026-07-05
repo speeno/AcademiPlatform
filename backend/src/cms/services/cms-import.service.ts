@@ -103,7 +103,7 @@ export class CmsImportService {
     }
 
     const basePath = chaptersEntry.entryName.replace('chapters.json', '');
-    this.storage.ensureBucket('스토리지 버킷이 설정되지 않았습니다.');
+    // 스토리지는 S3(원격) 또는 로컬 디스크 폴백 중 가용한 백엔드를 자동 선택한다.
 
     const pkgPrefix = `cms/pkg/${courseId}/${lessonId}/${Date.now()}`;
 
@@ -279,7 +279,8 @@ export class CmsImportService {
 
       await tx.lesson.update({
         where: { id: lessonId },
-        data: { contentStatus: 'DRAFT' },
+        // 단일 타입 기준: 강의 패키지는 업로드 영상 타입으로 동기화
+        data: { contentStatus: 'DRAFT', lessonType: 'VIDEO_UPLOAD' },
       });
 
       await tx.contentAuditLog.create({

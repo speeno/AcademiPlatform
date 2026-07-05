@@ -30,7 +30,13 @@ export class PaymentPostProcessor {
   ): Promise<void> {
     switch (targetType) {
       case PaymentTarget.ENROLLMENT: {
-        await this.coursesService.enroll(targetId, userId, paymentId, tx);
+        // 결제 완료 후처리 경로: 바로 ACTIVE 로 활성화한다.
+        await this.coursesService.activateEnrollment(
+          targetId,
+          userId,
+          paymentId,
+          tx,
+        );
         break;
       }
       case PaymentTarget.EXAM_APPLICATION: {

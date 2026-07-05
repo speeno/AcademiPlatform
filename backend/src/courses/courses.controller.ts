@@ -62,14 +62,10 @@ export class CoursesController {
     return this.coursesService.getCategories();
   }
 
-  /* 수강 등록 */
+  /* 수강 신청(결제 없음 → 관리자 승인 대기 PENDING) */
   @Post(':id/enroll')
-  enroll(
-    @Param('id') courseId: string,
-    @CurrentUser() user: any,
-    @Body('paymentId') paymentId?: string,
-  ) {
-    return this.coursesService.enroll(courseId, user.id, paymentId);
+  enroll(@Param('id') courseId: string, @CurrentUser() user: any) {
+    return this.coursesService.enroll(courseId, user.id);
   }
 
   @Get('my/enrollments')
@@ -160,6 +156,24 @@ export class CoursesController {
       targetUserId,
       user.id,
     );
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Post('admin/:id/enrollments/:enrollmentId/approve')
+  approveEnrollment(
+    @Param('id') courseId: string,
+    @Param('enrollmentId') enrollmentId: string,
+  ) {
+    return this.coursesService.approveEnrollment(courseId, enrollmentId);
+  }
+
+  @Roles(UserRole.OPERATOR)
+  @Post('admin/:id/enrollments/:enrollmentId/reject')
+  rejectEnrollment(
+    @Param('id') courseId: string,
+    @Param('enrollmentId') enrollmentId: string,
+  ) {
+    return this.coursesService.rejectEnrollment(courseId, enrollmentId);
   }
 
   @Roles(UserRole.OPERATOR)

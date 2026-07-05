@@ -9,6 +9,7 @@ import {
   CmsContentStatus,
   CmsContentType,
   EnrollmentStatus,
+  LessonType,
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -295,7 +296,11 @@ export class CmsContentService {
 
       await tx.lesson.update({
         where: { id: lessonId },
-        data: { contentStatus: 'DRAFT' },
+        data: {
+          contentStatus: 'DRAFT',
+          // 단일 타입 기준: 레슨 타입을 CMS 콘텐츠 타입에서 자동 동기화
+          lessonType: this.contentTypeToLessonType(payload.contentType),
+        },
       });
 
       await tx.contentAuditLog.create({
@@ -416,10 +421,194 @@ export class CmsContentService {
     return asset;
   }
 
+  /**
+   * CMS contentType → 레슨 lessonType 매핑(단일 타입 기준).
+   * CMS 콘텐츠 저장 시 레슨 타입을 자동 동기화해 타입 이중입력을 제거한다.
+   */
+  private contentTypeToLessonType(ct: CmsContentType): LessonType {
+    switch (ct) {
+      case CmsContentType.VIDEO_YOUTUBE:
+        return LessonType.VIDEO_YOUTUBE;
+      case CmsContentType.DOCUMENT:
+        return LessonType.DOCUMENT;
+      case CmsContentType.HTML:
+        return LessonType.TEXT;
+      case CmsContentType.VIDEO_MP4:
+      case CmsContentType.COURSE_PACKAGE:
+      default:
+        return LessonType.VIDEO_UPLOAD;
+    }
+  }
+
+  private normalizeContentType(value?: string): CmsContentType | undefined {
+    if (!value) return undefined;
+    return (Object.values(CmsContentType) as string[]).includes(value)
+      ? (value as CmsContentType)
+      : undefined;
+  }
+
+  /**
+   * 멀티파트 직접 업로드. presigned(S3 전용) 흐름과 달리 S3/로컬 폴백 모두에서 동작한다.
+   * 콘텐츠 아이템이 없으면 에셋을 붙일 수 있도록 DRAFT 로 자동 생성한다.
+   */
+  async uploadLessonAssetFile(
+    lessonId: string,
+    userId: string,
+    file:
+      | {
+          buffer?: Buffer;
+          originalname?: string;
+          mimetype?: string;
+          size?: number;
+        }
+      | undefined,
+    contentTypeHint?: string,
+  ) {
+    const { courseId } = await this.access.ensureCanEditLesson(
+      userId,
+      lessonId,
+    );
+    if (!file?.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('업로드할 파일이 필요합니다.');
+    }
+
+    const requestedType = this.normalizeContentType(contentTypeHint);
+    const item = await this.prisma.contentItem.upsert({
+      where: { lessonId },
+      create: {
+        courseId,
+        lessonId,
+        contentType: requestedType ?? CmsContentType.DOCUMENT,
+        status: CmsContentStatus.DRAFT,
+        latestVersionNo: 0,
+        createdById: userId,
+        updatedById: userId,
+      },
+      update: { updatedById: userId },
+    });
+
+    // 단일 타입 기준: 레슨 타입을 콘텐츠 타입에서 동기화
+    await this.prisma.lesson.update({
+      where: { id: lessonId },
+      data: { lessonType: this.contentTypeToLessonType(item.contentType) },
+    });
+
+    const safeName = (file.originalname || 'asset')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .slice(0, 200);
+    const mimeType = file.mimetype || 'application/octet-stream';
+    const storageKey = `cms/${courseId}/${lessonId}/${Date.now()}_${safeName}`;
+    await this.storage.uploadBuffer(storageKey, file.buffer, mimeType);
+
+    const asset = await this.prisma.contentAsset.create({
+      data: {
+        itemId: item.id,
+        assetType: requestedType ?? item.contentType,
+        mimeType,
+        storageKey,
+        fileName: file.originalname || safeName,
+        fileSize: file.size ?? file.buffer.length,
+        uploadedById: userId,
+      },
+    });
+
+    await this.prisma.contentAuditLog.create({
+      data: {
+        itemId: item.id,
+        actorId: userId,
+        action: 'ASSET_UPLOADED',
+        payloadJson: {
+          assetId: asset.id,
+          fileName: asset.fileName,
+          storageKey,
+        },
+      },
+    });
+
+    return asset;
+  }
+
+  /** 개별 에셋 삭제(스토리지 객체 + DB 행). 편집 권한자면 가능. */
+  async deleteLessonAsset(lessonId: string, assetId: string, userId: string) {
+    await this.access.ensureCanEditLesson(userId, lessonId);
+    const asset = await this.prisma.contentAsset.findUnique({
+      where: { id: assetId },
+      include: { item: { select: { id: true, lessonId: true } } },
+    });
+    if (!asset || asset.item.lessonId !== lessonId) {
+      throw new NotFoundException('에셋을 찾을 수 없습니다.');
+    }
+    if (asset.storageKey) {
+      await this.storage.deleteObject(asset.storageKey);
+    }
+    await this.prisma.contentAsset.delete({ where: { id: asset.id } });
+    await this.prisma.contentAuditLog.create({
+      data: {
+        itemId: asset.item.id,
+        actorId: userId,
+        action: 'ASSET_DELETED',
+        payloadJson: { assetId, fileName: asset.fileName },
+      },
+    });
+    return { deleted: true };
+  }
+
+  /**
+   * 레슨 콘텐츠 전체 삭제(되돌릴 수 없음). 운영자 전용.
+   * ContentItem 삭제 시 versions/assets/reviewRequests/auditLogs 는 cascade 로 함께 제거되며,
+   * 스토리지 객체는 베스트에포트로 정리하고 레슨 상태를 DRAFT 로 되돌린다.
+   */
+  async deleteLessonContent(lessonId: string, operatorId: string) {
+    await this.access.assertOperator(operatorId);
+    const item = await this.prisma.contentItem.findUnique({
+      where: { lessonId },
+      include: { assets: { select: { storageKey: true } } },
+    });
+    if (!item) return { deleted: false };
+
+    await Promise.all(
+      item.assets
+        .map((a) => a.storageKey)
+        .filter((key): key is string => !!key)
+        .map((key) => this.storage.deleteObject(key)),
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.lesson.update({
+        where: { id: lessonId },
+        data: { contentStatus: 'DRAFT' },
+      });
+      await tx.contentItem.delete({ where: { id: item.id } });
+    });
+
+    return { deleted: true };
+  }
+
+  /**
+   * 단일 콘텐츠 리졸버 — 교실(LMS)의 유일한 콘텐츠 진입점.
+   * 1) CMS 발행본(ContentItem PUBLISHED)이 있으면 그것을 반환.
+   * 2) 없으면 레거시 데이터(LessonVideoAsset/유튜브/라이브/텍스트)를 같은 형태로 어댑팅.
+   * 응답에 `source`('cms'|'legacy')와 `secureVideo`(HLS 보안 스트리밍 가용) 플래그를 포함해
+   * 프런트가 lessonType 분기 없이 단일 switch 로 렌더할 수 있게 한다.
+   */
   async getPublishedLessonContent(lessonId: string, userId: string) {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { id: true, courseId: true, isPreview: true },
+      select: {
+        id: true,
+        courseId: true,
+        isPreview: true,
+        lessonType: true,
+        description: true,
+        videoAsset: {
+          select: {
+            sourceType: true,
+            encodingStatus: true,
+            youtubeUrl: true,
+            hlsPlaylistUrl: true,
+          },
+        },
+      },
     });
     if (!lesson) throw new NotFoundException('레슨을 찾을 수 없습니다.');
 
@@ -431,6 +620,10 @@ export class CmsContentService {
         throw new ForbiddenException('수강 권한이 없습니다.');
       }
     }
+
+    const hasSecureStream =
+      lesson.videoAsset?.encodingStatus === 'READY' ||
+      !!lesson.videoAsset?.hlsPlaylistUrl;
 
     const item = await this.prisma.contentItem.findUnique({
       where: { lessonId },
@@ -451,44 +644,107 @@ export class CmsContentService {
         },
       },
     });
-    if (
-      !item ||
-      item.status !== CmsContentStatus.PUBLISHED ||
-      !item.publishedVersionNo
-    ) {
-      return null;
+    const version =
+      item && item.status === CmsContentStatus.PUBLISHED && item.publishedVersionNo
+        ? item.versions.find((v) => v.versionNo === item.publishedVersionNo)
+        : undefined;
+
+    if (item && version) {
+      const bucket = this.storage.getBucket();
+      const assets = await Promise.all(
+        item.assets.map(async (asset) => {
+          let resolvedUrl = asset.publicUrl ?? null;
+          if (!resolvedUrl && bucket && asset.storageKey) {
+            resolvedUrl = await this.storage.getSignedDownloadUrl(
+              asset.storageKey,
+              600,
+            );
+          }
+          return { ...asset, resolvedUrl };
+        }),
+      );
+
+      return {
+        lessonId,
+        source: 'cms' as const,
+        contentType: item.contentType as string,
+        status: item.status as string,
+        versionNo: version.versionNo,
+        schemaJson: version.schemaJson,
+        assets,
+        secureVideo:
+          item.contentType === CmsContentType.VIDEO_MP4 && hasSecureStream,
+      };
     }
-    const version = item.versions.find(
-      (v) => v.versionNo === item.publishedVersionNo,
-    );
-    if (!version) return null;
 
-    const bucket = this.storage.getBucket();
+    // CMS 발행본이 없으면 레거시 데이터를 동일 형태로 변환(단일 렌더 경로 유지).
+    return this.buildLegacyLessonContent(lesson);
+  }
 
-    const assets = await Promise.all(
-      item.assets.map(async (asset) => {
-        let resolvedUrl = asset.publicUrl ?? null;
-        if (!resolvedUrl && bucket && asset.storageKey) {
-          resolvedUrl = await this.storage.getSignedDownloadUrl(
-            asset.storageKey,
-            600,
-          );
-        }
-        return {
-          ...asset,
-          resolvedUrl,
-        };
-      }),
-    );
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
 
-    return {
-      lessonId,
-      contentType: item.contentType,
-      status: item.status,
-      versionNo: version.versionNo,
-      schemaJson: version.schemaJson,
-      assets,
+  private buildLegacyLessonContent(lesson: {
+    id: string;
+    lessonType: string;
+    description: string | null;
+    videoAsset: {
+      sourceType: string;
+      youtubeUrl: string | null;
+    } | null;
+  }) {
+    const base = {
+      lessonId: lesson.id,
+      source: 'legacy' as const,
+      status: 'PUBLISHED' as string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      assets: [] as any[],
+      versionNo: 0,
     };
+    const va = lesson.videoAsset;
+
+    if (va?.sourceType === 'YOUTUBE' || va?.youtubeUrl) {
+      return {
+        ...base,
+        contentType: 'VIDEO_YOUTUBE' as string,
+        schemaJson: { youtubeUrl: va?.youtubeUrl ?? '' } as Record<string, any>,
+        secureVideo: false,
+      };
+    }
+    if (va) {
+      // 레거시 업로드 영상은 보안 스트리밍 경로 사용(준비 여부는 stream-token 이 게이트).
+      return {
+        ...base,
+        contentType: 'VIDEO_MP4' as string,
+        schemaJson: {} as Record<string, any>,
+        secureVideo: true,
+      };
+    }
+    if (lesson.lessonType === 'LIVE_LINK') {
+      const liveUrl =
+        (lesson.description ?? '').match(/https?:\/\/[^\s"'<]+/)?.[0] ?? '';
+      return {
+        ...base,
+        contentType: 'LIVE_LINK' as string,
+        schemaJson: { liveUrl } as Record<string, any>,
+        secureVideo: false,
+      };
+    }
+    if (lesson.lessonType === 'TEXT' && lesson.description) {
+      return {
+        ...base,
+        contentType: 'HTML' as string,
+        schemaJson: {
+          html: `<div style="white-space:pre-wrap;padding:16px;line-height:1.7">${this.escapeHtml(lesson.description)}</div>`,
+        } as Record<string, any>,
+        secureVideo: false,
+      };
+    }
+    return null;
   }
 
   async getPublishedAssetFile(assetId: string, userId: string) {
@@ -546,6 +802,47 @@ export class CmsContentService {
     return {
       buffer,
       fileName: asset.fileName || `${asset.item.lesson.title}.pdf`,
+      mimeType: asset.mimeType || 'application/octet-stream',
+    };
+  }
+
+  /**
+   * 편집자(운영자/담당강사)용 에셋 스트리밍 — 게시 상태와 무관하게 편집 권한만 검사한다.
+   * 관리자 CMS 편집기의 미리보기(DRAFT 포함)에서 사용한다.
+   */
+  async getEditableAssetFile(assetId: string, userId: string) {
+    const asset = await this.prisma.contentAsset.findUnique({
+      where: { id: assetId },
+      include: {
+        item: {
+          select: {
+            lesson: { select: { id: true, title: true, courseId: true } },
+          },
+        },
+      },
+    });
+    if (!asset || !asset.item?.lesson) {
+      throw new NotFoundException('에셋을 찾을 수 없습니다.');
+    }
+    await this.access.ensureCanEditCourse(userId, asset.item.lesson.courseId);
+
+    let buffer: Buffer | null = null;
+    if (asset.storageKey) {
+      buffer = await this.storage.readBuffer(asset.storageKey);
+    } else if (asset.publicUrl) {
+      const response = await fetch(asset.publicUrl);
+      if (!response.ok) {
+        throw new NotFoundException('공개 URL 에셋을 불러오지 못했습니다.');
+      }
+      buffer = Buffer.from(await response.arrayBuffer());
+    }
+    if (!buffer) {
+      throw new NotFoundException('에셋 원본을 찾을 수 없습니다.');
+    }
+
+    return {
+      buffer,
+      fileName: asset.fileName || asset.item.lesson.title,
       mimeType: asset.mimeType || 'application/octet-stream',
     };
   }

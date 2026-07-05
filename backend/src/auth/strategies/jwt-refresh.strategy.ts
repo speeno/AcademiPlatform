@@ -28,11 +28,23 @@ export class JwtRefreshStrategy extends PassportStrategy(
   async validate(payload: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, name: true, role: true, status: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        tokenVersion: true,
+      },
     });
     if (!user || user.status !== 'ACTIVE') {
       throw new UnauthorizedException('유효하지 않은 refresh 토큰입니다.');
     }
-    return user;
+    // 로그아웃/비번변경으로 무효화된 refresh 토큰 거부.
+    if ((payload.tv ?? 0) !== (user.tokenVersion ?? 0)) {
+      throw new UnauthorizedException('무효화된 refresh 토큰입니다.');
+    }
+    const { tokenVersion: _tv, ...safeUser } = user;
+    return safeUser;
   }
 }

@@ -49,3 +49,14 @@ export interface PackageChapter {
   hasScript: boolean;
   hasQuiz: boolean;
 }
+
+export interface CmsAsset {
+  id: string;
+  assetType: string;
+  mimeType: string;
+  storageKey?: string | null;
+  publicUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
+  createdAt: string;
+}
