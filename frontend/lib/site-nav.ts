@@ -1,6 +1,7 @@
 /** 공개 사이트 상단 네비게이션 (Navbar·문서 동기화용) */
 export const publicNavItems = [
   { label: '서비스', href: '/services' },
+  { label: 'AX 워크톤', href: '/ax-workthon' },
   { label: '국제자격증소개', href: '/about' },
   { label: '자격증교육과정', href: '/courses' },
   { label: '시험접수', href: '/exam' },

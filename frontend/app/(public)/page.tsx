@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Video } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Video } from 'lucide-react';
 import { BrandCard, BrandCardTitle } from '@/components/ui/brand-card';
 import { BrandButton } from '@/components/ui/brand-button';
 import type { Metadata } from 'next';
@@ -107,6 +107,61 @@ export default async function HomePage() {
       </section>
 
       <MarketingHighlight />
+
+      {/* AX 워크톤 소개 밴드 */}
+      <section className="border-y border-border bg-brand-blue-subtle/40 py-16 md:py-20">
+        <PageShell size="wide" flush>
+          <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+            <div className="order-2 mx-auto w-full max-w-sm lg:order-1">
+              <Image
+                src="/promotion/ax-workthon-overview.jpg"
+                alt="AX 워크톤 전체 안내 포스터"
+                width={1055}
+                height={1491}
+                sizes="(max-width: 1024px) 80vw, 40vw"
+                className="h-auto w-full rounded-2xl border border-border shadow-lg"
+              />
+            </div>
+            <div className="order-1 lg:order-2">
+              <p className="mb-2 text-sm font-semibold text-brand-orange">
+                기업 AX 실전 교육 · Work-a-thon
+              </p>
+              <h2 className="text-3xl font-extrabold text-brand-blue md:text-4xl">
+                AX 워크톤
+              </h2>
+              <p className="mt-2 text-lg font-bold text-brand-blue/90">
+                이론은 짧게, 결과는 확실하게
+              </p>
+              <p className="mt-3 leading-relaxed text-muted-foreground">
+                내 업무를 가져와 AI 워크플로로 전환하는 실전 프로그램입니다.
+                데이(1일)·스프린트(3일)·부트캠프(1주), 비개발자·개발자 트랙으로 팀의
+                AI 자동화를 표준으로 정착시킵니다.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {['데이 1일', '스프린트 3일', '부트캠프 1주'].map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full border border-brand-blue/15 bg-white px-3 py-1 text-sm font-semibold text-brand-blue shadow-sm"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-blue shadow-sm">
+                <ShieldCheck className="h-4 w-4 text-brand-orange" />
+                ISO 국제표준 기반 AI 자격 연계
+              </div>
+              <div className="mt-6">
+                <Link href="/ax-workthon">
+                  <BrandButton variant="primary" size="lg">
+                    AX 워크톤 자세히 보기 <ArrowRight className="h-4 w-4" />
+                  </BrandButton>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </PageShell>
+      </section>
 
       <section className="py-16 md:py-20 bg-white">
         <PageShell size="wide" flush>

@@ -14,6 +14,9 @@ const nextConfig = {
       {
         pathname: '/covers/**',
       },
+      {
+        pathname: '/promotion/**',
+      },
     ],
     remotePatterns: [
       {
