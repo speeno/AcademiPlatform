@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetchWithAuth, apiFetch, parseJsonSafe } from '@/lib/api-client';
 import { isLoggedIn } from '@/lib/auth';
-import { QMI_AVATAR, qmiPoseSrc } from './poses';
+import {
+  QMI_AVATAR,
+  qmiPoseSrc,
+  QMI_WALK_FRAMES,
+  QMI_CLIMB_FRAMES,
+  QMI_DESCEND_FRAMES,
+  QMI_SWING_FRAMES,
+} from './poses';
 
 interface QmiChatResponse {
   reply: string;
@@ -64,6 +71,36 @@ const PROACTIVE_MESSAGES: { text: string; pose: string }[] = [
   { text: '큐미가 여기서 기다리고 있어요!', pose: 'waving' },
 ];
 
+/** 걷기/오르내리기(닫힘 런처) 이동 파라미터 */
+const LAUNCHER_SIZE = 70; // 런처 버튼 한 변(px)
+const EDGE_MARGIN = 20; // 화면 가장자리 여백(px)
+const WALK_SPEED = 70; // 좌우 걷기 속도(px/s)
+const VERT_SPEED = 58; // 위/아래 이동 속도(px/s)
+const WALK_MIN_DIST = 60; // 이보다 가까우면 다시 목적지 선택
+const TOP_MARGIN = 96; // 위로 올라갈 때 상단(내비 영역) 여백
+const CLIMB_MIN = 120; // 최소 이 정도는 올라가야 눈에 띔
+const BOTTOM_OFFSET = 20; // 런처 래퍼의 bottom-5(=1.25rem)
+const DRAG_THRESHOLD = 4; // 이보다 움직이면 클릭이 아니라 드래그
+const SWING_MS = 85; // 드래그 중 스윙 프레임 교체 간격
+/** 좌→우로 달랑거리는 핑퐁 순서(1=좌, 6=우) */
+const SWING_SEQ = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+
+/** 이동 모드별 프레임셋과 프레임 교체 간격(ms) */
+type MoveMode = 'idle' | 'walk' | 'climb' | 'descend';
+const MOVE_FRAMES: Record<Exclude<MoveMode, 'idle'>, { frames: string[]; ms: number }> = {
+  walk: { frames: QMI_WALK_FRAMES, ms: 140 },
+  climb: { frames: QMI_CLIMB_FRAMES, ms: 110 },
+  descend: { frames: QMI_DESCEND_FRAMES, ms: 130 },
+};
+
+const maxWalkX = () =>
+  Math.max(EDGE_MARGIN, window.innerWidth - LAUNCHER_SIZE - EDGE_MARGIN);
+const maxClimbY = () =>
+  Math.max(
+    CLIMB_MIN,
+    Math.min(window.innerHeight * 0.55, window.innerHeight - LAUNCHER_SIZE - TOP_MARGIN),
+  );
+
 export function QmiChat() {
   const loggedIn = isLoggedIn();
   const [open, setOpen] = useState(false);
@@ -80,6 +117,206 @@ export function QmiChat() {
   const [bubble, setBubble] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const lastMsgRef = useRef(-1);
+
+  // 런처가 화면을 걸어/올라/내려 다니게 하는 상태
+  const [posX, setPosX] = useState<number | null>(null); // 좌측 기준 px, 마운트 전엔 null
+  const [posY, setPosY] = useState(0); // 하단 기준 px (0 = 바닥)
+  const [vw, setVw] = useState(0); // 뷰포트 너비(말풍선 클램프용)
+  const [mode, setMode] = useState<MoveMode>('idle');
+  const [facing, setFacing] = useState<'right' | 'left'>('left');
+  const [frameIdx, setFrameIdx] = useState(0);
+  const [moveDur, setMoveDur] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [swingIdx, setSwingIdx] = useState(0);
+  const pressRef = useRef<{ id: number; sx: number; sy: number; moved: boolean } | null>(null);
+  const posXRef = useRef<number | null>(null);
+  const posYRef = useRef(0);
+  useEffect(() => {
+    posXRef.current = posX;
+  }, [posX]);
+  useEffect(() => {
+    posYRef.current = posY;
+  }, [posY]);
+
+  // 마운트: 우하단 도킹 위치 초기화 + reduced-motion / resize 감지
+  useEffect(() => {
+    setVw(window.innerWidth);
+    setPosX(maxWalkX());
+
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const applyMq = () => setReduceMotion(mq.matches);
+    applyMq();
+    mq.addEventListener('change', applyMq);
+
+    const onResize = () => {
+      setVw(window.innerWidth);
+      const max = maxWalkX();
+      setPosX((x) => (x == null ? max : Math.min(Math.max(x, EDGE_MARGIN), max)));
+      setPosY((y) => Math.min(y, maxClimbY()));
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      mq.removeEventListener('change', applyMq);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
+  // 이동 스케줄러: 닫힘 && 음소거 아님 && 모션 허용 && 드래그 아님 && 마운트됨
+  const ready = posX !== null;
+  useEffect(() => {
+    if (open || muted || reduceMotion || dragging || !ready) return;
+    let cancelled = false;
+    let frameTimer: ReturnType<typeof setInterval> | undefined;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        const t = setTimeout(() => {
+          timers.delete(t);
+          resolve();
+        }, ms);
+        timers.add(t);
+      });
+
+    // 한 구간 이동: 해당 모드 프레임을 재생하며 (x,y)로 활주, 도착까지 대기 후 멈춤
+    const animateTo = async (
+      targetX: number,
+      targetY: number,
+      m: Exclude<MoveMode, 'idle'>,
+      dir?: 'right' | 'left',
+    ) => {
+      const curX = posXRef.current ?? 0;
+      const curY = posYRef.current ?? 0;
+      const dist = Math.hypot(targetX - curX, targetY - curY);
+      const speed = m === 'walk' ? WALK_SPEED : VERT_SPEED;
+      const dur = Math.min(7000, Math.max(500, (dist / speed) * 1000));
+      const set = MOVE_FRAMES[m];
+      if (dir) setFacing(dir);
+      setMode(m);
+      setMoveDur(dur);
+      setFrameIdx(0);
+      setPosX(targetX);
+      setPosY(targetY);
+      posXRef.current = targetX;
+      posYRef.current = targetY;
+
+      let f = 0;
+      frameTimer = setInterval(() => {
+        f = (f + 1) % set.frames.length;
+        setFrameIdx(f);
+      }, set.ms);
+
+      await wait(dur);
+      if (frameTimer) {
+        clearInterval(frameTimer);
+        frameTimer = undefined;
+      }
+      if (!cancelled) {
+        setMode('idle');
+        setFrameIdx(0);
+      }
+    };
+
+    const loop = async () => {
+      while (!cancelled) {
+        await wait(15000 + Math.random() * 25000); // 15~40s 멈춰 있음
+        if (cancelled) break;
+
+        // 드래그로 공중에 놓였으면 먼저 바닥으로 내려옴
+        if ((posYRef.current ?? 0) > 4) {
+          await animateTo(posXRef.current ?? 0, 0, 'descend');
+          if (cancelled) break;
+        }
+
+        if (Math.random() < 0.35) {
+          // 세로 나들이: 제자리에서 위로 올라갔다가 잠시 후 바닥으로 내려옴
+          const upY = CLIMB_MIN + Math.random() * (maxClimbY() - CLIMB_MIN);
+          await animateTo(posXRef.current ?? 0, upY, 'climb');
+          if (cancelled) break;
+          await wait(1400 + Math.random() * 1800); // 위에서 잠깐 머무름
+          if (cancelled) break;
+          await animateTo(posXRef.current ?? 0, 0, 'descend');
+        } else {
+          // 하단을 따라 좌우로 걷기
+          const curX = posXRef.current ?? 0;
+          const targetX = EDGE_MARGIN + Math.random() * (maxWalkX() - EDGE_MARGIN);
+          if (Math.abs(targetX - curX) < WALK_MIN_DIST) continue;
+          await animateTo(targetX, 0, 'walk', targetX > curX ? 'right' : 'left');
+        }
+      }
+    };
+    loop();
+
+    return () => {
+      cancelled = true;
+      if (frameTimer) clearInterval(frameTimer);
+      timers.forEach(clearTimeout);
+      setMode('idle');
+      setFrameIdx(0);
+    };
+  }, [open, muted, reduceMotion, dragging, ready]);
+
+  // 드래그 중: 스윙 프레임을 핑퐁으로 순환(좌우 달랑달랑)
+  useEffect(() => {
+    if (!dragging) return;
+    let k = 0;
+    const t = setInterval(() => {
+      k = (k + 1) % SWING_SEQ.length;
+      setSwingIdx(SWING_SEQ[k]);
+    }, SWING_MS);
+    return () => clearInterval(t);
+  }, [dragging]);
+
+  // 포인터로 런처를 원하는 위치로 드래그. 이동이 임계값 미만이면 클릭(채팅 열기)으로 처리.
+  const dragTo = useCallback((clientX: number, clientY: number) => {
+    const x = Math.min(Math.max(clientX - LAUNCHER_SIZE / 2, EDGE_MARGIN), maxWalkX());
+    const maxY = Math.max(
+      0,
+      window.innerHeight - BOTTOM_OFFSET - LAUNCHER_SIZE - EDGE_MARGIN,
+    );
+    const y = Math.min(
+      Math.max(window.innerHeight - clientY - BOTTOM_OFFSET - LAUNCHER_SIZE / 2, 0),
+      maxY,
+    );
+    setPosX(x);
+    setPosY(y);
+    posXRef.current = x;
+    posYRef.current = y;
+  }, []);
+
+  const onLauncherPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    pressRef.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, []);
+
+  const onLauncherPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const p = pressRef.current;
+      if (!p || p.id !== e.pointerId) return;
+      if (!p.moved && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) > DRAG_THRESHOLD) {
+        p.moved = true;
+        setDragging(true);
+      }
+      if (p.moved) dragTo(e.clientX, e.clientY);
+    },
+    [dragTo],
+  );
+
+  const onLauncherPointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    const p = pressRef.current;
+    if (!p || p.id !== e.pointerId) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* noop */
+    }
+    const wasDrag = p.moved;
+    pressRef.current = null;
+    setDragging(false);
+    setSwingIdx(0);
+    if (!wasDrag) setOpen(true); // 이동 없이 놓으면 클릭 → 채팅 열기
+  }, []);
 
   useEffect(() => {
     if (open || muted) {
@@ -180,11 +417,20 @@ export function QmiChat() {
 
   return (
     <>
-      {/* 런처 (닫힘 상태): 포즈 순환 + 능동 말풍선 */}
+      {/* 런처 (닫힘 상태): 화면을 걸어다니며 포즈 순환 + 능동 말풍선 */}
       {!open && (
-        <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
-          {bubble && (
-            <div className="relative mr-1 max-w-[15rem] animate-in fade-in slide-in-from-bottom-2 rounded-2xl rounded-br-sm bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-xl ring-1 ring-black/5">
+        <>
+          {/* 능동 말풍선: 바닥에 멈춰 있을 때만, 마스코트 위·뷰포트 안으로 클램프 */}
+          {mode === 'idle' && posY === 0 && !dragging && bubble && posX != null && (
+            <div
+              className="fixed bottom-[6.25rem] z-50 max-w-[15rem] animate-in fade-in slide-in-from-bottom-2 rounded-2xl bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-xl ring-1 ring-black/5"
+              style={{
+                left: vw
+                  ? Math.min(Math.max(posX + LAUNCHER_SIZE / 2, 128), vw - 128)
+                  : posX + LAUNCHER_SIZE / 2,
+                transform: 'translateX(-50%)',
+              }}
+            >
               <button
                 type="button"
                 onClick={(e) => {
@@ -202,27 +448,80 @@ export function QmiChat() {
               <button type="button" onClick={() => setOpen(true)} className="text-left">
                 {bubble}
               </button>
-              <span className="absolute -bottom-1.5 right-4 h-3 w-3 rotate-45 bg-white" />
+              <span className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 bg-white" />
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label="공부도우미 큐미 열기"
-            className="relative flex h-[70px] w-[70px] items-center justify-center rounded-full transition hover:scale-105"
+
+          {/* 마스코트 런처: translate 로 화면을 활주(걷기·오르내리기)한다 */}
+          <div
+            className="fixed bottom-5 left-0 z-50 will-change-transform"
+            style={{
+              transform: `translate(${posX ?? 0}px, ${-posY}px)`,
+              transition: mode !== 'idle' ? `transform ${moveDur}ms linear` : 'none',
+              visibility: posX == null ? 'hidden' : 'visible',
+            }}
           >
-            <img
-              key={launcherPose}
-              src={qmiPoseSrc(launcherPose)}
-              alt="큐미"
-              className="h-[66px] w-[66px] animate-in fade-in zoom-in-95 object-contain drop-shadow-lg duration-500"
-            />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-4 w-4 rounded-full bg-emerald-500" />
-            </span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onPointerDown={onLauncherPointerDown}
+              onPointerMove={onLauncherPointerMove}
+              onPointerUp={onLauncherPointerUp}
+              onPointerCancel={() => {
+                pressRef.current = null;
+                setDragging(false);
+                setSwingIdx(0);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setOpen(true);
+                }
+              }}
+              aria-label="공부도우미 큐미 열기 (드래그해서 옮길 수 있어요)"
+              className={`relative flex h-[70px] w-[70px] touch-none select-none items-center justify-center rounded-full transition ${
+                dragging ? 'cursor-grabbing' : 'cursor-grab hover:scale-105'
+              }`}
+            >
+              {dragging ? (
+                <img
+                  src={QMI_SWING_FRAMES[swingIdx]}
+                  alt="큐미"
+                  draggable={false}
+                  className="h-[70px] w-[70px] object-contain drop-shadow-xl"
+                  style={{ transformOrigin: '50% 0%' }}
+                />
+              ) : mode !== 'idle' ? (
+                <img
+                  src={
+                    MOVE_FRAMES[mode].frames[frameIdx % MOVE_FRAMES[mode].frames.length]
+                  }
+                  alt="큐미"
+                  draggable={false}
+                  className="h-[66px] w-[66px] object-contain drop-shadow-lg"
+                  style={
+                    mode === 'walk'
+                      ? { transform: `scaleX(${facing === 'left' ? -1 : 1})` }
+                      : undefined
+                  }
+                />
+              ) : (
+                <img
+                  key={launcherPose}
+                  src={qmiPoseSrc(launcherPose)}
+                  alt="큐미"
+                  draggable={false}
+                  className="h-[66px] w-[66px] animate-in fade-in zoom-in-95 object-contain drop-shadow-lg duration-500"
+                />
+              )}
+              {!dragging && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-4 w-4 rounded-full bg-emerald-500" />
+                </span>
+              )}
+            </button>
+          </div>
+        </>
       )}
 
       {/* 채팅 패널 */}
