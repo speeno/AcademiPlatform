@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, BookOpen, ClipboardList,
   CreditCard, Bell, Settings, FileText, HelpCircle,
   MessageSquare, Library, ImageIcon, Link as LinkIcon, Video, UserCheck, Award, BarChart3,
-  FileQuestion, SquarePen, Bot, LogOut,
+  FileQuestion, SquarePen, Bot, LogOut, CalendarDays,
 } from 'lucide-react';
 import { SidebarShell } from '@/components/layout/SidebarShell';
 import { type SidebarNavGroup } from '@/components/layout/AppSidebar';
@@ -42,6 +42,7 @@ const navGroups: SidebarNavGroup[] = [
       { href: '/admin/textbooks', icon: Library, label: '교재 관리', matchPrefix: true },
       { href: '/admin/cms', icon: FileText, label: '콘텐츠 CMS' },
       { href: '/admin/cms/review', icon: FileText, label: 'CMS 승인함' },
+      { href: '/admin/training-permissions', icon: CalendarDays, label: '교육 운영 권한' },
     ],
   },
   {

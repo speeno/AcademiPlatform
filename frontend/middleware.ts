@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const protectedPrefixes = ['/classroom', '/mypage', '/textbooks', '/admin'];
+const protectedPrefixes = ['/classroom', '/mypage', '/textbooks', '/admin', '/training'];
+
+/** 수업관리(교육 운영) 전용 로그인 화면 — 보호 대상에서 제외 */
+const TRAINING_LOGIN_PATH = '/training/login';
 
 /** 시험 목록(/exam)은 공개, 접수/로비/응시실만 로그인 필요 */
 function isProtectedExamPath(pathname: string): boolean {
@@ -14,6 +17,11 @@ function isProtectedExamPath(pathname: string): boolean {
 
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+
+  if (pathname === TRAINING_LOGIN_PATH) {
+    return NextResponse.next();
+  }
+
   const isProtected =
     isProtectedExamPath(pathname) ||
     protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -28,7 +36,10 @@ export function middleware(req: NextRequest) {
   }
 
   const loginUrl = req.nextUrl.clone();
-  loginUrl.pathname = '/login';
+  // 교육 운영 영역은 전용 수업관리 로그인 화면으로 보낸다
+  loginUrl.pathname = pathname.startsWith('/training')
+    ? TRAINING_LOGIN_PATH
+    : '/login';
   loginUrl.searchParams.set('next', `${pathname}${search}`);
   return NextResponse.redirect(loginUrl);
 }
@@ -44,6 +55,8 @@ export const config = {
     '/exam/:path*',
     '/admin',
     '/admin/:path*',
+    '/training',
+    '/training/:path*',
   ],
 };
 

@@ -356,3 +356,20 @@ section.bg-hero-gradient p {
     animation: none;
   }
 }
+
+/* ─── 교육 운영 인쇄(A4) ─────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  .print-sheet table {
+    break-inside: auto;
+  }
+  .print-sheet tr {
+    break-inside: avoid;
+  }
+  .print-sheet thead {
+    display: table-header-group;
+  }
+}

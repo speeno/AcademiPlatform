@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
-  BookOpen, ClipboardList, CreditCard, User, Library, MessageSquare, FileText, LogOut,
+  BookOpen, CalendarDays, ClipboardList, CreditCard, User, Library, MessageSquare, FileText, LogOut,
 } from 'lucide-react';
 import { SidebarShell } from '@/components/layout/SidebarShell';
 import { type SidebarNavItem } from '@/components/layout/AppSidebar';
@@ -27,10 +27,16 @@ const instructorNavItems: SidebarNavItem[] = [
   { href: '/classroom/instructor/board', icon: FileText, label: '강사 게시판', matchPrefix: true },
 ];
 
+// 교육 운영 권한(TrainingPermission)이 부여된 사용자에게만 노출
+const trainingNavItems: SidebarNavItem[] = [
+  { href: '/training', icon: CalendarDays, label: '교육 운영', matchPrefix: true },
+];
+
 export default function ClassroomLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [authReady, setAuthReady] = useState(false);
   const [role, setRole] = useState<string>('');
+  const [trainingManager, setTrainingManager] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -47,6 +53,7 @@ export default function ClassroomLayout({ children }: { children: React.ReactNod
       }
 
       setRole(session.role ?? '');
+      setTrainingManager(session.trainingManager === true);
       setAuthReady(true);
     };
 
@@ -59,10 +66,14 @@ export default function ClassroomLayout({ children }: { children: React.ReactNod
   const navItems = useMemo(() => {
     const canSeeInstructorMenu =
       role === 'INSTRUCTOR' || role === 'OPERATOR' || role === 'SUPER_ADMIN';
-    return canSeeInstructorMenu
-      ? [...baseNavItems.slice(0, 2), ...instructorNavItems, ...baseNavItems.slice(2)]
+    const conditionalItems = [
+      ...(canSeeInstructorMenu ? instructorNavItems : []),
+      ...(trainingManager ? trainingNavItems : []),
+    ];
+    return conditionalItems.length > 0
+      ? [...baseNavItems.slice(0, 2), ...conditionalItems, ...baseNavItems.slice(2)]
       : baseNavItems;
-  }, [role]);
+  }, [role, trainingManager]);
 
   if (!authReady) {
     return <PageLoader />;

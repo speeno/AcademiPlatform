@@ -47,7 +47,7 @@ export function ensureAuthCookieSync(): void {
 }
 
 export type AuthSessionResult =
-  | { valid: true; role?: string }
+  | { valid: true; role?: string; trainingManager?: boolean }
   | { valid: false };
 
 /** 쿠키 동기화 후 /auth/me 검증. 실패 시 토큰 정리 */
@@ -80,7 +80,11 @@ export async function verifyAuthSession(): Promise<AuthSessionResult> {
   }
 
   const me = await res.json().catch(() => ({}));
-  return { valid: true, role: typeof me?.role === 'string' ? me.role : undefined };
+  return {
+    valid: true,
+    role: typeof me?.role === 'string' ? me.role : undefined,
+    trainingManager: me?.permissions?.trainingManagement === true,
+  };
 }
 
 /** 세션 무효 시 토큰 삭제 후 로그인으로 전체 이동 (리다이렉트 루프 방지) */

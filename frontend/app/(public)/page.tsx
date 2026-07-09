@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { HeroBanner, type HeroBannerData } from '@/components/hero/HeroBanner';
 import { MainShortsSection } from '@/components/shorts/MainShortsSection';
 import { MarketingHighlight } from '@/components/marketing/MarketingHighlight';
+import { PublicScheduleWidget } from '@/components/training/PublicScheduleWidget';
 import { PageShell } from '@/components/layout/PageShell';
 import { fetchPublicSettings } from '@/lib/public-settings';
 import { coreServiceCards } from '@/lib/core-services';
@@ -162,6 +163,9 @@ export default async function HomePage() {
           </div>
         </PageShell>
       </section>
+
+      {/* 공개 교육 일정 미니 달력 — 게시된 강의 계획이 없으면 자동 숨김 */}
+      <PublicScheduleWidget />
 
       <section className="py-16 md:py-20 bg-white">
         <PageShell size="wide" flush>

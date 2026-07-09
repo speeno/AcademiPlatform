@@ -28,6 +28,7 @@ import { InstructorPostsModule } from './instructor-posts/instructor-posts.modul
 import { AnalyticsModule } from './analytics/analytics.module';
 import { OnlineExamModule } from './online-exam/online-exam.module';
 import { QmiModule } from './qmi/qmi.module';
+import { TrainingModule } from './training/training.module';
 
 @Module({
   controllers: [AppController],
@@ -52,6 +53,7 @@ import { QmiModule } from './qmi/qmi.module';
     InstructorPostsModule,
     AnalyticsModule,
     QmiModule,
+    TrainingModule,
   ],
   providers: [
     AppService,

@@ -1,8 +1,7 @@
 import { QuestionType } from '@prisma/client';
 import fontkit from '@pdf-lib/fontkit';
-import * as fs from 'fs';
-import * as path from 'path';
 import { degrees, PDFDocument, type PDFFont, type PDFPage, rgb } from 'pdf-lib';
+import { loadKoreanFontBytes as loadFontBytes } from '../../common/pdf/korean-font.util';
 import {
   buildDefaultPrecautions,
   buildGradingCriteria,
@@ -82,19 +81,6 @@ function wrapMultilineText(
   const paragraphs = text.replace(/\r\n/g, '\n').split('\n').map((p) => p.trim()).filter(Boolean);
   if (paragraphs.length === 0) return [''];
   return paragraphs.flatMap((paragraph) => wrapText(paragraph, font, size, maxWidth));
-}
-
-function loadFontBytes(fileName: string): Buffer {
-  const candidates = [
-    path.join(__dirname, '../../assets/fonts', fileName),
-    path.join(process.cwd(), 'dist/assets/fonts', fileName),
-    path.join(process.cwd(), 'src/assets/fonts', fileName),
-    path.join(__dirname, '../assets/fonts', fileName),
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) return fs.readFileSync(candidate);
-  }
-  throw new Error(`한글 PDF 폰트(${fileName})를 찾을 수 없습니다.`);
 }
 
 export class ExamPaperPdfRenderer {

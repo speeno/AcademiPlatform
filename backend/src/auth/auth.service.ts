@@ -100,10 +100,20 @@ export class AuthService {
         phone: true,
         role: true,
         createdAt: true,
+        trainingPermission: { select: { id: true } },
       },
     });
     if (!user) throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
-    return user;
+    const { trainingPermission, ...profile } = user;
+    return {
+      ...profile,
+      permissions: {
+        trainingManagement:
+          user.role === 'OPERATOR' ||
+          user.role === 'SUPER_ADMIN' ||
+          !!trainingPermission,
+      },
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

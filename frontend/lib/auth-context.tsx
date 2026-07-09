@@ -8,6 +8,7 @@ type AuthMe = {
   name?: string;
   email?: string;
   role?: string;
+  trainingManager?: boolean;
 };
 
 type AuthContextValue = {
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: typeof data?.name === 'string' ? data.name : '',
           email: typeof data?.email === 'string' ? data.email : '',
           role: typeof data?.role === 'string' ? data.role : '',
+          trainingManager: data?.permissions?.trainingManagement === true,
         });
       } catch {
         if (!active) return;
