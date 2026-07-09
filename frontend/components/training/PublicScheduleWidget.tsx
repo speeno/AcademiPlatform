@@ -20,11 +20,22 @@ import { cn } from '@/lib/utils';
 
 const MAX_LIST_ITEMS = 6;
 
+interface PublicScheduleWidgetProps {
+  /** true(기본)면 공개 일정이 없을 때 섹션 자체를 숨긴다. 게시용 독립 페이지에서는 false */
+  hideWhenEmpty?: boolean;
+  /** 과정 상세 링크 프리픽스. 게시용 격리 페이지에서는 '/schedule/plan' 을 넘겨
+      같은 영역 안에서만 이동하게 한다. (기본: 사이트 공개 페이지 '/training-plan') */
+  planHrefBase?: string;
+}
+
 /**
- * 메인 페이지용 공개 교육 일정 위젯 — 작은 달력 + 일정 목록.
- * 게시(공유)된 강의 계획의 회차만 노출하며, 공개 일정이 없으면 섹션 자체를 숨긴다.
+ * 공개 교육 일정 위젯 — 작은 달력 + 일정 목록.
+ * 게시(공유)된 강의 계획의 회차만 노출한다. 메인 페이지와 게시용 독립 페이지(/schedule)에서 사용.
  */
-export function PublicScheduleWidget() {
+export function PublicScheduleWidget({
+  hideWhenEmpty = true,
+  planHrefBase = '/training-plan',
+}: PublicScheduleWidgetProps) {
   const [month, setMonth] = useState(currentMonth());
   const [events, setEvents] = useState<PublicScheduleEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -73,7 +84,13 @@ export function PublicScheduleWidget() {
   }, [events, eventsByDate, selectedDate, month, today]);
 
   // 공개된 일정이 하나도 없으면 섹션 숨김 (다른 달 탐색 중에는 유지)
-  if (loaded && events.length === 0 && month === currentMonth() && !selectedDate) {
+  if (
+    hideWhenEmpty &&
+    loaded &&
+    events.length === 0 &&
+    month === currentMonth() &&
+    !selectedDate
+  ) {
     return null;
   }
 
@@ -202,7 +219,7 @@ export function PublicScheduleWidget() {
                 {listEvents.slice(0, MAX_LIST_ITEMS).map((ev) => (
                   <li key={ev.id}>
                     <Link
-                      href={`/training-plan/${ev.shareToken}`}
+                      href={`${planHrefBase}/${ev.shareToken}`}
                       className="group flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border bg-white px-4 py-3 text-sm shadow-sm transition-colors hover:border-brand-blue/40"
                     >
                       <span

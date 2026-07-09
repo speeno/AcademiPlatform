@@ -58,9 +58,10 @@ interface WeekBar {
   /** 이전 바들의 서브 레인 누적 오프셋 */
   laneOffset: number;
   segments: WeekBarSegment[];
-  /** 클릭/라벨용 대표 이벤트(해당 주의 첫 수업, 없으면 프로그램 첫 수업) */
+  /** 클릭용 대표 이벤트(해당 주의 첫 수업, 없으면 프로그램 첫 수업) */
   representative: CalendarSessionEvent;
-  hasConflict: boolean;
+  /** 이 주의 첫 수업일 컬럼 — 과정명 라벨은 이 블록 안에 표시한다 */
+  leadCol: number | null;
 }
 
 export function MonthCalendar({
@@ -167,7 +168,7 @@ export function MonthCalendar({
 
         const segments: WeekBarSegment[] = [];
         let weekFirst: CalendarSessionEvent | null = null;
-        let hasConflict = false;
+        let leadCol: number | null = null;
         let subLanes = 1;
         for (let col = startCol; col <= endCol; col++) {
           const ymd = week[col];
@@ -178,12 +179,19 @@ export function MonthCalendar({
             segments.push({ col, subLane: 0, type: 'gap', conflict: false });
             continue;
           }
-          if (!weekFirst) weekFirst = dayEvents[0];
+          if (!weekFirst) {
+            weekFirst = dayEvents[0];
+            leadCol = col;
+          }
           subLanes = Math.max(subLanes, dayEvents.length);
           dayEvents.forEach((ev, subLane) => {
-            const conflict = overlappingIds.has(ev.id);
-            if (conflict) hasConflict = true;
-            segments.push({ col, subLane, type: 'session', event: ev, conflict });
+            segments.push({
+              col,
+              subLane,
+              type: 'session',
+              event: ev,
+              conflict: overlappingIds.has(ev.id),
+            });
           });
         }
         bars.push({
@@ -195,7 +203,7 @@ export function MonthCalendar({
           laneOffset: 0, // 아래에서 누적 계산
           segments,
           representative: weekFirst ?? span.first,
-          hasConflict,
+          leadCol,
         });
       }
       bars.sort(
@@ -375,47 +383,34 @@ export function MonthCalendar({
                                 seg.conflict ? CONFLICT_COLOR.bar : color.bar,
                               )}
                             >
-                              {/* 첫 서브 레인의 텍스트는 바 라벨이 담당하고,
-                                  중복 세션(2번째 레인부터)은 자기 시간을 직접 표시한다 */}
-                              {seg.subLane > 0 && (
-                                <span
-                                  className={cn(
-                                    'block truncate text-[11px] font-medium leading-5',
-                                    seg.conflict ? CONFLICT_COLOR.text : color.text,
-                                  )}
-                                >
-                                  {seg.event.startTime}
-                                  {seg.event.topic ? ` ${seg.event.topic}` : ''}
-                                </span>
-                              )}
+                              {/* 라벨은 수업일 블록 안에만 표시한다 — 주의 첫 수업일에는
+                                  과정명까지, 나머지는 시간(과 주제)만 */}
+                              <span
+                                className={cn(
+                                  'block truncate text-[11px] font-medium leading-5',
+                                  seg.conflict ? CONFLICT_COLOR.text : color.text,
+                                )}
+                              >
+                                {seg.col === bar.leadCol && seg.subLane === 0
+                                  ? `${seg.event.startTime} ${bar.programTitle}`
+                                  : `${seg.event.startTime}${seg.event.topic ? ` ${seg.event.topic}` : ''}`}
+                              </span>
                             </button>
                           ) : (
                             <div
                               key={`${seg.col}-gap`}
-                              title={bar.programTitle}
+                              title={`${bar.programTitle} — 수업일 사이 연결`}
                               style={{
                                 gridColumnStart: seg.col - bar.startCol + 1,
                                 gridRowStart: 1,
                               }}
                               className="flex items-center"
                             >
-                              <div className={cn('h-[3px] w-full opacity-60', color.dot)} />
+                              <div className={cn('h-[3px] w-full opacity-50', color.dot)} />
                             </div>
                           ),
                         )}
                       </div>
-                      {/* 바 라벨 (첫 서브 레인 위에 표시) */}
-                      <span
-                        className={cn(
-                          'pointer-events-none absolute inset-x-1.5 truncate text-[11px] font-medium',
-                          bar.hasConflict ? CONFLICT_COLOR.text : color.text,
-                        )}
-                        style={{ top: 0, lineHeight: `${SEGMENT_HEIGHT}px` }}
-                      >
-                        {[bar.representative.startTime, bar.programTitle]
-                          .filter(Boolean)
-                          .join(' ')}
-                      </span>
                     </div>
                   );
                 })}
@@ -424,6 +419,27 @@ export function MonthCalendar({
           );
         })}
       </div>
+
+      {/* 표기 안내 */}
+      {events.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-3 w-6 rounded-[4px] bg-muted-foreground/25" aria-hidden />
+            수업일 (시간·과정명 표시)
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-[3px] w-6 bg-muted-foreground/40" aria-hidden />
+            같은 과정의 수업일 사이 연결
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="h-3 w-6 rounded-[4px] bg-red-300 ring-1 ring-inset ring-red-500"
+              aria-hidden
+            />
+            장소가 다른 시간 중복
+          </span>
+        </div>
+      )}
     </div>
   );
 }
