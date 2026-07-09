@@ -89,6 +89,14 @@ export interface TrainingSession {
   location?: string | null;
 }
 
+/** 프로그램별 전체 수업일 범위 — 달력 바를 월(그리드) 경계 밖까지 이어 그리는 데 사용 */
+export interface CalendarProgramRange {
+  programId: string;
+  programTitle: string;
+  firstDate: string; // YYYY-MM-DD
+  lastDate: string; // YYYY-MM-DD
+}
+
 /** /training/calendar 피드 항목 */
 export interface CalendarSessionEvent {
   id: string;

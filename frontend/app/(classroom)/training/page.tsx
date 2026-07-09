@@ -13,7 +13,10 @@ import { ProgramListPanel } from '@/components/training/ProgramListPanel';
 import { apiFetchWithAuth, parseJsonSafe } from '@/lib/api-client';
 import { currentMonth, monthGridRange, thisMonthRange } from '@/lib/calendar';
 import { programColor, uniquePrograms } from '@/lib/training-colors';
-import type { CalendarSessionEvent } from '@/lib/training-types';
+import type {
+  CalendarProgramRange,
+  CalendarSessionEvent,
+} from '@/lib/training-types';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'calendar' | 'list';
@@ -32,6 +35,7 @@ export default function TrainingHomePage() {
   const [month, setMonth] = useState(currentMonth());
   const [listRange, setListRange] = useState(thisMonthRange());
   const [events, setEvents] = useState<CalendarSessionEvent[]>([]);
+  const [programRanges, setProgramRanges] = useState<CalendarProgramRange[]>([]);
   const [loading, setLoading] = useState(true);
   // 달력 드래그 선택 → 일괄 등록 모달
   const [bulkDates, setBulkDates] = useState<string[]>([]);
@@ -54,12 +58,15 @@ export default function TrainingHomePage() {
       );
       if (!res.ok) {
         setEvents([]);
+        setProgramRanges([]);
         return;
       }
-      const data = await parseJsonSafe<{ sessions: CalendarSessionEvent[] }>(res, {
-        sessions: [],
-      });
+      const data = await parseJsonSafe<{
+        sessions: CalendarSessionEvent[];
+        programRanges: CalendarProgramRange[];
+      }>(res, { sessions: [], programRanges: [] });
       setEvents(data.sessions);
+      setProgramRanges(data.programRanges ?? []);
     } finally {
       setLoading(false);
     }
@@ -119,6 +126,7 @@ export default function TrainingHomePage() {
           month={month}
           onMonthChange={setMonth}
           events={events}
+          programRanges={programRanges}
           loading={loading}
           onEventClick={(ev) =>
             router.push(`/training/programs/${ev.programId}/sessions`)

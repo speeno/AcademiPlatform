@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   addMonths,
   currentMonth,
+  datesBetween,
   formatMonthLabel,
   isSameMonth,
   monthGrid,
@@ -16,12 +17,17 @@ import {
   findOverlappingEventIds,
   programColor,
 } from '@/lib/training-colors';
-import type { CalendarSessionEvent } from '@/lib/training-types';
+import type {
+  CalendarProgramRange,
+  CalendarSessionEvent,
+} from '@/lib/training-types';
 
 interface MonthCalendarProps {
   month: string; // 'YYYY-MM'
   onMonthChange: (month: string) => void;
   events: CalendarSessionEvent[];
+  /** 프로그램별 전체 수업일 범위 — 있으면 바가 월(그리드) 경계 밖 일정까지 연결선으로 이어진다 */
+  programRanges?: CalendarProgramRange[];
   onEventClick?: (event: CalendarSessionEvent) => void;
   /** 날짜(빈 영역) 드래그/클릭 선택 완료 시 — 선택된 YYYY-MM-DD 목록 전달 */
   onRangeSelect?: (dates: string[]) => void;
@@ -29,27 +35,15 @@ interface MonthCalendarProps {
 }
 
 const DAY_HEADER_HEIGHT = 34; // 날짜 숫자 영역 높이(px)
-const LANE_HEIGHT = 24; // 프로그램 바 1개 레인 높이(px)
-
-/** start~end(양끝 포함) 사이의 모든 날짜 */
-function datesBetween(start: string, end: string): string[] {
-  const [from, to] = start <= end ? [start, end] : [end, start];
-  const dates: string[] = [];
-  const [y, m, d] = from.split('-').map(Number);
-  const cursor = new Date(y, m - 1, d);
-  for (let i = 0; i < 370; i++) {
-    const ymd = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
-    dates.push(ymd);
-    if (ymd === to) break;
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return dates;
-}
+const LANE_HEIGHT = 24; // 서브 레인 1줄 높이(px, 간격 포함)
+const SEGMENT_HEIGHT = LANE_HEIGHT - 4;
 
 interface WeekBarSegment {
   col: number;
+  /** 같은 날 중복 세션은 서브 레인(세로)으로 나눠 전부 표시한다 */
+  subLane: number;
   type: 'session' | 'gap';
-  events: CalendarSessionEvent[];
+  event?: CalendarSessionEvent;
   conflict: boolean;
 }
 
@@ -59,6 +53,10 @@ interface WeekBar {
   programTitle: string;
   startCol: number;
   endCol: number;
+  /** 이 주에서 필요한 서브 레인 수(= 하루 최대 세션 수) */
+  subLanes: number;
+  /** 이전 바들의 서브 레인 누적 오프셋 */
+  laneOffset: number;
   segments: WeekBarSegment[];
   /** 클릭/라벨용 대표 이벤트(해당 주의 첫 수업, 없으면 프로그램 첫 수업) */
   representative: CalendarSessionEvent;
@@ -69,6 +67,7 @@ export function MonthCalendar({
   month,
   onMonthChange,
   events,
+  programRanges,
   onEventClick,
   onRangeSelect,
   loading,
@@ -103,7 +102,8 @@ export function MonthCalendar({
 
   const overlappingIds = useMemo(() => findOverlappingEventIds(events), [events]);
 
-  // 프로그램별 수업일 스팬(달력에 보이는 범위 기준 최소~최대 수업일)
+  // 프로그램별 수업일 스팬. 기본은 화면에 보이는 이벤트 기준이며,
+  // programRanges 가 주어지면 전체 수업일 범위로 넓혀 월 경계 밖 일정까지 이어 그린다.
   const programSpans = useMemo(() => {
     const spans = new Map<
       string,
@@ -125,11 +125,37 @@ export function MonthCalendar({
         if (ev.date > span.max) span.max = ev.date;
       }
     }
+    for (const range of programRanges ?? []) {
+      const existing = spans.get(range.programId);
+      if (existing) {
+        if (range.firstDate < existing.min) existing.min = range.firstDate;
+        if (range.lastDate > existing.max) existing.max = range.lastDate;
+      } else {
+        // 이번 화면에는 수업일이 없지만 스팬이 걸쳐 있는 프로그램 — 연결선만 그린다.
+        // 클릭/라벨용 대표 이벤트는 합성해서 만든다.
+        spans.set(range.programId, {
+          title: range.programTitle,
+          min: range.firstDate,
+          max: range.lastDate,
+          first: {
+            id: `range-${range.programId}`,
+            programId: range.programId,
+            programTitle: range.programTitle,
+            programStatus: 'IN_PROGRESS',
+            sessionNo: 0,
+            date: range.firstDate,
+            startTime: '',
+            endTime: '',
+          },
+        });
+      }
+    }
     return spans;
-  }, [events]);
+  }, [events, programRanges]);
 
-  // 주별 프로그램 연결 바 계산: 같은 프로그램의 회차(예: 1·3·5일)는
-  // 수업일 세그먼트 + 사이 연결선으로 하나의 바처럼 이어 그린다.
+  // 주별 프로그램 연결 바 계산.
+  // - 같은 프로그램의 회차(예: 1·3·5일)는 수업일 세그먼트 + 사이 연결선으로 이어 그린다.
+  // - 같은 날 세션이 여러 개면 서브 레인으로 세로 확장해 하나도 겹치지 않게 전부 표시한다.
   const weekBars = useMemo(() => {
     return weeks.map((week) => {
       const bars: WeekBar[] = [];
@@ -142,19 +168,22 @@ export function MonthCalendar({
         const segments: WeekBarSegment[] = [];
         let weekFirst: CalendarSessionEvent | null = null;
         let hasConflict = false;
+        let subLanes = 1;
         for (let col = startCol; col <= endCol; col++) {
           const ymd = week[col];
           const dayEvents = events
             .filter((ev) => ev.programId === programId && ev.date === ymd)
             .sort((a, b) => a.startTime.localeCompare(b.startTime));
-          const conflict = dayEvents.some((ev) => overlappingIds.has(ev.id));
-          if (conflict) hasConflict = true;
-          if (!weekFirst && dayEvents.length > 0) weekFirst = dayEvents[0];
-          segments.push({
-            col,
-            type: dayEvents.length > 0 ? 'session' : 'gap',
-            events: dayEvents,
-            conflict,
+          if (dayEvents.length === 0) {
+            segments.push({ col, subLane: 0, type: 'gap', conflict: false });
+            continue;
+          }
+          if (!weekFirst) weekFirst = dayEvents[0];
+          subLanes = Math.max(subLanes, dayEvents.length);
+          dayEvents.forEach((ev, subLane) => {
+            const conflict = overlappingIds.has(ev.id);
+            if (conflict) hasConflict = true;
+            segments.push({ col, subLane, type: 'session', event: ev, conflict });
           });
         }
         bars.push({
@@ -162,6 +191,8 @@ export function MonthCalendar({
           programTitle: span.title,
           startCol,
           endCol,
+          subLanes,
+          laneOffset: 0, // 아래에서 누적 계산
           segments,
           representative: weekFirst ?? span.first,
           hasConflict,
@@ -170,22 +201,20 @@ export function MonthCalendar({
       bars.sort(
         (a, b) => a.startCol - b.startCol || a.programId.localeCompare(b.programId),
       );
-      return bars;
+      let offset = 0;
+      for (const bar of bars) {
+        bar.laneOffset = offset;
+        offset += bar.subLanes;
+      }
+      return { bars, laneTotal: offset };
     });
   }, [weeks, programSpans, events, overlappingIds]);
 
-  const segmentTitle = (bar: WeekBar, seg: WeekBarSegment) => {
-    if (seg.type === 'gap') return bar.programTitle;
-    return seg.events
-      .map(
-        (ev) =>
-          `${bar.programTitle} ${ev.sessionNo}회차 ${ev.startTime}–${ev.endTime}` +
-          (ev.topic ? ` — ${ev.topic}` : '') +
-          (ev.location ? ` @${ev.location}` : '') +
-          (seg.conflict ? ' (다른 장소 일정과 시간 중복)' : ''),
-      )
-      .join('\n');
-  };
+  const eventTitle = (ev: CalendarSessionEvent, conflict: boolean) =>
+    `${ev.programTitle} ${ev.sessionNo}회차 ${ev.startTime}–${ev.endTime}` +
+    (ev.topic ? ` — ${ev.topic}` : '') +
+    (ev.location ? ` @${ev.location}` : '') +
+    (conflict ? ' (다른 장소 일정과 시간 중복)' : '');
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
@@ -246,8 +275,8 @@ export function MonthCalendar({
       {/* 주 단위 렌더링: 배경(날짜 셀 + 드래그 타깃) 위에 프로그램 바 오버레이 */}
       <div className={cn('select-none', loading && 'opacity-50')}>
         {weeks.map((week, weekIdx) => {
-          const bars = weekBars[weekIdx];
-          const minHeight = DAY_HEADER_HEIGHT + bars.length * LANE_HEIGHT + 8;
+          const { bars, laneTotal } = weekBars[weekIdx];
+          const minHeight = DAY_HEADER_HEIGHT + laneTotal * LANE_HEIGHT + 8;
           return (
             <div key={week[0]} className="relative">
               {/* 배경 날짜 셀 */}
@@ -298,10 +327,11 @@ export function MonthCalendar({
               {/* 프로그램 연결 바 오버레이 */}
               <div
                 className="pointer-events-none absolute inset-x-0 grid grid-cols-7 gap-y-1"
-                style={{ top: DAY_HEADER_HEIGHT, gridAutoRows: `${LANE_HEIGHT - 4}px` }}
+                style={{ top: DAY_HEADER_HEIGHT, gridAutoRows: `${SEGMENT_HEIGHT}px` }}
               >
-                {bars.map((bar, lane) => {
+                {bars.map((bar) => {
                   const color = programColor(bar.programId);
+                  const spanLen = bar.endCol - bar.startCol + 1;
                   return (
                     <div
                       key={bar.programId}
@@ -312,45 +342,79 @@ export function MonthCalendar({
                       )}
                       style={{
                         gridColumn: `${bar.startCol + 1} / ${bar.endCol + 2}`,
-                        gridRowStart: lane + 1,
+                        gridRow: `${bar.laneOffset + 1} / span ${bar.subLanes}`,
                       }}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={() => onEventClick?.(bar.representative)}
                     >
-                      {/* 세그먼트: 수업일=솔리드, 사이 날짜=연결선 */}
+                      {/* 세그먼트 그리드: 열=날짜, 행=같은 날 중복 세션 서브 레인 */}
                       <div
-                        className="grid h-full items-stretch"
+                        className="grid h-full"
                         style={{
-                          gridTemplateColumns: `repeat(${bar.endCol - bar.startCol + 1}, 1fr)`,
+                          gridTemplateColumns: `repeat(${spanLen}, 1fr)`,
+                          gridTemplateRows: `repeat(${bar.subLanes}, ${SEGMENT_HEIGHT}px)`,
+                          rowGap: '4px',
                         }}
                       >
                         {bar.segments.map((seg) =>
-                          seg.type === 'session' ? (
-                            <div
-                              key={seg.col}
-                              title={segmentTitle(bar, seg)}
+                          seg.type === 'session' && seg.event ? (
+                            <button
+                              key={`${seg.col}-${seg.subLane}`}
+                              type="button"
+                              title={eventTitle(seg.event, seg.conflict)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEventClick?.(seg.event!);
+                              }}
+                              style={{
+                                gridColumnStart: seg.col - bar.startCol + 1,
+                                gridRowStart: seg.subLane + 1,
+                              }}
                               className={cn(
-                                'h-full rounded-[5px]',
+                                'overflow-hidden rounded-[5px] px-1 text-left',
                                 seg.conflict ? CONFLICT_COLOR.bar : color.bar,
                               )}
-                            />
+                            >
+                              {/* 첫 서브 레인의 텍스트는 바 라벨이 담당하고,
+                                  중복 세션(2번째 레인부터)은 자기 시간을 직접 표시한다 */}
+                              {seg.subLane > 0 && (
+                                <span
+                                  className={cn(
+                                    'block truncate text-[11px] font-medium leading-5',
+                                    seg.conflict ? CONFLICT_COLOR.text : color.text,
+                                  )}
+                                >
+                                  {seg.event.startTime}
+                                  {seg.event.topic ? ` ${seg.event.topic}` : ''}
+                                </span>
+                              )}
+                            </button>
                           ) : (
                             <div
-                              key={seg.col}
-                              title={segmentTitle(bar, seg)}
-                              className={cn('h-[3px] self-center opacity-60', color.dot)}
-                            />
+                              key={`${seg.col}-gap`}
+                              title={bar.programTitle}
+                              style={{
+                                gridColumnStart: seg.col - bar.startCol + 1,
+                                gridRowStart: 1,
+                              }}
+                              className="flex items-center"
+                            >
+                              <div className={cn('h-[3px] w-full opacity-60', color.dot)} />
+                            </div>
                           ),
                         )}
                       </div>
-                      {/* 바 라벨 */}
+                      {/* 바 라벨 (첫 서브 레인 위에 표시) */}
                       <span
                         className={cn(
-                          'pointer-events-none absolute inset-x-1.5 top-1/2 -translate-y-1/2 truncate text-[11px] font-medium leading-none',
+                          'pointer-events-none absolute inset-x-1.5 truncate text-[11px] font-medium',
                           bar.hasConflict ? CONFLICT_COLOR.text : color.text,
                         )}
+                        style={{ top: 0, lineHeight: `${SEGMENT_HEIGHT}px` }}
                       >
-                        {bar.representative.startTime} {bar.programTitle}
+                        {[bar.representative.startTime, bar.programTitle]
+                          .filter(Boolean)
+                          .join(' ')}
                       </span>
                     </div>
                   );

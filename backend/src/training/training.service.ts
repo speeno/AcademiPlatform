@@ -345,16 +345,43 @@ export class TrainingService {
     if (!from || !to || !DATE_REGEX.test(from) || !DATE_REGEX.test(to)) {
       throw new BadRequestException('조회 기간(from/to)을 YYYY-MM-DD 형식으로 지정해주세요.');
     }
-    const sessions = await this.prisma.trainingSession.findMany({
-      where: {
-        date: { gte: new Date(from), lte: new Date(to) },
-        program: this.isAdmin(user) ? undefined : { ownerId: user.id },
-      },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-      include: {
-        program: { select: { id: true, title: true, status: true } },
-      },
-    });
+    const programFilter = this.isAdmin(user) ? undefined : { ownerId: user.id };
+    const [sessions, ranges] = await Promise.all([
+      this.prisma.trainingSession.findMany({
+        where: {
+          date: { gte: new Date(from), lte: new Date(to) },
+          program: programFilter,
+        },
+        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+        include: {
+          program: { select: { id: true, title: true, status: true } },
+        },
+      }),
+      // 프로그램별 전체 수업일 범위(min~max). 달력 바가 월(그리드) 경계 밖의
+      // 일정까지 연결선으로 이어 그릴 수 있도록 조회 구간과 겹치는 것만 내려준다.
+      this.prisma.trainingSession.groupBy({
+        by: ['programId'],
+        where: { program: programFilter },
+        _min: { date: true },
+        _max: { date: true },
+      }),
+    ]);
+
+    const intersecting = ranges.filter(
+      (r) =>
+        r._min.date &&
+        r._max.date &&
+        toYmd(r._min.date) <= to &&
+        toYmd(r._max.date) >= from,
+    );
+    const rangePrograms =
+      intersecting.length > 0
+        ? await this.prisma.trainingProgram.findMany({
+            where: { id: { in: intersecting.map((r) => r.programId) } },
+            select: { id: true, title: true },
+          })
+        : [];
+    const titleById = new Map(rangePrograms.map((p) => [p.id, p.title]));
 
     return {
       sessions: sessions.map((s) => ({
@@ -368,6 +395,12 @@ export class TrainingService {
         endTime: s.endTime,
         topic: s.topic,
         location: s.location,
+      })),
+      programRanges: intersecting.map((r) => ({
+        programId: r.programId,
+        programTitle: titleById.get(r.programId) ?? '',
+        firstDate: toYmd(r._min.date!),
+        lastDate: toYmd(r._max.date!),
       })),
     };
   }

@@ -73,6 +73,29 @@ export function monthGridRange(month: string): { from: string; to: string } {
   return { from: grid[0][0], to: grid[grid.length - 1][6] };
 }
 
+/** start~end(양끝 포함, 순서 무관) 사이의 모든 날짜 */
+export function datesBetween(start: string, end: string): string[] {
+  const [from, to] = start <= end ? [start, end] : [end, start];
+  const dates: string[] = [];
+  const [y, m, d] = from.split('-').map(Number);
+  const cursor = new Date(y, m - 1, d);
+  for (let i = 0; i < 370; i++) {
+    const ymd = toYmd(cursor);
+    dates.push(ymd);
+    if (ymd === to) break;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
+/** ymd + n일 */
+export function addDaysYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + days);
+  return toYmd(date);
+}
+
 /** 오늘부터 n일 후까지 */
 export function rangeFromToday(days: number): { from: string; to: string } {
   const from = new Date();

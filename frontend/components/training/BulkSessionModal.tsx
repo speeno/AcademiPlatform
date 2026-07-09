@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { BrandButton } from '@/components/ui/brand-button';
 import { apiFetchWithAuth, parseJsonSafe } from '@/lib/api-client';
-import { formatKoreanDateWithDay } from '@/lib/calendar';
+import { addDaysYmd, datesBetween, formatKoreanDateWithDay } from '@/lib/calendar';
 import {
   PROGRAM_STATUS_LABELS,
   type TrainingProgram,
@@ -68,6 +68,16 @@ export function BulkSessionModal({ open, dates, onClose, onSaved }: BulkSessionM
 
   const removeDate = (date: string) =>
     setSelectedDates((prev) => prev.filter((d) => d !== date));
+
+  /** 드래그가 달력(월) 경계에서 끝났어도 다음 달 날짜까지 이어서 등록할 수 있게 범위를 연장 */
+  const extendTo = (target: string) => {
+    if (!target) return;
+    const last = selectedDates[selectedDates.length - 1];
+    if (!last || target <= last) return;
+    setSelectedDates((prev) =>
+      [...new Set([...prev, ...datesBetween(addDaysYmd(last, 1), target)])].sort(),
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,6 +189,23 @@ export function BulkSessionModal({ open, dates, onClose, onSaved }: BulkSessionM
               <p className="mt-1 text-xs text-red-500">
                 교육 기간 밖 날짜 {invalidDates.length}일은 자동으로 제외됩니다.
               </p>
+            )}
+            {selectedDates.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <label className="text-xs text-muted-foreground">
+                  마지막 날짜 이후로 연장 (다음 달 포함):
+                </label>
+                <input
+                  type="date"
+                  min={addDaysYmd(selectedDates[selectedDates.length - 1], 1)}
+                  max={program?.endDate}
+                  onChange={(e) => {
+                    extendTo(e.target.value);
+                    e.target.value = '';
+                  }}
+                  className="rounded-lg border border-border px-2 py-1 text-xs"
+                />
+              </div>
             )}
           </div>
 
